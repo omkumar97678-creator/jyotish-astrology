@@ -419,4 +419,153 @@ export const t = {
     en: 'The cosmic numbers calculated from your name and birth date',
     hinglish: 'Aapke naam aur janam tithi se calculate kiye gaye shubh ank'
   },
+
+  // ── AUTHENTICATION ───────────────
+  signup_title: {
+    en: 'Create Your Account',
+    hinglish: 'Account Banao'
+  },
+  signup_subtitle: {
+    en: 'Begin your cosmic journey',
+    hinglish: 'Apni cosmic journey shuru karo'
+  },
+  google_btn: {
+    en: 'Continue with Google',
+    hinglish: 'Google se Continue Karo'
+  },
+  or_email: {
+    en: 'or continue with email',
+    hinglish: 'ya email se continue karo'
+  },
+  full_name: {
+    en: 'Full Name',
+    hinglish: 'Poora Naam'
+  },
+  email_address: {
+    en: 'Email Address',
+    hinglish: 'Email Address'
+  },
+  password: {
+    en: 'Password',
+    hinglish: 'Password'
+  },
+  confirm_password: {
+    en: 'Confirm Password',
+    hinglish: 'Confirm Password'
+  },
+  pwd_strength: {
+    en: 'Password strength',
+    hinglish: 'Password ki mazbooti'
+  },
+  strength_weak: { en: 'Weak', hinglish: 'Kamzor' },
+  strength_fair: { en: 'Fair', hinglish: 'Theek' },
+  strength_good: { en: 'Good', hinglish: 'Accha' },
+  strength_strong: { en: 'Strong', hinglish: 'Mazboot' },
+  agree_terms: {
+    en: 'I agree to the Terms of Service and Privacy Policy',
+    hinglish: 'Main Terms of Service aur Privacy Policy se sehmat hoon'
+  },
+  terms_service: { en: 'Terms of Service', hinglish: 'Terms of Service' },
+  privacy_policy: { en: 'Privacy Policy', hinglish: 'Privacy Policy' },
+  create_account_btn: {
+    en: 'Create Account →',
+    hinglish: 'Account Banao →'
+  },
+  login_title: {
+    en: 'Welcome Back',
+    hinglish: 'Wapas Aaye!'
+  },
+  login_subtitle: {
+    en: 'Your stars are waiting',
+    hinglish: 'Aapke sitare wait kar rahe hain'
+  },
+  signin_btn: {
+    en: 'Sign In →',
+    hinglish: 'Sign In Karo →'
+  },
+  remember_me: {
+    en: 'Remember me for 30 days',
+    hinglish: '30 din tak yaad rakhein'
+  },
+  already_account: {
+    en: 'Already have an account?',
+    hinglish: 'Pehle se account hai?'
+  },
+  no_account: {
+    en: "Don't have an account?",
+    hinglish: 'Account nahi hai?'
+  },
+  create_one: {
+    en: 'Create one →',
+    hinglish: 'Naya banao →'
+  },
+  signin_link: {
+    en: 'Sign In →',
+    hinglish: 'Sign In →'
+  },
+  forgot_password: {
+    en: 'Forgot password?',
+    hinglish: 'Password bhool gaye?'
+  },
+  forgot_title: {
+    en: 'Reset Your Password',
+    hinglish: 'Password Reset Karo'
+  },
+  forgot_subtitle: {
+    en: "Enter your email and we'll send you a reset link",
+    hinglish: 'Apna email daalo, hum reset link bhejenge'
+  },
+  send_reset_link: {
+    en: 'Send Reset Link →',
+    hinglish: 'Reset Link Bhejo →'
+  },
+  back_to_login: {
+    en: 'Back to Sign In',
+    hinglish: 'Sign In pe Wapas Jao'
+  },
+  remember_pwd: {
+    en: 'Remember your password?',
+    hinglish: 'Password yaad aa gaya?'
+  },
+  account_created: {
+    en: 'Account Created!',
+    hinglish: 'Account Ban Gaya!'
+  },
+  verify_email_note: {
+    en: 'Check your email to verify your account',
+    hinglish: 'Apna account verify karne ke liye email check karein'
+  },
+  check_email_title: {
+    en: 'Check Your Email!',
+    hinglish: 'Apna Email Check Karein!'
+  },
+  reset_link_sent: {
+    en: "We've sent a password reset link to:",
+    hinglish: 'Humne password reset link yahan bhej diya hai:'
+  },
+  didnt_receive_note: {
+    en: "Didn't receive the email? Check your spam folder or",
+    hinglish: 'Email nahi mila? Spam folder check karein ya'
+  },
+  resend_email: {
+    en: 'Resend Email',
+    hinglish: 'Email Dobara Bhejo'
+  },
+  resend_available_in: {
+    en: 'Resend available in',
+    hinglish: 'Dobara bhej sakte hain'
+  },
+  invalid_creds: {
+    en: 'Invalid email or password. Please try again.',
+    hinglish: 'Galat email ya password. Kripya dobara prayas karein.'
+  },
+  my_account: {
+    en: '👤 My Account',
+    hinglish: '👤 Meri Profile'
+  },
+  sign_in_nav: {
+    en: 'Sign In',
+    hinglish: 'Sign In'
+  },
 };
+

@@ -15,6 +15,9 @@ import Numerology from '@/pages/Numerology';
 import GunMilan from '@/pages/GunMilan';
 import Horoscope from '@/pages/Horoscope';
 import Voice from '@/pages/Voice';
+import Signup from '@/pages/Signup';
+import Login from '@/pages/Login';
+import ForgotPassword from '@/pages/ForgotPassword';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +48,10 @@ const AuthenticatedApp = () => {
       <Navbar />
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/register" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/kundli" element={<Kundli />} />
         <Route path="/numerology" element={<Numerology />} />

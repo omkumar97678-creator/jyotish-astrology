@@ -98,7 +98,7 @@ export default function Hero() {
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 px-4">
           <motion.div {...up(0.7)} className="w-full sm:w-auto">
             <Link
-              to="/onboarding"
+              to="/signup"
               className="btn-primary w-full sm:w-auto justify-center text-center py-4 px-8 sm:px-10 text-sm sm:text-base"
               style={{ boxShadow: '0 0 40px rgba(200,130,42,0.35)' }}
             >

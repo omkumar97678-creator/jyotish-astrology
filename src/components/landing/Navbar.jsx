@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -9,8 +9,27 @@ import LanguageToggle from '@/components/LanguageToggle';
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const { lang } = useLang();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const checkUser = () => {
+    try {
+      const stored = localStorage.getItem('jyotish_user');
+      if (stored) {
+        setUser(JSON.parse(stored));
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkUser();
+  }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -22,6 +41,13 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('jyotish_user');
+    setUser(null);
+    setMobileOpen(false);
+    navigate('/');
+  };
 
   const navLinks = [
     { name: t.nav_kundli[lang] || 'Kundli', path: '/kundli', icon: '☸' },
@@ -85,18 +111,49 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right side: Language Toggle, CTA (Desktop), and Hamburger Menu (Mobile) */}
+          {/* Right side: Language Toggle, Auth/CTA (Desktop), and Hamburger Menu (Mobile) */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <LanguageToggle />
 
-            {/* CTA button visible on desktop/tablet only so mobile header never overflows */}
-            <Link
-              to="/onboarding"
-              className="btn-primary text-xs sm:text-sm whitespace-nowrap hidden md:inline-flex"
-              style={{ padding: '8px 18px' }}
-            >
-              {t.nav_cta[lang]}
-            </Link>
+            {/* Auth Buttons for Desktop/Tablet */}
+            {user ? (
+              <div className="hidden md:flex items-center gap-2">
+                <Link
+                  to="/kundli"
+                  className="btn-ghost text-xs sm:text-sm whitespace-nowrap flex items-center gap-1.5"
+                  style={{ padding: '7px 14px', color: 'var(--col-copper)', border: '1px solid rgba(200, 130, 42, 0.3)' }}
+                >
+                  <User size={14} />
+                  <span>{user.name ? user.name.slice(0, 10) : t.my_account[lang]}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  title="Log out"
+                  className="p-2 rounded-xl text-xs transition-colors hover:text-white"
+                  style={{ color: 'var(--col-moonstone-dim)' }}
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-2.5">
+                <Link
+                  to="/login"
+                  className="btn-ghost text-xs sm:text-sm whitespace-nowrap"
+                  style={{ padding: '7px 14px', color: 'var(--col-moonstone)' }}
+                >
+                  {t.sign_in_nav[lang]}
+                </Link>
+                <Link
+                  to="/signup"
+                  className="btn-primary text-xs sm:text-sm whitespace-nowrap"
+                  style={{ padding: '8px 18px' }}
+                >
+                  {t.nav_cta[lang]}
+                </Link>
+              </div>
+            )}
 
             {/* Mobile Hamburger Toggle Button - Always visible on mobile */}
             <button
@@ -165,14 +222,47 @@ export default function Navbar() {
               })}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-[rgba(255,255,255,0.08)]">
-              <Link
-                to="/onboarding"
-                onClick={() => setMobileOpen(false)}
-                className="btn-primary w-full text-center justify-center py-3.5 text-sm font-semibold"
-              >
-                {t.nav_cta[lang]}
-              </Link>
+            <div className="mt-5 pt-4 border-t border-[rgba(255,255,255,0.08)] space-y-2.5">
+              {user ? (
+                <>
+                  <Link
+                    to="/kundli"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn-ghost w-full text-center justify-center py-3 text-sm flex items-center gap-2"
+                    style={{ color: 'var(--col-copper)', border: '1px solid rgba(200, 130, 42, 0.3)' }}
+                  >
+                    <User size={16} />
+                    <span>{user.name ? user.name : t.my_account[lang]}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full py-2.5 text-xs text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                    style={{ color: 'var(--col-moonstone-dim)' }}
+                  >
+                    <LogOut size={14} />
+                    <span>Log Out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn-primary w-full text-center justify-center py-3.5 text-sm font-semibold"
+                  >
+                    {t.nav_cta[lang]}
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn-ghost w-full text-center justify-center py-2.5 text-xs"
+                    style={{ color: 'var(--col-moonstone)' }}
+                  >
+                    {t.sign_in_nav[lang]}
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
