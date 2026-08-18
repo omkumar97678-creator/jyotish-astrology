@@ -1,3 +1,5 @@
+import React from 'react';
+import { motion } from 'framer-motion';
 import ZodiacIcon from '@/components/ZodiacIcon';
 import Stars from './Stars';
 import { signs } from '../horoData';
