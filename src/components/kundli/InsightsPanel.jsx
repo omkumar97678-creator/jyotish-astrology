@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
+import { useLang } from '@/context/LanguageContext';
 
 const insights = [
   {
@@ -22,6 +23,8 @@ const insights = [
 ];
 
 export default function InsightsPanel() {
+  const { lang } = useLang();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -34,8 +37,12 @@ export default function InsightsPanel() {
       <div className="flex items-center gap-2 mb-6">
         <Sparkles size={18} style={{ color: 'var(--col-copper)' }} />
         <div>
-          <span className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>AI Insights</span>
-          <span className="block font-display" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.9rem' }}>ज्योतिष विश्लेषण</span>
+          <span className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>
+            {lang === 'hinglish' ? 'वैदिक अंतर्दृष्टि' : 'Vedic Insights'}
+          </span>
+          <span className="block font-display" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.9rem' }}>
+            ज्योतिष विश्लेषण
+          </span>
         </div>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
@@ -55,7 +62,9 @@ export default function InsightsPanel() {
         ))}
       </div>
       <p className="mt-6 text-xs" style={{ color: 'rgba(232,228,220,0.3)' }}>
-        Insights are AI-generated based on your chart and are for entertainment & educational purposes only.
+        {lang === 'hinglish'
+          ? 'यह विश्लेषण Swiss Ephemeris और प्राचीन वैदिक ज्योतिष सिद्धांतों पर आधारित है।'
+          : 'Insights are calculated using Swiss Ephemeris and ancient Vedic principles for astrological guidance.'}
       </p>
     </motion.div>
   );

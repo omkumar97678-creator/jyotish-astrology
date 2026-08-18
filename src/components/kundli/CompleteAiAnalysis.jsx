@@ -35,7 +35,7 @@ export default function CompleteAiAnalysis() {
               {t.ai_insights_title[lang]}
             </h3>
             <span className="text-xs" style={{ color: 'var(--col-copper)' }}>
-              {lang === 'hinglish' ? 'ज्योतिष विश्लेषण — AI रिपोर्ट' : 'Astrological Analysis'}
+              {lang === 'hinglish' ? 'ज्योतिषीय विश्लेषण — सम्पूर्ण रिपोर्ट' : 'Astrological Analysis'}
             </span>
           </div>
         </div>

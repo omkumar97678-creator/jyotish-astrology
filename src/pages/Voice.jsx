@@ -10,7 +10,7 @@ import Conversation, { now, mock } from '@/components/voice/Conversation';
 import InputBar from '@/components/voice/InputBar';
 import SessionBar from '@/components/voice/SessionBar';
 
-const geminiReply = (q) =>
+const jyotishReply = (q) =>
   q.toLowerCase().includes('career')
     ? 'This year favors steady growth in your career. Saturn\'s transit asks for discipline, but rewards patient effort with recognition around late autumn.'
     : 'Based on your kundli, the planetary alignment suggests a period of reflection and opportunity. Trust your intuition and stay grounded in your decisions.';
@@ -46,7 +46,7 @@ export default function Voice() {
     timers.current.push(
       setTimeout(() => {
         const last = userText || 'Tell me about my Moon sign personality.';
-        setMessages((m) => [...m, { role: 'gemini', text: geminiReply(last), time: now() }]);
+        setMessages((m) => [...m, { role: 'jyotish', text: jyotishReply(last), time: now() }]);
         setVoiceState('idle');
       }, 6000)
     );

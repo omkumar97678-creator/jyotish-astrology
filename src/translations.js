@@ -17,8 +17,8 @@ export const t = {
     hinglish: 'Rashifal'
   },
   nav_voice: {
-    en: 'Voice AI',
-    hinglish: 'Voice AI'
+    en: 'Voice Consultation',
+    hinglish: 'Voice Kundli'
   },
   nav_cta: {
     en: 'Start Free →',
@@ -27,16 +27,16 @@ export const t = {
 
   // ── LANDING PAGE ────────────────
   hero_badge: {
-    en: '✦ AI-Powered Vedic Astrology ✦',
-    hinglish: '✦ AI-Powered Vedic Jyotish ✦'
+    en: '✦ Vedic Astrology & Kundli ✦',
+    hinglish: '✦ Vedic Jyotish & Kundli ✦'
   },
   hero_subtitle: {
     en: 'Your Chart, Your Destiny',
     hinglish: 'Aapki Kundli, Aapka Bhagya'
   },
   hero_body: {
-    en: 'Vedic astrology and numerology with Swiss Ephemeris accuracy, explained clearly by AI.',
-    hinglish: 'Vedic jyotish aur numerology — Swiss Ephemeris accuracy ke saath, AI dwara Hindi mein explain kiya gaya.'
+    en: 'Vedic astrology and numerology with Swiss Ephemeris accuracy, explained clearly with deep astrological insights.',
+    hinglish: 'Vedic jyotish aur numerology — Swiss Ephemeris accuracy ke saath, poore vishleshan ke saath explain kiya gaya.'
   },
   hero_cta: {
     en: 'Create Free Kundli ✦',
@@ -75,10 +75,10 @@ export const t = {
     en: 'Daily readings based on your moon sign, with optional push notifications.',
     hinglish: 'Har roz ka rashifal aapki Rashi ke hisaab se. Notifications bhi milenge.'
   },
-  feature5_title: { en: 'Voice Report', hinglish: 'Voice Report' },
+  feature5_title: { en: 'Voice Consultation', hinglish: 'Voice Consultation' },
   feature5_desc: {
-    en: 'Listen to your report and ask any question in a real-time AI voice Q&A.',
-    hinglish: 'Report suno aur koi bhi sawal pucho — real-time AI voice Q&A ke saath.'
+    en: 'Listen to your report and ask any question in real-time interactive voice guidance.',
+    hinglish: 'Report suno aur koi bhi sawal pucho — real-time interactive voice guidance ke saath.'
   },
   feature6_title: { en: 'PDF Report', hinglish: 'PDF Report' },
   feature6_desc: {
@@ -94,10 +94,10 @@ export const t = {
     en: 'Name, date of birth, time and birth city. It takes just two minutes.',
     hinglish: 'Naam, date of birth, time aur janam ka shahar. Sirf 2 minute lagte hain.'
   },
-  step2_title: { en: 'AI Calculates', hinglish: 'AI Calculate Karta Hai' },
+  step2_title: { en: 'Vedic Calculation', hinglish: 'Vedic Ganana' },
   step2_desc: {
-    en: 'Swiss Ephemeris and AI work together to build your complete chart instantly.',
-    hinglish: 'Swiss Ephemeris aur AI milke tumhari complete kundli banate hain.'
+    en: 'Swiss Ephemeris and ancient mathematical systems work together to build your complete chart instantly.',
+    hinglish: 'Swiss Ephemeris aur Vedic ganit milke tumhari complete kundli banate hain.'
   },
   step3_title: { en: 'Get Your Report', hinglish: 'Report Pao' },
   step3_desc: {
@@ -251,12 +251,12 @@ export const t = {
     hinglish: 'Aapke Shubh Tatv — शुभ तत्व'
   },
   ai_insights_title: {
-    en: '✦ Complete AI Analysis',
-    hinglish: '✦ Poora AI Vishleshan'
+    en: '✦ Complete Vedic Analysis',
+    hinglish: '✦ सम्पूर्ण जन्म कुंडली विश्लेषण'
   },
   ai_insights_subtitle: {
-    en: 'AI Generated',
-    hinglish: 'AI Generated'
+    en: 'Vedic Certified',
+    hinglish: 'वैदिक विश्लेषण'
   },
   tab_personality: {
     en: 'Personality',
@@ -368,8 +368,8 @@ export const t = {
     hinglish: 'Aaj ki Salah'
   },
   ai_horoscope_title: {
-    en: '✦ AI Horoscope Insights',
-    hinglish: '✦ AI Rashifal Vishleshan'
+    en: '✦ Cosmic Planetary Insights',
+    hinglish: '✦ ग्रह दृष्टि एवं विशेष फल'
   },
   get_personal: {
     en: 'Get Personal Reading',

@@ -30,7 +30,7 @@ export default function HoroAiInsights() {
             background: 'rgba(200,130,42,0.08)',
           }}
         >
-          {lang === 'hinglish' ? 'AI Vishleshan' : 'AI Generated'}
+          {lang === 'hinglish' ? 'वैदिक फलकथन' : 'Vedic Forecast'}
         </span>
       </div>
 

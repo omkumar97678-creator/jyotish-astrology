@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '@/context/LanguageContext';
 
 export default function AiAnalysisSection() {
+  const { lang } = useLang();
+
   const sections = [
     {
       title: '✦ Overall Verdict',
@@ -43,7 +46,7 @@ export default function AiAnalysisSection() {
           background: 'rgba(200,130,42,0.08)',
         }}
       >
-        AI Analysis
+        {lang === 'hinglish' ? 'वैदिक मूल्यांकन' : 'Vedic Evaluation'}
       </span>
 
       <div className="flex items-center gap-2 mb-6">

@@ -5,7 +5,7 @@ const now = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minu
 
 const mock = [
   { role: 'user', text: 'What does my Life Path 7 mean?', time: '2:30 PM' },
-  { role: 'gemini', text: 'Your Life Path 7 indicates you are a seeker of truth and wisdom. You are naturally analytical, introspective, and drawn to understanding the deeper mysteries of life.', time: '2:30 PM' },
+  { role: 'jyotish', text: 'Your Life Path 7 indicates you are a seeker of truth and wisdom. You are naturally analytical, introspective, and drawn to understanding the deeper mysteries of life.', time: '2:30 PM' },
   { role: 'user', text: 'What about my career this year?', time: '2:31 PM' },
 ];
 
@@ -55,7 +55,9 @@ export default function Conversation({ messages }) {
                     >
                       ✦
                     </span>
-                    <span className="text-xs font-medium" style={{ color: 'var(--col-teal)' }}>Gemini</span>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--col-teal)' }}>
+                      ज्योतिष (Jyotish)
+                    </span>
                   </div>
                 )}
                 {m.typing ? <TypingDots /> : (
