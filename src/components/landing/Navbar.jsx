@@ -1,0 +1,182 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X } from 'lucide-react';
+import { useLang } from '@/context/LanguageContext';
+import { t } from '@/translations';
+import LanguageToggle from '@/components/LanguageToggle';
+
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { lang } = useLang();
+  const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  const navLinks = [
+    { name: t.nav_kundli[lang] || 'Kundli', path: '/kundli', icon: '☸' },
+    { name: t.nav_numerology[lang] || 'Numerology', path: '/numerology', icon: '∑' },
+    { name: t.nav_gunmilan[lang] || 'Gun Milan', path: '/gunmilan', icon: '⚭' },
+    { name: t.nav_horoscope[lang] || 'Horoscope', path: '/horoscope', icon: '☽' },
+    { name: t.nav_voice[lang] || 'Voice AI', path: '/voice', icon: '◉' },
+  ];
+
+  return (
+    <>
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="fixed top-0 left-0 w-full z-50"
+        style={{
+          background:
+            scrolled || location.pathname !== '/' || mobileOpen
+              ? 'rgba(13,15,43,0.95)'
+              : 'rgba(13,15,43,0.5)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          transition: 'all 0.35s var(--ease-smooth)',
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-[60px] sm:h-[72px] flex items-center justify-between gap-2">
+          {/* Logo */}
+          <Link
+            to="/"
+            className="font-display text-base sm:text-xl whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
+            style={{ color: 'var(--col-copper)' }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>✦</span>
+            <span>ज्योतिष</span>
+          </Link>
+
+          {/* Desktop Links (Hidden on mobile/tablet) */}
+          <div className="hidden lg:flex items-center gap-7">
+            {navLinks.slice(0, 4).map((l) => {
+              const isActive = location.pathname === l.path;
+              return (
+                <Link
+                  key={l.path}
+                  to={l.path}
+                  className="text-sm font-medium transition-colors"
+                  style={{
+                    color: isActive ? 'var(--col-copper)' : 'var(--col-moonstone-dim)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--col-moonstone)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--col-moonstone-dim)';
+                  }}
+                >
+                  {l.name}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right side: Language Toggle, CTA (Desktop), and Hamburger Menu (Mobile) */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <LanguageToggle />
+
+            {/* CTA button visible on desktop/tablet only so mobile header never overflows */}
+            <Link
+              to="/onboarding"
+              className="btn-primary text-xs sm:text-sm whitespace-nowrap hidden md:inline-flex"
+              style={{ padding: '8px 18px' }}
+            >
+              {t.nav_cta[lang]}
+            </Link>
+
+            {/* Mobile Hamburger Toggle Button - Always visible on mobile */}
+            <button
+              type="button"
+              aria-label="Toggle navigation menu"
+              onClick={() => setMobileOpen((o) => !o)}
+              className="lg:hidden p-2 sm:p-2.5 rounded-xl glass-card flex items-center justify-center transition-colors min-w-[38px] min-h-[38px] cursor-pointer"
+              style={{
+                color: mobileOpen ? 'var(--col-copper)' : 'var(--col-moonstone)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </div>
+      </motion.nav>
+
+      {/* Slide-Down Mobile Drawer Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed inset-x-0 top-[60px] sm:top-[72px] z-40 lg:hidden px-4 pb-6 pt-3 shadow-2xl"
+            style={{
+              background: 'rgba(13, 15, 43, 0.98)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderBottom: '1px solid rgba(200, 130, 42, 0.3)',
+              maxHeight: 'calc(100vh - 64px)',
+              overflowY: 'auto',
+            }}
+          >
+            <div className="space-y-1">
+              {navLinks.map((l) => {
+                const isActive = location.pathname === l.path;
+                return (
+                  <Link
+                    key={l.path}
+                    to={l.path}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-between p-3.5 rounded-xl transition-all"
+                    style={{
+                      background: isActive ? 'rgba(200, 130, 42, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                      border: isActive
+                        ? '1px solid rgba(200, 130, 42, 0.4)'
+                        : '1px solid rgba(255, 255, 255, 0.05)',
+                      color: isActive ? 'var(--col-copper)' : 'var(--col-moonstone)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span style={{ fontSize: '18px', color: 'var(--col-copper)' }}>{l.icon}</span>
+                      <span className="font-medium text-sm">{l.name}</span>
+                    </div>
+                    {isActive && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--col-copper)', color: '#0D0F2B', fontWeight: 600 }}>
+                        Active
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-[rgba(255,255,255,0.08)]">
+              <Link
+                to="/onboarding"
+                onClick={() => setMobileOpen(false)}
+                className="btn-primary w-full text-center justify-center py-3.5 text-sm font-semibold"
+              >
+                {t.nav_cta[lang]}
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

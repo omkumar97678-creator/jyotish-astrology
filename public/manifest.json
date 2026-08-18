@@ -1,0 +1,15 @@
+{
+  "short_name": "ज्योतिष",
+  "name": "✦ ज्योतिष — Vedic Astrology & Kundli",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0D0F2B",
+  "theme_color": "#C8822A",
+  "display": "standalone"
+}

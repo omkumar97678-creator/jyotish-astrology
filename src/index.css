@@ -1,0 +1,304 @@
+@import url('https://fonts.googleapis.com/css2?family=Yatra+One&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --font-heading: ui-sans-serif, system-ui, sans-serif;
+    --font-body: ui-sans-serif, system-ui, sans-serif;
+    --font-display: ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+}
+
+/* ===== Digital Panchang design system ===== */
+:root {
+  --col-midnight: #0D0F2B;
+  --col-midnight-lift: #12152E;
+  --col-midnight-mid: #1A1D3D;
+  --col-copper: #C8822A;
+  --col-copper-light: #E09840;
+  --col-copper-glow: rgba(200, 130, 42, 0.18);
+  --col-moonstone: #E8E4DC;
+  --col-moonstone-dim: rgba(232, 228, 220, 0.55);
+  --col-teal: #2AABA8;
+  --col-glass: rgba(255, 255, 255, 0.04);
+  --col-glass-border: rgba(255, 255, 255, 0.08);
+
+  --ff-display: 'Yatra One', ui-sans-serif, system-ui, sans-serif;
+  --ff-body: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 32px;
+  --r-full: 9999px;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--ff-body);
+  background-color: var(--col-midnight);
+  color: var(--col-moonstone);
+  -webkit-font-smoothing: antialiased;
+  transition: opacity 0.2s ease;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+body.lang-switching {
+  opacity: 0;
+}
+
+.lang-fade {
+  transition: opacity 0.2s ease;
+}
+
+/* Hide scrollbar for clean touch horizontal swipes */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.font-display { font-family: var(--ff-display); }
+.font-mono-num { font-family: var(--ff-mono); }
+
+::selection { background: var(--col-copper-glow); color: var(--col-moonstone); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--col-midnight); }
+::-webkit-scrollbar-thumb { background: rgba(200, 130, 42, 0.45); border-radius: var(--r-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--col-copper); }
+
+*:focus-visible { outline: 2px solid var(--col-copper); outline-offset: 2px; }
+
+@keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(6deg); }
+}
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rotate-ccw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(200, 130, 42, 0.3); }
+  50% { box-shadow: 0 0 90px rgba(200, 130, 42, 0.55); }
+}
+@keyframes shimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+.animate-rotate { animation: rotate 80s linear infinite; }
+.animate-rotate-cw { animation: rotate-cw 80s linear infinite; }
+.animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+
+.glass-card {
+  background: var(--col-glass);
+  border: 1px solid var(--col-glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--r-lg);
+  transition: all 0.35s var(--ease-smooth);
+}
+
+.text-copper-gradient {
+  background: linear-gradient(100deg, var(--col-copper) 0%, var(--col-copper-light) 40%, var(--col-moonstone) 55%, var(--col-copper) 75%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 5s linear infinite;
+}
+
+.input-base {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--col-glass-border);
+  border-radius: var(--r-md);
+  color: var(--col-moonstone);
+  padding: 15px 18px;
+  font-size: 1rem;
+  font-family: var(--ff-body);
+  transition: all 0.25s var(--ease-smooth);
+}
+.input-base::placeholder { color: rgba(232, 228, 220, 0.3); }
+.input-base:focus {
+  outline: none;
+  border-color: rgba(200, 130, 42, 0.6);
+  box-shadow: 0 0 0 3px var(--col-copper-glow);
+}
+.input-base:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--col-copper) 0%, var(--col-copper-light) 100%);
+  color: #0D0F2B;
+  font-weight: 600;
+  border-radius: var(--r-full);
+  padding: 14px 32px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200, 130, 42, 0.35); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--col-moonstone-dim);
+  border: 1px solid var(--col-glass-border);
+  border-radius: var(--r-full);
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+}
+.btn-ghost:hover { color: var(--col-moonstone); border-color: rgba(200, 130, 42, 0.4); }
+
+/* Zodiac Sign Cards Force Override */
+.zodiac-sign-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(232, 228, 220, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.25s var(--ease-smooth);
+}
+
+.zodiac-sign-card:hover {
+  border: 1px solid rgba(200, 130, 42, 0.3) !important;
+}
+
+.zodiac-sign-card.selected {
+  background: rgba(200, 130, 42, 0.1) !important;
+  color: #C8822A !important;
+  border: 1px solid rgba(200, 130, 42, 0.5) !important;
+  box-shadow: 0 0 20px rgba(200, 130, 42, 0.15) !important;
+}
+
+.zodiac-sign-symbol {
+  font-family: 'DejaVu Sans', 'Arial Unicode MS', 'Lucida Sans Unicode', 'Segoe UI Symbol', system-ui, sans-serif !important;
+  font-variant-emoji: text !important;
+  line-height: 1;
+  display: block;
+}
+
+.zodiac-sign-symbol.unselected {
+  color: rgba(232, 228, 220, 0.6) !important;
+}
+
+.zodiac-sign-symbol.selected {
+  color: #C8822A !important;
+}
+
+.hero-zodiac-symbol {
+  font-size: 88px !important;
+  line-height: 1 !important;
+  color: #C8822A !important;
+  display: inline-block !important;
+  font-family: 'DejaVu Sans', 'Arial Unicode MS', 'Lucida Sans Unicode', 'Segoe UI Symbol', system-ui, sans-serif !important;
+  font-variant-emoji: text !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 36px rgba(200, 130, 42, 0.45);
+}
+
+.zodiac-sign-card:hover .zodiac-sign-symbol.unselected {
+  color: #E09840 !important;
+}
