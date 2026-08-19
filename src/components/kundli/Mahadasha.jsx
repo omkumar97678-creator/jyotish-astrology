@@ -3,13 +3,26 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-const START = 2019;
-const END = 2038;
-const NOW = new Date().getFullYear();
-const progress = Math.min(100, Math.max(0, ((NOW - START) / (END - START)) * 100));
-
-export default function Mahadasha() {
+export default function Mahadasha({ mahadasha, nakshatra }) {
   const { lang } = useLang();
+
+  const lord = mahadasha?.currentLord || 'Saturn';
+  const start = (mahadasha?.runningYear ? mahadasha.runningYear - 6 : 2020);
+  const end = (mahadasha?.runningYear ? mahadasha.runningYear + 10 : 2036);
+  const now = new Date().getFullYear();
+  const progress = Math.min(100, Math.max(10, ((now - start) / (end - start)) * 100));
+
+  const hindiLords = {
+    Sun: 'Surya (सूर्य)',
+    Moon: 'Chandra (चंद्र)',
+    Mars: 'Mangal (मंगल)',
+    Mercury: 'Budha (बुध)',
+    Jupiter: 'Guru (गुरु)',
+    Venus: 'Shukra (शुक्र)',
+    Saturn: 'Shani (शनि)',
+    Rahu: 'Rahu (राहु)',
+    Ketu: 'Ketu (केतु)',
+  };
 
   return (
     <motion.div
@@ -25,25 +38,25 @@ export default function Mahadasha() {
       </div>
 
       <div className="font-display" style={{ fontSize: '1.8rem', color: 'var(--col-copper)' }}>
-        {lang === 'hinglish' ? 'Shani Mahadasha (शनि महादशा)' : 'Saturn Mahadasha'}
+        {lang === 'hinglish' ? `${hindiLords[lord] || lord} Mahadasha` : `${lord} Mahadasha`}
       </div>
       <div className="mt-1 font-mono-num" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.95rem' }}>
-        {START} – {END}
+        {start} – {end}
       </div>
       <div className="mt-2 text-sm" style={{ color: 'var(--col-moonstone)' }}>
-        Antardasha: <span style={{ color: 'var(--col-copper)' }}>Saturn — Mercury</span>
+        Nakshatra: <span style={{ color: 'var(--col-copper)' }}>{nakshatra || 'Pushya'}</span>
       </div>
       <p className="mt-3 text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.7 }}>
         {lang === 'hinglish'
-          ? 'Anushasan, mehnat aur karmic sikhne ka samay.'
-          : 'Period of discipline, hard work and karmic lessons.'}
+          ? 'Vimshottari dasha ke anusaar prabhavi graha kaal aur unki shakti ka samay.'
+          : 'Vimshottari planetary period influencing major life events, focus, and transformation.'}
       </p>
 
       <div className="mt-5">
         <div className="flex justify-between text-xs mb-2" style={{ color: 'var(--col-moonstone-dim)' }}>
-          <span>{START}</span>
+          <span>{start}</span>
           <span className="font-mono-num" style={{ color: 'var(--col-copper)' }}>{Math.round(progress)}%</span>
-          <span>{END}</span>
+          <span>{end}</span>
         </div>
         <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--r-full)', overflow: 'hidden' }}>
           <motion.div

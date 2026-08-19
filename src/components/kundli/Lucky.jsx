@@ -3,37 +3,39 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function Lucky() {
+export default function Lucky({ lucky }) {
   const { lang } = useLang();
 
-  const colors = [
-    { name: lang === 'hinglish' ? 'Sunehra (Gold)' : 'Gold', hex: '#D4AF37' },
-    { name: lang === 'hinglish' ? 'Baingani (Purple)' : 'Purple', hex: '#7C5BA8' },
-    { name: lang === 'hinglish' ? 'Hara (Green)' : 'Green', hex: '#3FA86A' },
-  ];
+  const lk = lucky || {
+    color: 'Coral Red / Amber',
+    gem: 'Red Coral (Moonga)',
+    day: 'Tuesday',
+    number: 7,
+    direction: 'East',
+  };
 
   const cards = [
     {
       title: lang === 'hinglish' ? 'Shubh Ank (Lucky Numbers)' : 'Lucky Numbers',
       type: 'numbers',
-      values: [3, 7, 21]
+      values: [lk.number, (lk.number + 3) % 9 || 9, (lk.number * 2) % 9 || 8],
     },
     {
-      title: lang === 'hinglish' ? 'Shubh Rang (Lucky Colors)' : 'Lucky Colors',
-      type: 'colors',
-      values: colors
+      title: lang === 'hinglish' ? 'Shubh Rang (Lucky Color)' : 'Lucky Color',
+      type: 'color',
+      value: lk.color,
     },
     {
       title: lang === 'hinglish' ? 'Shubh Din (Lucky Day)' : 'Lucky Day',
       type: 'day',
-      value: lang === 'hinglish' ? 'Guruwar (Thursday)' : 'Thursday',
-      icon: '♃'
+      value: lk.day,
+      icon: '✦',
     },
     {
       title: lang === 'hinglish' ? 'Shubh Ratna (Gemstone)' : 'Lucky Gemstone',
       type: 'gem',
-      value: lang === 'hinglish' ? 'Pukhraj (Yellow Sapphire)' : 'Yellow Sapphire',
-      desc: lang === 'hinglish' ? 'Brihaspati ko balwan karne aur gyaan badhane ke liye dharan karein.' : 'Worn to strengthen Jupiter and invite wisdom.'
+      value: lk.gem,
+      desc: lang === 'hinglish' ? 'Lagna Swami ko balwan karne aur bhagya badhane ke liye dharan karein.' : 'Worn to strengthen your Ascendant Lord and invite auspicious fortune.',
     },
   ];
 
@@ -61,53 +63,64 @@ export default function Lucky() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: i * 0.08 }}
             className="glass-card"
-            style={{ padding: 22, borderLeft: '3px solid var(--col-copper)' }}
+            style={{ padding: 22 }}
           >
-            <div className="text-xs uppercase" style={{ color: 'var(--col-copper)', letterSpacing: '0.14em' }}>{c.title}</div>
+            <div className="text-xs uppercase" style={{ color: 'var(--col-copper)', letterSpacing: '0.12em', fontSize: '0.72rem' }}>
+              {c.title}
+            </div>
 
             {c.type === 'numbers' && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {c.values.map((n) => (
-                  <span
-                    key={n}
-                    className="font-mono-num"
+              <div className="mt-3 flex gap-3">
+                {c.values.map((v) => (
+                  <div
+                    key={v}
+                    className="font-mono-num flex items-center justify-center rounded-xl"
                     style={{
+                      width: 44,
+                      height: 44,
+                      fontSize: '1.25rem',
+                      background: 'rgba(200,130,42,0.1)',
+                      border: '1px solid rgba(200,130,42,0.4)',
                       color: 'var(--col-copper)',
-                      background: 'rgba(200,130,42,0.12)',
-                      border: '1px solid rgba(200,130,42,0.35)',
-                      borderRadius: 'var(--r-full)',
-                      padding: '5px 14px',
-                      fontSize: '1rem',
                     }}
                   >
-                    {n}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {c.type === 'colors' && (
-              <div className="mt-3 flex flex-wrap gap-4">
-                {c.values.map((co) => (
-                  <div key={co.name} className="flex items-center gap-2">
-                    <span style={{ width: 16, height: 16, borderRadius: '9999px', background: co.hex, boxShadow: `0 0 10px ${co.hex}` }} />
-                    <span className="text-sm" style={{ color: 'var(--col-moonstone)' }}>{co.name}</span>
+                    {v}
                   </div>
                 ))}
               </div>
             )}
 
+            {c.type === 'color' && (
+              <div className="mt-3 flex items-center gap-3">
+                <span
+                  className="w-5 h-5 rounded-full"
+                  style={{ background: 'var(--col-copper)', border: '1px solid rgba(255,255,255,0.2)' }}
+                />
+                <span className="text-sm font-medium" style={{ color: 'var(--col-moonstone)' }}>
+                  {c.value}
+                </span>
+              </div>
+            )}
+
             {c.type === 'day' && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2.5">
                 <span style={{ color: 'var(--col-copper)', fontSize: 20 }}>{c.icon}</span>
-                <span className="font-display" style={{ color: 'var(--col-moonstone)', fontSize: '1.3rem' }}>{c.value}</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--col-moonstone)' }}>
+                  {c.value}
+                </span>
               </div>
             )}
 
             {c.type === 'gem' && (
               <div className="mt-3">
-                <div className="font-display" style={{ color: 'var(--col-moonstone)', fontSize: '1.3rem' }}>{c.value}</div>
-                <p className="mt-1 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>{c.desc}</p>
+                <div className="text-sm font-semibold" style={{ color: 'var(--col-copper)' }}>
+                  {c.value}
+                </div>
+                {c.desc && (
+                  <p className="mt-1.5 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+                    {c.desc}
+                  </p>
+                )}
               </div>
             )}
           </motion.div>

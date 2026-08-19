@@ -6,20 +6,17 @@ const isUUID = (str) =>
 
 // ── Calculate Numerology ─────────────
 export function calculateNumerology(name, dob) {
-  // Life Path: sum all digits of DOB
   const dateStr = String(dob || '').replace(/[^0-9]/g, '');
   let lifePathSum = dateStr
     .split('')
     .reduce((sum, d) => sum + (parseInt(d, 10) || 0), 0);
 
-  // Reduce to single digit (except master numbers 11, 22, 33)
   while (lifePathSum > 9 && ![11, 22, 33].includes(lifePathSum)) {
     lifePathSum = String(lifePathSum)
       .split('')
       .reduce((s, d) => s + (parseInt(d, 10) || 0), 0);
   }
 
-  // Destiny: Pythagorean numerology of name
   const letterValues = {
     a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9,
     j: 1, k: 2, l: 3, m: 4, n: 5, o: 6, p: 7, q: 8, r: 9,
@@ -38,7 +35,6 @@ export function calculateNumerology(name, dob) {
       .reduce((s, d) => s + (parseInt(d, 10) || 0), 0);
   }
 
-  // Soul Urge: vowels only
   const vowels = ['a', 'e', 'i', 'o', 'u'];
   let soulSum = String(name || '')
     .toLowerCase()
@@ -66,20 +62,33 @@ export async function saveKundli(userId, kundliData) {
   const localId = kundliData.id || 'kundli_' + Date.now();
   const localRecord = {
     id: localId,
-    user_id: userId,
+    user_id: isUUID(userId) ? userId : null,
     ...kundliData,
     created_at: new Date().toISOString(),
   };
   localStorage.setItem('kundli_data', JSON.stringify(localRecord));
   localStorage.setItem('current_kundli_id', localId);
 
-  if (!isSupabaseConfigured() || !userId) {
+  if (!isSupabaseConfigured()) {
     return localRecord;
   }
 
   try {
+    // Check if user is authenticated in Supabase session
+    let effectiveUserId = isUUID(userId) ? userId : null;
+    if (!effectiveUserId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id && isUUID(user.id)) {
+          effectiveUserId = user.id;
+        }
+      } catch {
+        effectiveUserId = null;
+      }
+    }
+
     const payload = {
-      user_id: userId,
+      user_id: effectiveUserId,
       name: kundliData.name || 'Seeker',
       date_of_birth: kundliData.date_of_birth || '1995-05-15',
       time_of_birth: kundliData.time_of_birth || null,
@@ -103,7 +112,6 @@ export async function saveKundli(userId, kundliData) {
       updated_at: new Date().toISOString(),
     };
 
-    // Only pass ID if it is a valid UUID, otherwise let Postgres generate a UUID
     if (isUUID(kundliData.id)) {
       payload.id = kundliData.id;
     }
@@ -118,6 +126,7 @@ export async function saveKundli(userId, kundliData) {
       console.warn('Supabase saveKundli error, using local fallback:', error);
       return localRecord;
     }
+
     if (data?.id) {
       localStorage.setItem('current_kundli_id', data.id);
       localStorage.setItem('kundli_data', JSON.stringify({ ...localRecord, ...data }));
@@ -131,7 +140,7 @@ export async function saveKundli(userId, kundliData) {
 
 // ── Get User's Kundlis ───────────────
 export async function getUserKundlis(userId) {
-  if (!isSupabaseConfigured() || !userId) {
+  if (!isSupabaseConfigured() || !userId || !isUUID(userId)) {
     const local = localStorage.getItem('kundli_data');
     return local ? [JSON.parse(local)] : [];
   }

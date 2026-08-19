@@ -2,29 +2,34 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 
-export default function SummaryCards() {
+export default function SummaryCards({ data }) {
   const { lang } = useLang();
+
+  const lagnaVal = data?.lagna || 'Leo (Simha)';
+  const rashiVal = data?.rashi || 'Cancer (Karka)';
+  const nakshatraVal = data?.nakshatra ? `${data.nakshatra} (Pada ${data?.nakshatraPada || 1})` : 'Pushya';
+  const ganaVal = data?.gana || 'Manushya';
 
   const cards = [
     {
       label: lang === 'hinglish' ? 'Lagna (लग्नेश)' : 'Lagna (Ascendant)',
-      value: 'Leo (Singha)',
-      note: lang === 'hinglish' ? 'Janam ke samay uday rashi' : 'Rising sign at birth'
+      value: lagnaVal,
+      note: lang === 'hinglish' ? 'Janam ke samay uday rashi' : 'Rising sign at birth',
     },
     {
       label: lang === 'hinglish' ? 'Rashi (चन्द्र राशि)' : 'Rashi (Moon Sign)',
-      value: 'Cancer (Karka)',
-      note: lang === 'hinglish' ? 'Jahan Chandrama virajman hai' : 'Where the Moon sits'
+      value: rashiVal,
+      note: lang === 'hinglish' ? 'Jahan Chandrama virajman hai' : 'Where the Moon sits',
     },
     {
       label: lang === 'hinglish' ? 'Nakshatra (नक्षत्र)' : 'Nakshatra',
-      value: 'Pushya',
-      note: lang === 'hinglish' ? 'Janam nakshatra' : 'Birth star'
+      value: nakshatraVal,
+      note: lang === 'hinglish' ? `Swami: ${data?.nakshatraLord || 'Saturn'}` : `Lord: ${data?.nakshatraLord || 'Saturn'}`,
     },
     {
       label: lang === 'hinglish' ? 'Gana (गण)' : 'Gana',
-      value: 'Manushya',
-      note: lang === 'hinglish' ? 'Swabhav & Pravritti' : 'Temperament'
+      value: ganaVal,
+      note: lang === 'hinglish' ? 'Swabhav & Pravritti' : 'Temperament',
     },
   ];
 

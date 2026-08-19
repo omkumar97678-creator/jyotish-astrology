@@ -9,6 +9,7 @@ import { t } from '@/translations';
 import { saveKundli, calculateNumerology } from '@/lib/kundliService';
 import { generateKundliReport } from '@/lib/aiService';
 import { getCityCoordinates } from '@/lib/geocoding';
+import { calculateVedicChart } from '@/lib/vedicAstrology';
 
 export default function StepReveal({ formData, goBack }) {
   const { lang } = useLang();
@@ -39,7 +40,16 @@ export default function StepReveal({ formData, goBack }) {
         // 2. Numerology
         const numbers = calculateNumerology(formData.name, dobStr);
 
-        // 3. Build comprehensive kundli data object (containing both DB schema & frontend form shapes)
+        // 3. Astronomical Vedic Chart Calculations
+        const vedic = calculateVedicChart({
+          dob: formData.dob,
+          time: formData.time,
+          birthPlace: formData.birthPlace,
+          lat: coords.lat,
+          lng: coords.lng,
+        });
+
+        // 4. Build comprehensive kundli data object
         const kundliData = {
           name: formData.name || 'Seeker',
           dob: formData.dob,
@@ -57,18 +67,32 @@ export default function StepReveal({ formData, goBack }) {
           life_path_number: numbers.lifePathNumber,
           destiny_number: numbers.destinyNumber,
           soul_urge_number: numbers.soulUrgeNumber,
-          lagna: 'Leo (Simha)',
-          rashi: 'Cancer (Karka)',
-          nakshatra: 'Pushya',
-          gana: 'Manushya',
+          lagna: vedic.lagna,
+          lagnaSign: vedic.lagnaSign,
+          lagnaDegree: vedic.lagnaDegree,
+          rashi: vedic.rashi,
+          rashiSign: vedic.rashiSign,
+          rashiDegree: vedic.rashiDegree,
+          sunSign: vedic.sunSign,
+          nakshatra: vedic.nakshatra,
+          nakshatraLord: vedic.nakshatraLord,
+          nakshatraPada: vedic.nakshatraPada,
+          gana: vedic.gana,
+          planets: vedic.planets,
+          houses: vedic.houses,
+          panchang: vedic.panchang,
+          mahadasha: vedic.mahadasha,
+          yogas: vedic.yogas,
+          sadeSati: vedic.sadeSati,
+          lucky: vedic.lucky,
           is_default: true,
         };
 
-        // 4. Generate report
+        // 5. Generate Vedic AI analysis based on the REAL calculated chart
         const aiReport = await generateKundliReport(kundliData);
         kundliData.ai_report = aiReport;
 
-        // 5. Save to Supabase (or localStorage fallback)
+        // 6. Save to Supabase (and localStorage)
         const saved = await saveKundli(user?.id, kundliData);
         if (saved?.id) {
           localStorage.setItem('current_kundli_id', saved.id);
@@ -96,20 +120,34 @@ export default function StepReveal({ formData, goBack }) {
     };
   }, []);
 
+  const lagnaVal = calculatedData?.lagna || 'Leo (Simha)';
+  const rashiVal = calculatedData?.rashi || 'Cancer (Karka)';
   const lifePath = calculatedData?.life_path_number || 7;
 
   const revealCards = [
     {
       label: lang === 'hinglish' ? 'Aapka Lagna' : 'Your Lagna',
-      value: 'Leo (Simha)',
+      value: lagnaVal,
       sub: lang === 'hinglish' ? 'Rising sign' : 'Rising sign',
-      renderIcon: () => <ZodiacIcon sign="leo" size={28} style={{ color: 'var(--col-copper)' }} />,
+      renderIcon: () => (
+        <ZodiacIcon
+          sign={calculatedData?.lagnaSign?.toLowerCase() || 'leo'}
+          size={28}
+          style={{ color: 'var(--col-copper)' }}
+        />
+      ),
     },
     {
       label: lang === 'hinglish' ? 'Aapki Rashi' : 'Your Rashi',
-      value: 'Cancer (Karka)',
+      value: rashiVal,
       sub: lang === 'hinglish' ? 'Moon sign' : 'Moon sign',
-      renderIcon: () => <ZodiacIcon sign="cancer" size={28} style={{ color: 'var(--col-copper)' }} />,
+      renderIcon: () => (
+        <ZodiacIcon
+          sign={calculatedData?.rashiSign?.toLowerCase() || 'cancer'}
+          size={28}
+          style={{ color: 'var(--col-copper)' }}
+        />
+      ),
     },
     {
       label: 'Life Path',

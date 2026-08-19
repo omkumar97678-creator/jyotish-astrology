@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const planets = [
+const defaultPlanets = [
   { sym: '☉', name: 'Sun (सूर्य)', sign: 'Leo', house: '1', deg: '14°22′' },
   { sym: '☽', name: 'Moon (चंद्र)', sign: 'Cancer', house: '12', deg: '02°08′' },
   { sym: '♂', name: 'Mars (मंगल)', sign: 'Gemini', house: '11', deg: '19°47′' },
@@ -13,7 +13,9 @@ const planets = [
   { sym: '☋', name: 'Ketu (केतु)', sign: 'Libra', house: '3', deg: '16°40′' },
 ];
 
-export default function PlanetsTable() {
+export default function PlanetsTable({ planets = defaultPlanets }) {
+  const list = planets && planets.length > 0 ? planets : defaultPlanets;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -28,7 +30,7 @@ export default function PlanetsTable() {
           Planetary Positions
         </div>
         <div className="font-display mt-1 mb-4" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.95rem' }}>
-          ग्रह स्थिति
+          ग्रह स्थिति (Sidereal Longitude)
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -42,10 +44,10 @@ export default function PlanetsTable() {
             </tr>
           </thead>
           <tbody>
-            {planets.map((p) => (
+            {list.map((p) => (
               <tr key={p.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <td className="py-2.5 flex items-center gap-2">
-                  <span style={{ color: 'var(--col-copper)' }}>{p.sym}</span>
+                  <span style={{ color: p.color || 'var(--col-copper)' }}>{p.sym}</span>
                   <span>{p.name}</span>
                 </td>
                 <td className="py-2.5">{p.sign}</td>

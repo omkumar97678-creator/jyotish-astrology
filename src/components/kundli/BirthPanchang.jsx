@@ -3,16 +3,25 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function BirthPanchang() {
+export default function BirthPanchang({ panchang }) {
   const { lang } = useLang();
 
+  const p = panchang || {
+    tithi: 'Dwadashi (Shukla)',
+    vara: 'Monday (Somvar)',
+    nityaYoga: 'Shiva Yoga',
+    karana: 'Bava',
+    paksha: 'Shukla Paksha',
+    sunrise: '06:14 AM',
+  };
+
   const cards = [
-    { label: lang === 'hinglish' ? 'Tithi (तिथि)' : 'Tithi (Lunar Day)', value: 'Dwadashi', sub: '12th' },
-    { label: lang === 'hinglish' ? 'Vaar (वार)' : 'Vara (Weekday)', value: lang === 'hinglish' ? 'Somvar (Monday)' : 'Monday (Somvar)' },
-    { label: lang === 'hinglish' ? 'Nitya Yoga (योग)' : 'Nitya Yoga', value: 'Shiva Yoga', sub: lang === 'hinglish' ? 'Shubh sanyog' : 'Auspicious combination' },
-    { label: lang === 'hinglish' ? 'Karan (करण)' : 'Karana', value: 'Bava' },
-    { label: lang === 'hinglish' ? 'Paksha (पक्ष)' : 'Paksha', value: 'Shukla Paksha', sub: lang === 'hinglish' ? 'Shukla Paksha' : 'Waxing Moon phase' },
-    { label: lang === 'hinglish' ? 'Janam ke samay Surya Uday' : 'Sunrise at Birth', value: '06:42 AM' },
+    { label: lang === 'hinglish' ? 'Tithi (तिथि)' : 'Tithi (Lunar Day)', value: p.tithi, sub: p.paksha },
+    { label: lang === 'hinglish' ? 'Vaar (वार)' : 'Vara (Weekday)', value: p.vara },
+    { label: lang === 'hinglish' ? 'Nitya Yoga (योग)' : 'Nitya Yoga', value: p.nityaYoga, sub: lang === 'hinglish' ? 'Shubh sanyog' : 'Auspicious combination' },
+    { label: lang === 'hinglish' ? 'Karan (करण)' : 'Karana', value: p.karana },
+    { label: lang === 'hinglish' ? 'Paksha (पक्ष)' : 'Paksha', value: p.paksha, sub: p.paksha.includes('Shukla') ? 'Waxing Moon' : 'Waning Moon' },
+    { label: lang === 'hinglish' ? 'Janam ke samay Surya Uday' : 'Sunrise at Birth', value: p.sunrise || '06:14 AM' },
   ];
 
   return (

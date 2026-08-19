@@ -17,6 +17,7 @@ import BhavaAnalysis from '@/components/kundli/BhavaAnalysis';
 import DashaTimeline from '@/components/kundli/DashaTimeline';
 import { useAuth } from '@/context/AuthContext';
 import { getKundli } from '@/lib/kundliService';
+import { calculateVedicChart } from '@/lib/vedicAstrology';
 
 function normalizeKundliData(raw) {
   if (!raw) return null;
@@ -53,17 +54,36 @@ function normalizeKundliData(raw) {
     };
   }
 
+  const birthPlace = raw.birthPlace || raw.birth_place || 'New Delhi, India';
+  const lat = raw.latitude || 28.6139;
+  const lng = raw.longitude || 77.2090;
+
+  // Calculate real Vedic sidereal astrological details
+  const vedic = calculateVedicChart({ dob, time, birthPlace, lat, lng });
+
   return {
+    ...vedic,
     ...raw,
     name: raw.name || 'Seeker',
     dob,
     time,
     date_of_birth: raw.date_of_birth || `${dob.year}-${dob.month}-${dob.day}`,
     time_of_birth: raw.time_of_birth || `${time.hour}:${time.minute}`,
-    birthPlace: raw.birthPlace || raw.birth_place || 'New Delhi, India',
-    birth_place: raw.birth_place || raw.birthPlace || 'New Delhi, India',
+    birthPlace,
+    birth_place: birthPlace,
     unknownTime: Boolean(raw.unknownTime || raw.time_unknown),
     time_unknown: Boolean(raw.time_unknown || raw.unknownTime),
+    lagna: raw.lagna || vedic.lagna,
+    rashi: raw.rashi || vedic.rashi,
+    nakshatra: raw.nakshatra || vedic.nakshatra,
+    gana: raw.gana || vedic.gana,
+    planets: raw.planets && raw.planets.length > 0 ? raw.planets : vedic.planets,
+    houses: raw.houses && raw.houses.length > 0 ? raw.houses : vedic.houses,
+    panchang: raw.panchang || vedic.panchang,
+    mahadasha: raw.mahadasha || vedic.mahadasha,
+    yogas: raw.yogas || vedic.yogas,
+    sadeSati: raw.sadeSati || vedic.sadeSati,
+    lucky: raw.lucky || vedic.lucky,
     life_path_number: raw.life_path_number || 7,
     destiny_number: raw.destiny_number || 3,
     soul_urge_number: raw.soul_urge_number || 9,
@@ -140,32 +160,32 @@ export default function Kundli() {
           <SummaryCards data={data} />
         </div>
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <PlanetsTable />
+          <PlanetsTable planets={data.planets} />
           <NumerologyPanel data={data} />
         </div>
         <div className="mt-6">
-          <BirthPanchang />
+          <BirthPanchang panchang={data.panchang} />
         </div>
         <div className="mt-6">
-          <SadeSati />
+          <SadeSati sadeSati={data.sadeSati} rashi={data.rashi} />
         </div>
         <div className="mt-6">
-          <BhavaAnalysis />
+          <BhavaAnalysis houses={data.houses} />
         </div>
         <div className="mt-6">
-          <Mahadasha />
+          <Mahadasha mahadasha={data.mahadasha} nakshatra={data.nakshatra} />
         </div>
         <div className="mt-6">
-          <DashaTimeline />
+          <DashaTimeline mahadasha={data.mahadasha} />
         </div>
         <div className="mt-6">
-          <Yogas />
+          <Yogas yogas={data.yogas} />
         </div>
         <div className="mt-6">
           <AshtakvargaTable />
         </div>
         <div className="mt-6">
-          <Lucky />
+          <Lucky lucky={data.lucky} />
         </div>
         <div className="mt-6">
           <CompleteAiAnalysis report={aiReport} data={data} />

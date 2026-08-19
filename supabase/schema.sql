@@ -41,7 +41,6 @@ BEGIN
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
-    -- Prevent trigger errors from failing user signup
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -54,7 +53,7 @@ CREATE TRIGGER on_auth_user_created
 -- TABLE 2: Kundlis
 CREATE TABLE IF NOT EXISTS public.kundlis (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   
   -- Input data
   name TEXT NOT NULL,
@@ -91,7 +90,7 @@ CREATE TABLE IF NOT EXISTS public.kundlis (
 -- TABLE 3: Gun Milan Reports
 CREATE TABLE IF NOT EXISTS public.gun_milan_reports (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   
   -- Person 1
   person1_name TEXT NOT NULL,
@@ -134,7 +133,7 @@ CREATE TABLE IF NOT EXISTS public.horoscope_cache (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rashi TEXT NOT NULL,
   date DATE NOT NULL,
-  period TEXT NOT NULL, -- 'today', 'week', 'month'
+  period TEXT NOT NULL,
   content JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(rashi, date, period)
@@ -143,7 +142,7 @@ CREATE TABLE IF NOT EXISTS public.horoscope_cache (
 -- TABLE 6: Consultations
 CREATE TABLE IF NOT EXISTS public.consultations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   astrologer_name TEXT,
   scheduled_at TIMESTAMPTZ,
   status TEXT DEFAULT 'pending',
@@ -179,17 +178,34 @@ CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
--- Kundlis: users see and manage only their own
+-- Kundlis: Allow full CRUD for owner, plus open insert & read for guest/onboarding flow
 DROP POLICY IF EXISTS "Users can CRUD own kundlis" ON public.kundlis;
+DROP POLICY IF EXISTS "Allow anon insert kundlis" ON public.kundlis;
+DROP POLICY IF EXISTS "Allow read kundlis" ON public.kundlis;
+
 CREATE POLICY "Users can CRUD own kundlis"
   ON public.kundlis FOR ALL
-  USING (auth.uid() = user_id);
+  TO authenticated
+  USING (auth.uid() = user_id OR user_id IS NULL)
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
--- Gun Milan: users see and manage only their own
+CREATE POLICY "Allow anon insert kundlis"
+  ON public.kundlis FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Allow read kundlis"
+  ON public.kundlis FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+-- Gun Milan: Allow insert and read
 DROP POLICY IF EXISTS "Users can CRUD own reports" ON public.gun_milan_reports;
 CREATE POLICY "Users can CRUD own reports"
   ON public.gun_milan_reports FOR ALL
-  USING (auth.uid() = user_id);
+  TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
 
 -- Horoscope preferences: own only
 DROP POLICY IF EXISTS "Users can CRUD own preferences" ON public.horoscope_preferences;

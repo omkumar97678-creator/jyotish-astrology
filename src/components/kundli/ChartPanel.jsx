@@ -4,7 +4,7 @@ import NorthIndianChart from './NorthIndianChart';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function ChartPanel() {
+export default function ChartPanel({ data }) {
   const { lang } = useLang();
 
   return (
@@ -22,15 +22,18 @@ export default function ChartPanel() {
             {t.north_chart_title[lang]}
           </h3>
           <span className="text-xs" style={{ color: 'var(--col-copper)' }}>
-            {lang === 'hinglish' ? 'लग्न कुण्डली (डी-१)' : 'Lagna Chart (D-1)'}
+            {lang === 'hinglish' ? `लग्न: ${data?.lagna || 'Leo'}` : `Lagna: ${data?.lagna || 'Leo'}`}
           </span>
         </div>
-        <span className="text-[11px] font-mono-num px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(200, 130, 42, 0.12)', color: 'var(--col-copper)', border: '1px solid rgba(200, 130, 42, 0.3)' }}>
-          Rashi D1
+        <span
+          className="text-[11px] font-mono-num px-2.5 py-0.5 rounded-full"
+          style={{ background: 'rgba(200, 130, 42, 0.12)', color: 'var(--col-copper)', border: '1px solid rgba(200, 130, 42, 0.3)' }}
+        >
+          Rashi D-1
         </span>
       </div>
 
-      <NorthIndianChart />
+      <NorthIndianChart houses={data?.houses} />
 
       <p className="mt-4 text-xs text-center" style={{ color: 'var(--col-moonstone-dim)' }}>
         {lang === 'hinglish'
