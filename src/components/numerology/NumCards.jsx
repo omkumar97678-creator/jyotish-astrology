@@ -2,28 +2,28 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import AnimatedNumber from './AnimatedNumber';
 
-const cards = [
-  {
-    label: 'Destiny Number',
-    value: 3,
-    desc: 'You are naturally expressive and creative. Your purpose unfolds through communication, art, and inspiring others with your ideas.',
-    how: 'Sum of all letters in your full birth name',
-  },
-  {
-    label: 'Soul Urge Number',
-    value: 9,
-    desc: 'Deep within, you are compassionate and humanitarian. You long to serve, heal, and bring wisdom to the world around you.',
-    how: 'Sum of the vowels in your name',
-  },
-  {
-    label: 'Personal Year Number',
-    value: 5,
-    desc: 'This year brings change, travel, and freedom. New opportunities invite you to embrace adventure and let go of the old.',
-    how: 'Birth day + month + current year',
-  },
-];
+export default function NumCards({ numData }) {
+  const cards = [
+    {
+      label: 'Destiny Number (नामांक)',
+      value: numData?.destinyNumber || 3,
+      desc: numData?.destinyDesc || 'Your purpose unfolds through communication, inspiring others, and expressive creative leadership.',
+      how: 'Calculated from all letters in your name',
+    },
+    {
+      label: 'Soul Urge Number (आत्म कारक)',
+      value: numData?.soulUrgeNumber || 9,
+      desc: numData?.soulUrgeDesc || 'Deep within, your soul seeks compassionate service, wisdom, harmony, and spiritual connection.',
+      how: 'Calculated from vowels in your name',
+    },
+    {
+      label: 'Personal Year Number (वार्षिक अंक)',
+      value: numData?.personalYearNumber || 5,
+      desc: numData?.personalYearDesc || 'This annual cycle brings dynamic growth, fresh horizons, and progressive change.',
+      how: 'Calculated from Birth day + Month + Current year',
+    },
+  ];
 
-export default function NumCards() {
   return (
     <div className="mt-6 grid gap-6 md:grid-cols-3">
       {cards.map((c, i) => (

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function NumHeader() {
+export default function NumHeader({ name }) {
   const { lang } = useLang();
 
   return (
@@ -17,7 +17,7 @@ export default function NumHeader() {
     >
       <Link
         to="/kundli"
-        className="inline-flex items-center gap-2 text-sm mb-5"
+        className="inline-flex items-center gap-2 text-sm mb-5 cursor-pointer"
         style={{ color: 'var(--col-moonstone-dim)' }}
       >
         <ArrowLeft size={16} /> {lang === 'hinglish' ? '← Kundli Pe Wapas Jao' : 'Back to Kundli'}
@@ -26,7 +26,7 @@ export default function NumHeader() {
         ✦ ज्योतिष
       </Link>
       <h1 className="font-display mt-4" style={{ fontSize: 'clamp(32px, 6vw, 52px)', color: 'var(--col-moonstone)' }}>
-        {t.numerology_title[lang]}
+        {name ? `${name}'s ` : ''}{t.numerology_title[lang]}
       </h1>
       <p className="mt-3 text-sm" style={{ color: 'var(--col-moonstone-dim)' }}>
         {t.numerology_subtitle[lang]}
