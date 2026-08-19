@@ -302,3 +302,8 @@ body.lang-switching {
 .zodiac-sign-card:hover .zodiac-sign-symbol.unselected {
   color: #E09840 !important;
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

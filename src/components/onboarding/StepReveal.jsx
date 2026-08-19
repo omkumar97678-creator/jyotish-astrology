@@ -4,12 +4,18 @@ import { motion } from 'framer-motion';
 import KundliChart from '@/components/KundliChart';
 import ZodiacIcon from '@/components/ZodiacIcon';
 import { useLang } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { t } from '@/translations';
+import { saveKundli, calculateNumerology } from '@/lib/kundliService';
+import { generateKundliReport } from '@/lib/aiService';
+import { getCityCoordinates } from '@/lib/geocoding';
 
 export default function StepReveal({ formData, goBack }) {
   const { lang } = useLang();
+  const { user } = useAuth();
   const [ready, setReady] = useState(false);
   const [msg, setMsg] = useState(0);
+  const [calculatedData, setCalculatedData] = useState(null);
   const navigate = useNavigate();
 
   const messages = [
@@ -18,6 +24,74 @@ export default function StepReveal({ formData, goBack }) {
     lang === 'hinglish' ? 'Numerology analyze kar rahe hain...' : 'Analyzing numerology...',
     lang === 'hinglish' ? 'Kundli bas taiyaar hone wali hai...' : 'Your kundli is almost ready...',
   ];
+
+  useEffect(() => {
+    let isMounted = true;
+    const msgInterval = setInterval(() => setMsg((m) => (m + 1) % messages.length), 800);
+
+    const runCalculations = async () => {
+      try {
+        const dobStr = `${formData.dob.year}-${String(formData.dob.month).padStart(2, '0')}-${String(formData.dob.day).padStart(2, '0')}`;
+        
+        // 1. Geocoding
+        const coords = await getCityCoordinates(formData.birthPlace);
+        
+        // 2. Numerology
+        const numbers = calculateNumerology(formData.name, dobStr);
+
+        // 3. Build base kundli data
+        const kundliData = {
+          name: formData.name || 'Seeker',
+          date_of_birth: dobStr,
+          time_of_birth: formData.unknownTime
+            ? null
+            : `${String(formData.time.hour).padStart(2, '0')}:${String(formData.time.minute).padStart(2, '0')}`,
+          time_unknown: Boolean(formData.unknownTime),
+          birth_place: formData.birthPlace || 'New Delhi',
+          latitude: coords.lat,
+          longitude: coords.lng,
+          life_path_number: numbers.lifePathNumber,
+          destiny_number: numbers.destinyNumber,
+          soul_urge_number: numbers.soulUrgeNumber,
+          lagna: 'Leo (Simha)',
+          rashi: 'Cancer (Karka)',
+          nakshatra: 'Pushya',
+          is_default: true,
+        };
+
+        // 4. Generate report
+        const aiReport = await generateKundliReport(kundliData);
+        kundliData.ai_report = aiReport;
+
+        // 5. Save to Supabase (or localStorage fallback)
+        const saved = await saveKundli(user?.id, kundliData);
+        if (saved?.id) {
+          localStorage.setItem('current_kundli_id', saved.id);
+        }
+        localStorage.setItem('kundli_data', JSON.stringify(kundliData));
+        localStorage.setItem('jyotish_onboarding', JSON.stringify(formData));
+
+        if (isMounted) {
+          setCalculatedData(kundliData);
+          setReady(true);
+        }
+      } catch (err) {
+        console.warn('Calculation workflow error, using fallback:', err);
+        if (isMounted) {
+          setReady(true);
+        }
+      }
+    };
+
+    runCalculations();
+
+    return () => {
+      isMounted = false;
+      clearInterval(msgInterval);
+    };
+  }, []);
+
+  const lifePath = calculatedData?.life_path_number || 7;
 
   const revealCards = [
     {
@@ -34,7 +108,7 @@ export default function StepReveal({ formData, goBack }) {
     },
     {
       label: 'Life Path',
-      value: '7',
+      value: String(lifePath),
       sub: lang === 'hinglish' ? 'The Seeker' : 'The Seeker',
       renderIcon: () => <span style={{ fontSize: 26, color: 'var(--col-copper)' }}>✦</span>,
       mono: true,
@@ -45,15 +119,6 @@ export default function StepReveal({ formData, goBack }) {
     localStorage.setItem('jyotish_onboarding', JSON.stringify(formData));
     navigate('/kundli');
   };
-
-  useEffect(() => {
-    const tTimer = setTimeout(() => setReady(true), 3000);
-    const i = setInterval(() => setMsg((m) => (m + 1) % messages.length), 800);
-    return () => {
-      clearTimeout(tTimer);
-      clearInterval(i);
-    };
-  }, []);
 
   return (
     <div className="text-center">
@@ -120,7 +185,11 @@ export default function StepReveal({ formData, goBack }) {
           </div>
 
           <div className="mt-8 px-4">
-            <button className="btn-primary animate-glow-pulse w-full sm:w-auto justify-center" style={{ padding: '16px 44px', fontSize: '1.05rem' }} onClick={viewKundli}>
+            <button
+              className="btn-primary animate-glow-pulse w-full sm:w-auto justify-center cursor-pointer"
+              style={{ padding: '16px 44px', fontSize: '1.05rem' }}
+              onClick={viewKundli}
+            >
               {t.onboarding_view_btn[lang]}
             </button>
           </div>

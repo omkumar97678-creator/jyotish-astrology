@@ -15,18 +15,53 @@ import BirthPanchang from '@/components/kundli/BirthPanchang';
 import SadeSati from '@/components/kundli/SadeSati';
 import BhavaAnalysis from '@/components/kundli/BhavaAnalysis';
 import DashaTimeline from '@/components/kundli/DashaTimeline';
+import { useAuth } from '@/context/AuthContext';
+import { getKundli } from '@/lib/kundliService';
 
 export default function Kundli() {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [aiReport, setAiReport] = useState(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('jyotish_onboarding');
-      if (raw) setData(JSON.parse(raw));
-    } catch (e) {
-      /* ignore */
-    }
-  }, []);
+    const loadData = async () => {
+      // 1. Try Supabase via current_kundli_id if available
+      const kundliId = localStorage.getItem('current_kundli_id');
+      if (kundliId) {
+        try {
+          const dbKundli = await getKundli(kundliId);
+          if (dbKundli) {
+            setData(dbKundli);
+            if (dbKundli.ai_report) setAiReport(dbKundli.ai_report);
+            return;
+          }
+        } catch (e) {
+          console.warn('Could not fetch from Supabase, checking local cache:', e);
+        }
+      }
+
+      // 2. Fallback to localStorage kundli_data or jyotish_onboarding
+      try {
+        const storedKundli = localStorage.getItem('kundli_data');
+        if (storedKundli) {
+          const parsed = JSON.parse(storedKundli);
+          setData(parsed);
+          if (parsed.ai_report) setAiReport(parsed.ai_report);
+          return;
+        }
+
+        const raw = localStorage.getItem('jyotish_onboarding');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setData(parsed);
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
+    loadData();
+  }, [user]);
 
   if (!data) {
     return (
@@ -78,10 +113,10 @@ export default function Kundli() {
           <Lucky />
         </div>
         <div className="mt-6">
-          <CompleteAiAnalysis />
+          <CompleteAiAnalysis report={aiReport} data={data} />
         </div>
         <div className="mt-8">
-          <KundliActions />
+          <KundliActions data={data} />
         </div>
       </main>
     </div>

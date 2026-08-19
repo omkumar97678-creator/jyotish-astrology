@@ -3,33 +3,17 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { t } from '@/translations';
 import LanguageToggle from '@/components/LanguageToggle';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, signOut } = useAuth();
   const { lang } = useLang();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const checkUser = () => {
-    try {
-      const stored = localStorage.getItem('jyotish_user');
-      if (stored) {
-        setUser(JSON.parse(stored));
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
-  };
-
-  useEffect(() => {
-    checkUser();
-  }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -42,9 +26,8 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('jyotish_user');
-    setUser(null);
+  const handleLogout = async () => {
+    await signOut();
     setMobileOpen(false);
     navigate('/');
   };

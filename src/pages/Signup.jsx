@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import StarField from '@/components/StarField';
 import KundliChart from '@/components/KundliChart';
 import GoogleIcon from '@/components/GoogleIcon';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
+import { signUpWithEmail, signInWithGoogle } from '@/lib/auth';
 
 export default function Signup() {
   const { lang } = useLang();
@@ -25,6 +26,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   // Validation helpers
   const isNameValid = formData.name.trim().length >= 2;
@@ -54,35 +56,31 @@ export default function Signup() {
   ];
   const strengthColors = ['', '#EF4444', '#F59E0B', '#C8822A', '#2AABA8'];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid) return;
 
+    setAuthError('');
     setLoading(true);
-    setTimeout(() => {
-      // Mock account creation & user save
-      const user = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        loggedIn: true,
-        joinedAt: new Date().toISOString(),
-      };
-      localStorage.setItem('jyotish_user', JSON.stringify(user));
-      setLoading(false);
+    try {
+      await signUpWithEmail(formData.email.trim(), formData.password, formData.name.trim());
       setIsSuccess(true);
-    }, 600);
+    } catch (err) {
+      console.warn('Signup error:', err);
+      setAuthError(err.message || 'Signup failed. Please check details and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = () => {
-    const user = {
-      name: 'Google User',
-      email: 'user@gmail.com',
-      loggedIn: true,
-      provider: 'google',
-      joinedAt: new Date().toISOString(),
-    };
-    localStorage.setItem('jyotish_user', JSON.stringify(user));
-    navigate('/onboarding');
+  const handleGoogleSignIn = async () => {
+    setAuthError('');
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      console.warn('Google sign-in error:', err);
+      setAuthError(err.message || 'Google sign-in failed.');
+    }
   };
 
   return (
@@ -142,6 +140,26 @@ export default function Signup() {
                     {t.signup_subtitle[lang]}
                   </p>
                 </div>
+
+                {/* Auth Error Banner */}
+                <AnimatePresence>
+                  {authError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: -8 }}
+                      animate={{ opacity: 1, height: 'auto', y: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-5 p-3 rounded-xl flex items-center gap-2.5 text-xs"
+                      style={{
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        color: '#F59E0B',
+                      }}
+                    >
+                      <AlertCircle size={16} className="flex-shrink-0" />
+                      <span>{authError}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* 4. Google Sign In Button (Priority) */}
                 <button

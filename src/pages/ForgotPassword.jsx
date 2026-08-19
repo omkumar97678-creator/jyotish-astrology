@@ -6,6 +6,7 @@ import StarField from '@/components/StarField';
 import KundliChart from '@/components/KundliChart';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
+import { resetPassword } from '@/lib/auth';
 
 export default function ForgotPassword() {
   const { lang } = useLang();
@@ -14,6 +15,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let timer;
@@ -31,23 +33,34 @@ export default function ForgotPassword() {
     return () => clearInterval(timer);
   }, [isSubmitted, countdown]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim() || !email.includes('@')) return;
 
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await resetPassword(email.trim());
       setIsSubmitted(true);
       setCountdown(60);
       setCanResend(false);
-    }, 600);
+    } catch (err) {
+      console.warn('Reset password error:', err);
+      setError(err.message || 'Failed to send reset link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
     setCanResend(false);
     setCountdown(60);
+    try {
+      await resetPassword(email.trim());
+    } catch (err) {
+      console.warn('Resend error:', err);
+    }
   };
 
   const formatCountdown = (secs) => {

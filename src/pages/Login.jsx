@@ -7,6 +7,7 @@ import KundliChart from '@/components/KundliChart';
 import GoogleIcon from '@/components/GoogleIcon';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
+import { signInWithEmail, signInWithGoogle } from '@/lib/auth';
 
 export default function Login() {
   const { lang } = useLang();
@@ -19,7 +20,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -29,36 +30,25 @@ export default function Login() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      // Basic mock authentication validation
-      if (email.includes('@') && password.length >= 6) {
-        const user = {
-          name: email.split('@')[0],
-          email: email.trim(),
-          loggedIn: true,
-          rememberMe,
-          lastLogin: new Date().toISOString(),
-        };
-        localStorage.setItem('jyotish_user', JSON.stringify(user));
-        setLoading(false);
-        navigate('/onboarding');
-      } else {
-        setLoading(false);
-        setError(t.invalid_creds[lang]);
-      }
-    }, 600);
+    try {
+      await signInWithEmail(email.trim(), password);
+      navigate('/onboarding');
+    } catch (err) {
+      console.warn('Login error:', err);
+      setError(err.message || t.invalid_creds[lang]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = () => {
-    const user = {
-      name: 'Google User',
-      email: 'user@gmail.com',
-      loggedIn: true,
-      provider: 'google',
-      lastLogin: new Date().toISOString(),
-    };
-    localStorage.setItem('jyotish_user', JSON.stringify(user));
-    navigate('/onboarding');
+  const handleGoogleSignIn = async () => {
+    setError('');
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      console.warn('Google sign-in error:', err);
+      setError(err.message || 'Google sign-in failed.');
+    }
   };
 
   return (
