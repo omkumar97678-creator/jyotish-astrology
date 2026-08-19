@@ -6,9 +6,31 @@ import { t } from '@/translations';
 
 export default function KundliHeader({ data }) {
   const { lang } = useLang();
-  const timeLabel = data.unknownTime
-    ? (lang === 'hinglish' ? 'Sunrise Chart (Surya Uday)' : 'Sunrise Chart')
-    : `${data.time.hour}:${data.time.minute || '00'} ${data.time.period}`;
+
+  // Safe extraction of time
+  let timeLabel = '';
+  if (data?.unknownTime || data?.time_unknown) {
+    timeLabel = lang === 'hinglish' ? 'Sunrise Chart (Surya Uday)' : 'Sunrise Chart';
+  } else if (data?.time?.hour !== undefined) {
+    timeLabel = `${data.time.hour}:${data.time.minute || '00'} ${data.time.period || 'AM'}`;
+  } else if (data?.time_of_birth) {
+    timeLabel = data.time_of_birth;
+  } else {
+    timeLabel = '12:00 PM';
+  }
+
+  // Safe extraction of dob
+  let dobString = '';
+  if (data?.dob?.day !== undefined) {
+    dobString = `${data.dob.day}.${data.dob.month}.${data.dob.year}`;
+  } else if (data?.date_of_birth) {
+    dobString = data.date_of_birth;
+  } else {
+    dobString = '01.01.2000';
+  }
+
+  const name = data?.name || 'Seeker';
+  const birthPlace = data?.birthPlace || data?.birth_place || 'New Delhi, India';
 
   return (
     <motion.div
@@ -21,13 +43,13 @@ export default function KundliHeader({ data }) {
         ✦ ज्योतिष
       </Link>
       <h1 className="font-display mt-4" style={{ fontSize: 'clamp(32px, 6vw, 52px)', color: 'var(--col-moonstone)' }}>
-        {data.name}'s {t.kundli_subtitle[lang]}
+        {name}'s {t.kundli_subtitle[lang]}
       </h1>
       <div className="font-display mt-2" style={{ fontSize: '0.9rem', color: 'var(--col-copper)', opacity: 0.7 }}>
         {lang === 'hinglish' ? 'जन्म कुंडली — वैदिक ज्योतिष' : 'Vedic Birth Chart'}
       </div>
       <p className="mt-3 text-sm" style={{ color: 'var(--col-moonstone-dim)' }}>
-        {data.dob.day}.{data.dob.month}.{data.dob.year} • {timeLabel} • {data.birthPlace}
+        {dobString} • {timeLabel} • {birthPlace}
       </p>
     </motion.div>
   );

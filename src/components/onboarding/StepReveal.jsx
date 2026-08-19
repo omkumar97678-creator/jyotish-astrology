@@ -39,15 +39,19 @@ export default function StepReveal({ formData, goBack }) {
         // 2. Numerology
         const numbers = calculateNumerology(formData.name, dobStr);
 
-        // 3. Build base kundli data
+        // 3. Build comprehensive kundli data object (containing both DB schema & frontend form shapes)
         const kundliData = {
           name: formData.name || 'Seeker',
+          dob: formData.dob,
+          time: formData.time,
+          unknownTime: Boolean(formData.unknownTime),
+          birthPlace: formData.birthPlace || 'New Delhi, India',
           date_of_birth: dobStr,
           time_of_birth: formData.unknownTime
             ? null
             : `${String(formData.time.hour).padStart(2, '0')}:${String(formData.time.minute).padStart(2, '0')}`,
           time_unknown: Boolean(formData.unknownTime),
-          birth_place: formData.birthPlace || 'New Delhi',
+          birth_place: formData.birthPlace || 'New Delhi, India',
           latitude: coords.lat,
           longitude: coords.lng,
           life_path_number: numbers.lifePathNumber,
@@ -56,6 +60,7 @@ export default function StepReveal({ formData, goBack }) {
           lagna: 'Leo (Simha)',
           rashi: 'Cancer (Karka)',
           nakshatra: 'Pushya',
+          gana: 'Manushya',
           is_default: true,
         };
 
@@ -68,7 +73,7 @@ export default function StepReveal({ formData, goBack }) {
         if (saved?.id) {
           localStorage.setItem('current_kundli_id', saved.id);
         }
-        localStorage.setItem('kundli_data', JSON.stringify(kundliData));
+        localStorage.setItem('kundli_data', JSON.stringify({ ...kundliData, id: saved?.id }));
         localStorage.setItem('jyotish_onboarding', JSON.stringify(formData));
 
         if (isMounted) {

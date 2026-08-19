@@ -3,20 +3,33 @@ import { motion } from 'framer-motion';
 
 function calcNameNumber(name) {
   // Pythagorean: A=1.. I=9 etc.
-  const map = { a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:8,i:9,j:1,k:2,l:3,m:4,n:5,o:6,p:7,q:8,r:9,s:1,t:2,u:3,v:4,w:5,x:6,y:7,z:8 };
-  const sum = name.toLowerCase().replace(/[^a-z]/g, '').split('').reduce((a, c) => a + (map[c] || 0), 0);
+  const map = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 1, k: 2, l: 3, m: 4, n: 5, o: 6, p: 7, q: 8, r: 9, s: 1, t: 2, u: 3, v: 4, w: 5, x: 6, y: 7, z: 8 };
+  const sum = String(name || '').toLowerCase().replace(/[^a-z]/g, '').split('').reduce((a, c) => a + (map[c] || 0), 0);
   const reduce = (n) => (n <= 9 || [11, 22, 33].includes(n)) ? n : reduce(String(n).split('').reduce((a, d) => a + +d, 0));
-  return reduce(sum);
+  return reduce(sum || 3);
 }
 
 export default function NumerologyPanel({ data }) {
   const lifePath = (() => {
-    const { day, month, year } = data.dob;
-    const reduce = (n) => (n <= 9 || [11, 22, 33].includes(n)) ? n : reduce(String(n).split('').reduce((a, d) => a + +d, 0));
-    const d = +day || 0, m = +month || 0, y = +(year || 0);
-    return reduce(d + m + y);
+    if (data?.life_path_number) return data.life_path_number;
+    if (data?.dob?.day !== undefined) {
+      const { day, month, year } = data.dob;
+      const reduce = (n) => (n <= 9 || [11, 22, 33].includes(n)) ? n : reduce(String(n).split('').reduce((a, d) => a + +d, 0));
+      const d = +day || 0, m = +month || 0, y = +(year || 0);
+      return reduce(d + m + y);
+    }
+    if (data?.date_of_birth) {
+      const digits = String(data.date_of_birth).replace(/[^0-9]/g, '');
+      let sum = digits.split('').reduce((a, d) => a + +d, 0);
+      while (sum > 9 && ![11, 22, 33].includes(sum)) {
+        sum = String(sum).split('').reduce((a, d) => a + +d, 0);
+      }
+      return sum || 7;
+    }
+    return 7;
   })();
-  const destiny = calcNameNumber(data.name || '');
+
+  const destiny = data?.destiny_number || calcNameNumber(data?.name || '');
 
   const readings = {
     1: 'Natural leader, ambitious and self-driven.',
@@ -56,9 +69,12 @@ export default function NumerologyPanel({ data }) {
             <div
               className="font-mono-num flex items-center justify-center"
               style={{
-                width: 56, height: 56, flexShrink: 0, fontSize: '1.6rem',
+                width: 56,
+                height: 56,
+                flexShrink: 0,
+                fontSize: '1.6rem',
                 background: 'rgba(200,130,42,0.1)',
-                border: '1px solid rgba(200,130,42,0.35)',
+                border: '1px solid rgba(200,130,42,0.4)',
                 borderRadius: 'var(--r-md)',
                 color: 'var(--col-copper)',
               }}
@@ -66,10 +82,10 @@ export default function NumerologyPanel({ data }) {
               {it.value}
             </div>
             <div>
-              <div className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{it.label} Number</div>
-              <div className="text-sm mt-1" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.55 }}>
+              <div className="font-medium text-sm" style={{ color: 'var(--col-moonstone)' }}>{it.label}</div>
+              <p className="text-xs mt-1" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
                 {it.meaning}
-              </div>
+              </p>
             </div>
           </div>
         ))}

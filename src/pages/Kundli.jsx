@@ -18,6 +18,58 @@ import DashaTimeline from '@/components/kundli/DashaTimeline';
 import { useAuth } from '@/context/AuthContext';
 import { getKundli } from '@/lib/kundliService';
 
+function normalizeKundliData(raw) {
+  if (!raw) return null;
+
+  let dob = { day: '15', month: '05', year: '1995' };
+  if (raw.dob && typeof raw.dob === 'object') {
+    dob = {
+      day: String(raw.dob.day || '15'),
+      month: String(raw.dob.month || '05'),
+      year: String(raw.dob.year || '1995'),
+    };
+  } else if (raw.date_of_birth) {
+    const parts = String(raw.date_of_birth).split('-');
+    if (parts.length === 3) {
+      dob = { year: parts[0], month: parts[1], day: parts[2] };
+    }
+  }
+
+  let time = { hour: '10', minute: '30', period: 'AM' };
+  if (raw.time && typeof raw.time === 'object') {
+    time = {
+      hour: String(raw.time.hour || '10'),
+      minute: String(raw.time.minute || '30'),
+      period: raw.time.period || 'AM',
+    };
+  } else if (raw.time_of_birth) {
+    const parts = String(raw.time_of_birth).split(':');
+    const h = parseInt(parts[0], 10) || 12;
+    const m = parts[1] ? parts[1].slice(0, 2) : '00';
+    time = {
+      hour: String(h > 12 ? h - 12 : (h === 0 ? 12 : h)),
+      minute: m,
+      period: h >= 12 ? 'PM' : 'AM',
+    };
+  }
+
+  return {
+    ...raw,
+    name: raw.name || 'Seeker',
+    dob,
+    time,
+    date_of_birth: raw.date_of_birth || `${dob.year}-${dob.month}-${dob.day}`,
+    time_of_birth: raw.time_of_birth || `${time.hour}:${time.minute}`,
+    birthPlace: raw.birthPlace || raw.birth_place || 'New Delhi, India',
+    birth_place: raw.birth_place || raw.birthPlace || 'New Delhi, India',
+    unknownTime: Boolean(raw.unknownTime || raw.time_unknown),
+    time_unknown: Boolean(raw.time_unknown || raw.unknownTime),
+    life_path_number: raw.life_path_number || 7,
+    destiny_number: raw.destiny_number || 3,
+    soul_urge_number: raw.soul_urge_number || 9,
+  };
+}
+
 export default function Kundli() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
@@ -31,7 +83,8 @@ export default function Kundli() {
         try {
           const dbKundli = await getKundli(kundliId);
           if (dbKundli) {
-            setData(dbKundli);
+            const normalized = normalizeKundliData(dbKundli);
+            setData(normalized);
             if (dbKundli.ai_report) setAiReport(dbKundli.ai_report);
             return;
           }
@@ -45,7 +98,8 @@ export default function Kundli() {
         const storedKundli = localStorage.getItem('kundli_data');
         if (storedKundli) {
           const parsed = JSON.parse(storedKundli);
-          setData(parsed);
+          const normalized = normalizeKundliData(parsed);
+          setData(normalized);
           if (parsed.ai_report) setAiReport(parsed.ai_report);
           return;
         }
@@ -53,7 +107,8 @@ export default function Kundli() {
         const raw = localStorage.getItem('jyotish_onboarding');
         if (raw) {
           const parsed = JSON.parse(raw);
-          setData(parsed);
+          const normalized = normalizeKundliData(parsed);
+          setData(normalized);
         }
       } catch (e) {
         /* ignore */
