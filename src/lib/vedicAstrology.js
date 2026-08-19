@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 // VEDIC ASTROLOGICAL ENGINE (SIDEREAL LAHIRI AYANAMSHA)
 // High-precision calculations for Lagna (Ascendant), 9 Grahas (Planets),
-// Nakshatras, Rashis, Vimshottari Mahadasha Timeline, Panchang & Yogas
+// Nakshatras, Rashis, Vimshottari Mahadasha Timeline, Panchang, Ashtakvarga & Yogas
 // ══════════════════════════════════════════════════════════════════════════
 
 export const ZODIAC_SIGNS = [
@@ -100,18 +100,147 @@ export function getJulianDay(year, month, day, hour = 12, minute = 0, timezoneOf
 // Calculate Lahiri Ayanamsha for a given Julian Day
 export function getLahiriAyanamsha(jd) {
   const T = (jd - 2451545.0) / 36525;
-  // Standard N.C. Lahiri formula: 23°51′25.5″ at J2000 + 50.29″/year
   return 23.8561 + 1.3968 * T + 0.0003 * T * T;
+}
+
+// Classical Parashari Ashtakvarga Calculation
+export function calculateAshtakvarga(planetSignIndices, ascSignIndex) {
+  const rules = {
+    Sun: {
+      Sun: [1, 2, 4, 7, 8, 9, 10, 11],
+      Moon: [3, 6, 10, 11],
+      Mars: [1, 2, 4, 7, 8, 9, 10, 11],
+      Mercury: [3, 5, 6, 9, 10, 11, 12],
+      Jupiter: [5, 6, 9, 11],
+      Venus: [6, 7, 12],
+      Saturn: [1, 2, 4, 7, 8, 9, 10, 11],
+      Lagna: [3, 4, 6, 10, 11, 12],
+    },
+    Moon: {
+      Sun: [3, 6, 7, 8, 10, 11],
+      Moon: [1, 3, 6, 7, 10, 11],
+      Mars: [2, 3, 5, 6, 9, 10, 11],
+      Mercury: [1, 3, 4, 5, 7, 8, 10, 11],
+      Jupiter: [1, 4, 7, 8, 10, 11, 12],
+      Venus: [3, 4, 5, 7, 9, 10, 11],
+      Saturn: [3, 5, 6, 11],
+      Lagna: [3, 6, 10, 11],
+    },
+    Mars: {
+      Sun: [3, 5, 6, 10, 11],
+      Moon: [3, 6, 11],
+      Mars: [1, 2, 4, 7, 8, 10, 11],
+      Mercury: [3, 5, 6, 11],
+      Jupiter: [6, 10, 11, 12],
+      Venus: [6, 8, 11, 12],
+      Saturn: [1, 4, 7, 8, 9, 10, 11],
+      Lagna: [1, 3, 6, 10, 11],
+    },
+    Mercury: {
+      Sun: [5, 6, 9, 11, 12],
+      Moon: [2, 4, 6, 8, 10, 11],
+      Mars: [1, 2, 4, 7, 8, 9, 10, 11],
+      Mercury: [1, 3, 5, 6, 9, 10, 11, 12],
+      Jupiter: [6, 8, 11, 12],
+      Venus: [1, 2, 3, 4, 5, 8, 9, 11],
+      Saturn: [1, 2, 4, 7, 8, 9, 10, 11],
+      Lagna: [1, 2, 4, 6, 8, 10, 11],
+    },
+    Jupiter: {
+      Sun: [1, 2, 3, 4, 7, 8, 9, 10, 11],
+      Moon: [2, 5, 7, 9, 11],
+      Mars: [1, 2, 4, 7, 8, 10, 11],
+      Mercury: [1, 2, 4, 5, 6, 9, 10, 11],
+      Jupiter: [1, 2, 3, 4, 7, 8, 10, 11],
+      Venus: [2, 5, 6, 9, 10, 11],
+      Saturn: [3, 5, 6, 12],
+      Lagna: [1, 2, 4, 5, 6, 7, 9, 10, 11],
+    },
+    Venus: {
+      Sun: [8, 11, 12],
+      Moon: [1, 2, 3, 4, 5, 8, 9, 11, 12],
+      Mars: [3, 5, 6, 9, 11, 12],
+      Mercury: [3, 5, 6, 9, 11],
+      Jupiter: [5, 8, 9, 10, 11],
+      Venus: [1, 2, 3, 4, 5, 8, 9, 10, 11],
+      Saturn: [3, 4, 5, 8, 9, 10, 11],
+      Lagna: [1, 2, 3, 4, 5, 8, 9, 11],
+    },
+    Saturn: {
+      Sun: [1, 2, 4, 7, 8, 10, 11],
+      Moon: [3, 6, 11],
+      Mars: [3, 5, 6, 10, 11, 12],
+      Mercury: [6, 8, 9, 10, 11, 12],
+      Jupiter: [5, 6, 11, 12],
+      Venus: [6, 11, 12],
+      Saturn: [3, 5, 6, 11],
+      Lagna: [1, 3, 4, 6, 10, 11],
+    },
+  };
+
+  const positions = {
+    ...planetSignIndices,
+    Lagna: ascSignIndex,
+  };
+
+  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  const symbols = {
+    Sun: '☉',
+    Moon: '☽',
+    Mars: '♂',
+    Mercury: '☿',
+    Jupiter: '♃',
+    Venus: '♀',
+    Saturn: '♄',
+  };
+
+  const table = [];
+  const savScores = new Array(12).fill(0);
+
+  planets.forEach((p) => {
+    const pRules = rules[p];
+    const scores = new Array(12).fill(0);
+
+    Object.keys(pRules).forEach((donor) => {
+      const donorSign = positions[donor] ?? 0;
+      const benefics = pRules[donor];
+      benefics.forEach((h) => {
+        const signIdx = (donorSign + (h - 1)) % 12;
+        scores[signIdx] += 1;
+      });
+    });
+
+    const total = scores.reduce((a, b) => a + b, 0);
+    scores.forEach((s, idx) => {
+      savScores[idx] += s;
+    });
+
+    table.push({
+      planet: `${p} ${symbols[p] || ''}`,
+      total,
+      scores,
+      natalSignIndex: planetSignIndices[p] ?? 0,
+    });
+  });
+
+  table.push({
+    planet: 'Total (SAV)',
+    total: savScores.reduce((a, b) => a + b, 0),
+    scores: savScores,
+    natalSignIndex: -1,
+    isSav: true,
+  });
+
+  return table;
 }
 
 // Calculate 120-Year Vimshottari Mahadasha Timeline with zero overlaps
 export function calculateVimshottariTimeline(birthDateDecimal, moonSiderealDeg) {
-  const nakshatraSpan = 360 / 27; // 13.33333333°
+  const nakshatraSpan = 360 / 27;
   const nakIdx = Math.floor(moonSiderealDeg / nakshatraSpan) % 27;
   const birthLord = NAKSHATRAS[nakIdx].lord;
   const startLordIdx = DASHA_ORDER.indexOf(birthLord);
 
-  // Fraction of nakshatra already elapsed at birth
   const degInNak = moonSiderealDeg % nakshatraSpan;
   const elapsedFraction = degInNak / nakshatraSpan;
   const birthLordTotalYears = DASHA_YEARS[birthLord];
@@ -138,7 +267,6 @@ export function calculateVimshottariTimeline(birthDateDecimal, moonSiderealDeg) 
 
   currentStart = firstEnd;
 
-  // Next 8 cycles
   for (let i = 1; i < 9; i++) {
     const lordName = DASHA_ORDER[(startLordIdx + i) % 9];
     const duration = DASHA_YEARS[lordName];
@@ -189,11 +317,12 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const T = (jd - 2451545.0) / 36525;
 
   const norm = (deg) => ((deg % 360) + 360) % 360;
+  const toRad = (d) => (d * Math.PI) / 180;
 
   // 1. Sun Longitude
   const sunMean = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
   const sunAnomaly = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
-  const sunEquation = (1.914602 - 0.004817 * T) * Math.sin((sunAnomaly * Math.PI) / 180) + 0.019993 * Math.sin((2 * sunAnomaly * Math.PI) / 180);
+  const sunEquation = (1.914602 - 0.004817 * T) * Math.sin(toRad(sunAnomaly)) + 0.019993 * Math.sin(toRad(2 * sunAnomaly));
   const sunTropical = norm(sunMean + sunEquation);
   const sunSidereal = norm(sunTropical - ayanamsha);
 
@@ -203,7 +332,6 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const sunElongation = 297.8501921 + 445267.1114034 * T;
   const moonLatArg = 93.2720950 + 483202.0175233 * T;
 
-  const toRad = (d) => (d * Math.PI) / 180;
   const moonEquation =
     6.288774 * Math.sin(toRad(moonAnomaly)) +
     1.274027 * Math.sin(toRad(2 * sunElongation - moonAnomaly)) +
@@ -222,7 +350,6 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const ramcRad = (lmst * Math.PI) / 180;
   const latRad = (lat * Math.PI) / 180;
 
-  // True Ascendant without artificial offsets
   const yAsc = Math.cos(ramcRad);
   const xAsc = -Math.sin(ramcRad) * Math.cos(eps) - Math.tan(latRad) * Math.sin(eps);
   const ascTropical = norm((Math.atan2(yAsc, xAsc) * 180) / Math.PI);
@@ -258,7 +385,7 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const satEq = 6.358 * Math.sin(toRad(satAnomaly));
   const saturnSidereal = norm(satMean + satEq - ayanamsha);
 
-  // 9. Rahu & Ketu (Mean Lunar Nodes — Correct J2000 epoch 125.04452°)
+  // 9. Rahu & Ketu
   const rahuMeanTropical = norm(125.04452 - 1934.136261 * T + 0.0020708 * T * T);
   const rahuSidereal = norm(rahuMeanTropical - ayanamsha);
   const ketuSidereal = norm(rahuSidereal + 180);
@@ -272,13 +399,13 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const moonSign = ZODIAC_SIGNS[moonSignIdx];
   const sunSign = ZODIAC_SIGNS[sunSignIdx];
 
-  // Derive Nakshatra (360 / 27 = 13.333333°)
+  // Derive Nakshatra
   const nakshatraSpan = 360 / 27;
   const nakshatraIdx = Math.floor(moonSidereal / nakshatraSpan);
   const nakshatra = NAKSHATRAS[nakshatraIdx % 27];
   const pada = Math.floor((moonSidereal % nakshatraSpan) / (nakshatraSpan / 4)) + 1;
 
-  // Calculate House Number for a planet based on Ascendant
+  // Calculate House Number for a planet
   const getHouse = (planetLon) => {
     const pSignIdx = Math.floor(planetLon / 30);
     return ((pSignIdx - ascSignIdx + 12) % 12) + 1;
@@ -296,22 +423,52 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
     { sym: '☋', name: 'Ketu (केतु)', key: 'Ketu', lon: ketuSidereal, sign: ZODIAC_SIGNS[Math.floor(ketuSidereal / 30)].name, signHi: ZODIAC_SIGNS[Math.floor(ketuSidereal / 30)].hindi, house: String(getHouse(ketuSidereal)), deg: formatDegree(ketuSidereal), color: '#9CA3AF' },
   ];
 
-  // Construct 12 Houses for Chart Geometry
+  // Bhava Domains and Sanskrit Names
+  const bhavaMeta = [
+    { n: '1st', sk: 'Lagna Bhava (लग्न भाव)', domain: 'Self, Vitality & Physical Persona', theme: 'Physical body, charisma, personal orientation and natural temperament.' },
+    { n: '2nd', sk: 'Dhana Bhava (धन भाव)', domain: 'Wealth, Family & Speech', theme: 'Accumulated wealth, immediate family heritage, voice, and dietary habits.' },
+    { n: '3rd', sk: 'Sahaja Bhava (सहज भाव)', domain: 'Courage, Siblings & Enterprise', theme: 'Willpower, short journeys, writing, communication and sibling dynamics.' },
+    { n: '4th', sk: 'Sukha Bhava (सुख भाव)', domain: 'Home, Mother & Emotional Peace', theme: 'Real estate, vehicular comforts, domestic happiness and maternal bond.' },
+    { n: '5th', sk: 'Putra Bhava (पुत्र भाव)', domain: 'Intellect, Children & Purva Punya', theme: 'Creative discernment, romantic expression, education, and past-life merits.' },
+    { n: '6th', sk: 'Ari Bhava (अरि भाव)', domain: 'Health, Obstacles & Daily Service', theme: 'Immunity, problem-solving prowess, service orientation, and debt management.' },
+    { n: '7th', sk: 'Yuvati Bhava (युवति भाव)', domain: 'Partnership, Marriage & Public', theme: 'Spouse, business agreements, diplomacy, and societal interactions.' },
+    { n: '8th', sk: 'Randhra Bhava (रन्ध्र भाव)', domain: 'Transformation, Longevity & Occult', theme: 'Deep research, psychological resilience, inheritance, and hidden knowledge.' },
+    { n: '9th', sk: 'Dharma Bhava (धर्म भाव)', domain: 'Fortune, Higher Dharma & Mentors', theme: 'Spiritual evolution, divine grace, higher learning, and mentor guidance.' },
+    { n: '10th', sk: 'Karma Bhava (कर्म भाव)', domain: 'Career, Authority & Public Status', theme: 'Professional mastery, public leadership, reputation, and life vocation.' },
+    { n: '11th', sk: 'Labha Bhava (लाभ भाव)', domain: 'Gains, Aspirations & Community', theme: 'Financial inflows, influential friendships, aspirations, and rewards of effort.' },
+    { n: '12th', sk: 'Vyaya Bhava (व्यय भाव)', domain: 'Liberation, Foreign Lands & Solitude', theme: 'Spiritual liberation (Moksha), foreign connections, introspection, and investments.' },
+  ];
+
+  // Construct 12 Dynamic Houses
   const houseData = Array.from({ length: 12 }, (_, i) => {
     const houseNum = i + 1;
     const signIndex = (ascSignIdx + i) % 12;
     const signObj = ZODIAC_SIGNS[signIndex];
     const occupiedPlanets = planetList
       .filter((p) => parseInt(p.house, 10) === houseNum)
-      .map((p) => ({ name: p.key.slice(0, 3), color: p.color }));
+      .map((p) => ({ name: p.key.slice(0, 3), fullName: p.name, color: p.color }));
+
+    const meta = bhavaMeta[i];
+    const planetText = occupiedPlanets.length > 0
+      ? occupiedPlanets.map((p) => p.fullName.split(' ')[0]).join(', ')
+      : 'Rikt (Empty / Unoccupied)';
 
     return {
       num: houseNum,
+      n: meta.n,
+      sk: meta.sk,
+      domain: meta.domain,
+      theme: meta.theme,
       sign: signObj.name,
       rashiHi: signObj.hindi,
       rashiNumber: signIndex + 1,
       rashiAbbr: `${signObj.name.slice(0, 3)} (${signIndex + 1})`,
+      ruler: signObj.ruler,
       planets: occupiedPlanets,
+      planetDisplay: planetText,
+      reading: `${signObj.name} in House ${houseNum} ruled by ${signObj.ruler}. ${meta.theme} ${
+        occupiedPlanets.length > 0 ? `Influenced strongly by ${planetText}.` : 'Activated by aspect and house lord.'
+      }`,
     };
   });
 
@@ -339,6 +496,18 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   // Vimshottari Mahadasha Timeline (Complete 120-Year Cycle)
   const birthYearDecimal = year + (month - 1) / 12 + day / 365.25;
   const dashaCalculations = calculateVimshottariTimeline(birthYearDecimal, moonSidereal);
+
+  // Calculate Authentic Ashtakvarga
+  const planetIndices = {
+    Sun: Math.floor(sunSidereal / 30),
+    Moon: Math.floor(moonSidereal / 30),
+    Mars: Math.floor(marsSidereal / 30),
+    Mercury: Math.floor(mercurySidereal / 30),
+    Jupiter: Math.floor(jupiterSidereal / 30),
+    Venus: Math.floor(venusSidereal / 30),
+    Saturn: Math.floor(saturnSidereal / 30),
+  };
+  const ashtakvarga = calculateAshtakvarga(planetIndices, ascSignIdx);
 
   // Active Yogas Check
   const yogas = [];
@@ -403,6 +572,7 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
     gana: nakshatra.gana,
     planets: planetList,
     houses: houseData,
+    ashtakvarga,
     panchang: {
       tithi,
       vara,

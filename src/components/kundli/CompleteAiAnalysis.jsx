@@ -1,13 +1,95 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Check, X, Heart, Shield, Award, Moon, Sun } from 'lucide-react';
+import { Sparkles, Check, Heart, Shield, Award, Moon, Sun, Compass } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function CompleteAiAnalysis() {
+export default function CompleteAiAnalysis({ report, data }) {
   const { lang } = useLang();
   const [activeTab, setActiveTab] = useState('Personality');
-  const [wellnessSubTab, setWellnessSubTab] = useState('Diet');
+
+  const lagna = data?.lagna || 'Scorpio (Vrishchik)';
+  const rashi = data?.rashi || 'Gemini (Mithun)';
+  const nakshatra = data?.nakshatra || 'Ardra';
+  const name = data?.name || 'Seeker';
+
+  // Dynamic fallback report builder personalized to user's real chart
+  const defaultReport = {
+    personality: {
+      overview: `With ${lagna} as your Ascendant and ${rashi} as your Chandra Rashi in ${nakshatra} nakshatra, your chart combines intense inner willpower with exceptional intellectual adaptability. You possess natural strategic discernment, deep emotional perception, and magnetic presence. People recognize your competence and intuitive insight.`,
+      strengths: [
+        `Strategic Mind — ${lagna} Lagna bestows depth, focus, and piercing insight.`,
+        `Curious Intellect — ${rashi} Chandra Rashi provides quick learning and adaptability.`,
+        `Resilient Nature — Deep emotional strength to overcome transformational obstacles.`,
+        `Astute Discernment — Ability to understand hidden motives and underlying truth.`,
+        `Inspiring Expression — ${nakshatra} energy drives curiosity and inventive breakthroughs.`,
+        `Loyal Protection — Fiercely devoted to loved ones and core principles.`,
+      ],
+      challenges: [
+        { title: 'Emotional Guardedness', desc: 'Tendency to keep inner emotions tightly shielded. Cultivate trusted openness.' },
+        { title: 'Restless Overthinking', desc: 'Airy Moon in Gemini can cause mental dispersion. Practice grounding breathwork.' },
+        { title: 'Pacing Intensity', desc: 'Scorpio energy operates with high intensity; balance ambition with regular rest.' },
+      ],
+      lifePurpose: `“Your soul came to transform challenge into wisdom, illuminate hidden knowledge, and inspire others through communicative truth and unwavering spiritual courage.”`,
+    },
+    career: {
+      overview: `Your planetary placements indicate strong aptitude for leadership, strategic analysis, research, technology, communication, and advisory roles. You thrive in vocations requiring problem-solving and specialized mastery.`,
+      bestFields: [
+        'Strategic Leadership & Management',
+        'Information Technology, Data & Engineering',
+        'Research, Analytics & Investigation',
+        'Advisory, Consulting & Mentorship',
+        'Media, Communication & Writing',
+        'Holistic Health & Financial Strategy',
+      ],
+      currentPhase: `Currently moving through favorable planetary periods supporting intellectual expansion, career restructuring, and authoritative recognition.`,
+      timeline: [
+        { period: '2024–2025', prediction: 'Professional consolidation, skill enhancement, and key foundational achievements.' },
+        { period: '2025–2026', prediction: 'Expansion of responsibilities, lucrative opportunities, and positive peer recognition.' },
+        { period: '2026–2027', prediction: 'High-impact milestones, enhanced autonomy, and long-term vocational stability.' },
+      ],
+    },
+    love: {
+      overview: `In relationships, you seek genuine mental stimulation paired with deep emotional authenticity. Mutual respect, intelligent conversation, and unwavering loyalty form the bedrock of your partnerships.`,
+      bestMatches: [
+        { sign: 'Cancer (Kark)', reason: 'Profound emotional understanding, nurturing warmth, and deep loyalty.' },
+        { sign: 'Pisces (Meen)', reason: 'Spiritual harmony, intuitive depth, and unconditional mutual support.' },
+        { sign: 'Taurus (Vrishabh)', reason: 'Grounding stability, sensual warmth, and complementary opposite alignment.' },
+      ],
+      marriageTiming: 'Transiting Jupiter and favorable Dasha sub-periods create harmonious windows for commitment and lasting marital happiness.',
+      relationshipLesson: 'Balance independence with open emotional vulnerability; allow your partner to see your tender inner core.',
+    },
+    health: {
+      constitution: `Dynamic blend of Pitta (transformative solar fire) and Vata (mental mobility). Strong vitality supported by conscious nervous system care.`,
+      watchAreas: [
+        { area: 'Nervous System & Mind', advice: 'Avoid mental fatigue; practice daily meditation and digital detox.' },
+        { area: 'Digestion & Metabolism', advice: 'Favor freshly cooked, warm sattvic food and mindful eating rhythms.' },
+        { area: 'Reproductive & Pelvic Health', advice: 'Maintain adequate hydration and regular morning stretching exercises.' },
+      ],
+      recommendations: {
+        diet: 'Wholesome grains, cooling herbs, almonds, fresh seasonal fruits, and warm herbal teas.',
+        exercise: 'Surya Namaskar at dawn, brisk walking in greenery, and restorative yoga.',
+        spiritual: 'Daily pranayama (Anulom Vilom) and silent reflection at twilight.',
+      },
+    },
+    spiritual: {
+      soulPurpose: 'To evolve from mental restlessness toward meditative stillness, utilizing your analytical mind in service of dharma.',
+      pastLife: 'Cultivated scholarship, investigation, and intellectual pursuits, now evolving toward higher spiritual wisdom and emotional mastery.',
+      practices: [
+        'Pranayama (Alternate Nostril Breathing) for 10 minutes at sunrise',
+        'Gayatri Mantra or Mahamrityunjaya Mantra chanting',
+        'Offering water (Arghya) to the rising Sun on Sundays',
+        'Feeding birds and practicing weekly charity (Daan)',
+      ],
+      remedies: [
+        { planet: 'Sun ☉', remedy: 'Offer water to the morning sun and practice daily gratitude', day: 'Sunday' },
+        { planet: 'Mars ♂ (Lagna Lord)', remedy: 'Recite Hanuman Chalisa or practice physical discipline', day: 'Tuesday' },
+        { planet: 'Jupiter ♃', remedy: 'Respect teachers/mentors and donate yellow items/food', day: 'Thursday' },
+      ],
+    },
+  };
+
+  const rep = report && report.personality ? report : defaultReport;
 
   const tabs = [
     { id: 'Personality', label: t.tab_personality[lang] },
@@ -35,7 +117,7 @@ export default function CompleteAiAnalysis() {
               {t.ai_insights_title[lang]}
             </h3>
             <span className="text-xs" style={{ color: 'var(--col-copper)' }}>
-              {lang === 'hinglish' ? 'ज्योतिषीय विश्लेषण — सम्पूर्ण रिपोर्ट' : 'Astrological Analysis'}
+              {lang === 'hinglish' ? `वैदिक विश्लेषण — ${lagna} • ${rashi}` : `Vedic Analysis — ${lagna} • ${rashi}`}
             </span>
           </div>
         </div>
@@ -59,7 +141,7 @@ export default function CompleteAiAnalysis() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200"
+              className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer"
               style={
                 isActive
                   ? {
@@ -95,29 +177,22 @@ export default function CompleteAiAnalysis() {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-1" style={{ color: 'var(--col-moonstone)' }}>
-                  Your Complete Personality Profile
+                  Personalized Personality Profile for {name}
                 </h4>
                 <div className="text-xs uppercase font-semibold mt-4 mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Core Identity
+                  Core Identity Synthesis
                 </div>
                 <p className="text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
-                  With Leo rising (Lagna), you project confidence, warmth, and natural authority. Your Cancer Moon adds emotional depth beneath this bold exterior — you lead with heart, not just intellect. People are drawn to your magnetic presence, yet few see the sensitive, protective soul within. This combination creates a natural leader who deeply cares for those under their wing.
+                  {rep.personality?.overview}
                 </p>
               </div>
 
               <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
-                  Your Strengths ✦
+                  Auspicious Strengths ✦
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {[
-                    'Natural Leader — Leo Lagna gives commanding presence',
-                    'Emotionally Intelligent — Cancer Moon, deep empathy',
-                    'Strategic Mind — Mercury in Virgo, analytical',
-                    'Protective — Strong 4th house influences',
-                    'Creative — Venus in Leo, artistic gifts',
-                    'Resilient — Saturn in 7th, learns from challenges',
-                  ].map((s) => (
+                  {(rep.personality?.strengths || []).map((s) => (
                     <div
                       key={s}
                       className="p-3 rounded-xl flex items-start gap-2.5"
@@ -134,44 +209,48 @@ export default function CompleteAiAnalysis() {
 
               <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: '#F59E0B', letterSpacing: '0.1em' }}>
-                  Areas to Develop
+                  Areas to Cultivate & Balance
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    { title: 'Ego Management', desc: 'Leo energy can become prideful. Practice humility and active listening daily.' },
-                    { title: 'Emotional Boundaries', desc: "Cancer Moon absorbs others' emotions easily. Shield your energy." },
-                    { title: 'Perfectionism', desc: 'Mercury in Virgo can lead to over-analysis. Trust your spontaneous intuition.' },
-                  ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="p-3.5 rounded-xl"
-                      style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}
-                    >
-                      <div className="text-xs font-semibold mb-1" style={{ color: '#F59E0B' }}>
-                        {item.title}
+                  {(Array.isArray(rep.personality?.challenges) ? rep.personality.challenges : []).map((item, idx) => {
+                    const title = typeof item === 'string' ? item : item.title || `Area ${idx + 1}`;
+                    const desc = typeof item === 'string' ? '' : item.desc || '';
+                    return (
+                      <div
+                        key={title}
+                        className="p-3.5 rounded-xl"
+                        style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}
+                      >
+                        <div className="text-xs font-semibold mb-1" style={{ color: '#F59E0B' }}>
+                          {title}
+                        </div>
+                        {desc && (
+                          <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
+                            {desc}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
-                        {item.desc}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div
-                className="p-5 rounded-2xl relative"
-                style={{
-                  background: 'rgba(200, 130, 42, 0.06)',
-                  border: '1px solid rgba(200, 130, 42, 0.4)',
-                }}
-              >
-                <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Life Purpose Statement
+              {rep.personality?.lifePurpose && (
+                <div
+                  className="p-5 rounded-2xl relative"
+                  style={{
+                    background: 'rgba(200, 130, 42, 0.06)',
+                    border: '1px solid rgba(200, 130, 42, 0.4)',
+                  }}
+                >
+                  <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
+                    Life Purpose Statement
+                  </div>
+                  <p className="text-sm italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.75 }}>
+                    {rep.personality.lifePurpose}
+                  </p>
                 </div>
-                <p className="text-sm italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.75 }}>
-                  “Your soul came to lead, protect, and illuminate. You are meant to be seen — not to hide. Your greatest growth comes through relationships that challenge your ego and expand your heart.”
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -180,212 +259,120 @@ export default function CompleteAiAnalysis() {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
-                  Career & Vocational Profile
+                  Career & Vocational Destiny
                 </h4>
-                <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Natural Career Paths
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="p-4 rounded-xl space-y-2" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                    <div className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--col-teal)' }}>
-                      Best Suited
-                    </div>
-                    {[
-                      'Leadership & Executive Management',
-                      'Teaching, Mentoring & Coaching',
-                      'Entertainment & Performing Arts',
-                      'Government, Policy & Politics',
-                      'Consulting & Advisory Roles',
-                      'Healthcare & Wellness (Cancer Moon)',
-                    ].map((p) => (
-                      <div key={p} className="flex items-center gap-2 text-xs" style={{ color: 'var(--col-moonstone)' }}>
-                        <Check size={14} style={{ color: 'var(--col-teal)' }} />
-                        <span>{p}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-4 rounded-xl space-y-2" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-                    <div className="text-xs font-bold uppercase mb-2" style={{ color: '#F59E0B' }}>
-                      Less Suited
-                    </div>
-                    {[
-                      'Isolated, repetitive desk work',
-                      'Subordinate-only roles with no autonomy',
-                      'Pure technical tasks without human element',
-                    ].map((p) => (
-                      <div key={p} className="flex items-center gap-2 text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-                        <X size={14} style={{ color: '#F59E0B' }} />
-                        <span>{p}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Current Career Phase */}
-              <div
-                className="p-5 rounded-2xl"
-                style={{
-                  background: 'rgba(200, 130, 42, 0.08)',
-                  border: '1px solid rgba(200, 130, 42, 0.45)',
-                }}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <div className="text-xs uppercase font-bold tracking-wider" style={{ color: 'var(--col-copper)' }}>
-                    Current Career Phase
-                  </div>
-                  <span className="font-mono-num text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'var(--col-copper)', color: 'var(--col-midnight)' }}>
-                    RAHU MAHADASHA (2010–2028)
-                  </span>
-                </div>
-                <p className="text-xs mt-2" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.7 }}>
-                  You are in a period of rapid career expansion and unconventional growth. Rahu in the 9th house pushes you toward international connections, higher education, and breaking traditional career boundaries. This is your decade to take calculated risks.
+                <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
+                  {rep.career?.overview}
                 </p>
-                <div className="mt-4">
-                  <div className="flex justify-between text-xs mb-1 font-mono-num" style={{ color: 'var(--col-moonstone-dim)' }}>
-                    <span>Period Progress</span>
-                    <span className="font-semibold" style={{ color: 'var(--col-copper)' }}>60%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                    <div className="h-full rounded-full" style={{ width: '60%', background: 'linear-gradient(90deg, var(--col-copper), var(--col-copper-light))' }} />
-                  </div>
-                </div>
-              </div>
 
-              {/* Career Timeline */}
-              <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Career Timeline
+                  Best Suited Fields & Callings
                 </div>
-                <div className="space-y-2.5">
-                  {[
-                    { yrs: '2024–2025', desc: 'Jupiter 10th house transit — Major career recognition and leadership expansion incoming' },
-                    { yrs: '2025–2026', desc: 'Saturn stabilizes partnerships — High-yield business collaborations favored' },
-                    { yrs: '2026–2027', desc: 'Rahu peak phase — Global networks and international opportunities open' },
-                    { yrs: '2028+', desc: 'Jupiter Mahadasha begins — Wisdom-based advisory and mentorship expansion' },
-                  ].map((t) => (
-                    <div key={t.yrs} className="p-3 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 glass-card">
-                      <span className="font-mono-num text-xs font-bold px-2 py-0.5 rounded w-fit" style={{ background: 'rgba(200,130,42,0.15)', color: 'var(--col-copper)' }}>
-                        {t.yrs}
-                      </span>
-                      <span className="text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-                        {t.desc}
-                      </span>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(rep.career?.bestFields || []).map((f) => (
+                    <div
+                      key={f}
+                      className="p-3 rounded-xl flex items-center gap-2.5"
+                      style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}
+                    >
+                      <Award size={16} style={{ color: 'var(--col-teal)' }} />
+                      <span className="text-xs font-medium" style={{ color: 'var(--col-moonstone)' }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Financial Outlook */}
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="p-4 rounded-xl glass-card text-center">
-                  <div className="text-xs font-semibold text-[var(--col-moonstone-dim)]">Short Term (1 yr)</div>
-                  <div className="font-display text-base mt-1" style={{ color: 'var(--col-copper)' }}>Growth Phase ↑</div>
+              {rep.career?.currentPhase && (
+                <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
+                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
+                    Current Planetary Period Insight
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+                    {rep.career.currentPhase}
+                  </p>
                 </div>
-                <div className="p-4 rounded-xl glass-card text-center">
-                  <div className="text-xs font-semibold text-[var(--col-moonstone-dim)]">Medium Term (3 yr)</div>
-                  <div className="font-display text-base mt-1" style={{ color: 'var(--col-teal)' }}>Peak Earning Period</div>
+              )}
+
+              {rep.career?.timeline && (
+                <div>
+                  <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
+                    Career Horizon Predictions
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {rep.career.timeline.map((item) => (
+                      <div
+                        key={item.period}
+                        className="p-3.5 rounded-xl"
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--col-glass-border)' }}
+                      >
+                        <div className="text-xs font-mono-num font-bold mb-1" style={{ color: 'var(--col-copper)' }}>
+                          {item.period}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
+                          {item.prediction}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="p-4 rounded-xl glass-card text-center">
-                  <div className="text-xs font-semibold text-[var(--col-moonstone-dim)]">Long Term (10 yr)</div>
-                  <div className="font-display text-base mt-1" style={{ color: 'var(--col-copper-light)' }}>Financial Stability ✦</div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* ================= TAB 3: LOVE & RELATIONSHIPS ================= */}
+          {/* ================= TAB 3: LOVE ================= */}
           {activeTab === 'Love & Relationships' && (
             <div className="space-y-7">
               <div>
-                <h4 className="font-display text-lg mb-2" style={{ color: 'var(--col-moonstone)' }}>
-                  Love & Relationship Forecast
+                <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
+                  Relationship & Marriage Dynamics
                 </h4>
-                <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Relationship Nature
-                </div>
-                <p className="text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
-                  Venus in Leo makes you a passionate, romantic partner who loves grand gestures and deep loyalty. You give 100% in relationships and expect the same. Saturn in the 7th house indicates that serious, lasting relationships come after age 28-30, but when they do, they are built for life.
+                <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
+                  {rep.love?.overview}
                 </p>
-              </div>
 
-              {/* Compatibility Guide */}
-              <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Compatibility Guide
+                  Auspicious Compatibility Alignment
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="p-4 rounded-xl space-y-2.5" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                    <div className="text-xs font-bold uppercase mb-1" style={{ color: 'var(--col-teal)' }}>
-                      Most Compatible
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {(rep.love?.bestMatches || []).map((m) => (
+                    <div
+                      key={m.sign}
+                      className="p-3.5 rounded-xl"
+                      style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+                    >
+                      <div className="flex items-center gap-1.5 text-xs font-bold mb-1" style={{ color: '#F87171' }}>
+                        <Heart size={14} />
+                        {m.sign}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
+                        {m.reason}
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-semibold text-xs text-[var(--col-moonstone)]">♈ Aries (Mesh)</span>
-                      <p className="text-xs text-[var(--col-moonstone-dim)]">Instant spark, shared passion and mutual ambition.</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-xs text-[var(--col-moonstone)]">♐ Sagittarius (Dhanu)</span>
-                      <p className="text-xs text-[var(--col-moonstone-dim)]">Adventure, mutual respect, and philosophical expansion.</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-xs text-[var(--col-moonstone)]">♊ Gemini (Mithun)</span>
-                      <p className="text-xs text-[var(--col-moonstone-dim)]">Mental stimulation, lively energy, and endless humor.</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl space-y-2.5" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-                    <div className="text-xs font-bold uppercase mb-1" style={{ color: '#F59E0B' }}>
-                      Challenging but Growthful
-                    </div>
-                    <div>
-                      <span className="font-semibold text-xs text-[var(--col-moonstone)]">♑ Capricorn (Makar)</span>
-                      <p className="text-xs text-[var(--col-moonstone-dim)]">Opposite polarities; teaches grounding and discipline.</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-xs text-[var(--col-moonstone)]">♏ Scorpio (Vrishchik)</span>
-                      <p className="text-xs text-[var(--col-moonstone-dim)]">Intense, transformative bond requiring deep trust.</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Marriage Timing */}
-              <div
-                className="p-5 rounded-2xl"
-                style={{
-                  background: 'rgba(200, 130, 42, 0.08)',
-                  border: '1px solid rgba(200, 130, 42, 0.45)',
-                  boxShadow: '0 0 24px rgba(200, 130, 42, 0.12)',
-                }}
-              >
-                <div className="text-xs uppercase font-bold tracking-wider mb-2" style={{ color: 'var(--col-copper)' }}>
-                  Auspicious Marriage Windows
-                </div>
-                <div className="space-y-1.5 text-xs font-medium" style={{ color: 'var(--col-moonstone)' }}>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: 'var(--col-teal)' }}>✦</span>
-                    <span><strong>2025–2026:</strong> Jupiter in 7th — Very Favorable & Harmonious</span>
+              {rep.love?.marriageTiming && (
+                <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
+                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
+                    Marriage & Union Timing
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: 'var(--col-copper)' }}>✦</span>
-                    <span><strong>2027–2028:</strong> Saturn stabilized — Ideal for permanent lifelong commitment</span>
-                  </div>
+                  <p className="text-xs" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>
+                    {rep.love.marriageTiming}
+                  </p>
                 </div>
-                <div className="mt-3 pt-2.5 border-t border-[rgba(200,130,42,0.2)] text-[11px]" style={{ color: 'var(--col-moonstone-dim)' }}>
-                  Best Muhurat Months: <strong>Nov–Feb, June–July</strong>
-                </div>
-              </div>
+              )}
 
-              {/* Relationship Lessons */}
-              <div>
-                <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Relationship Lessons
+              {rep.love?.relationshipLesson && (
+                <div className="p-4 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
+                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>
+                    Karmic Relationship Lesson
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+                    {rep.love.relationshipLesson}
+                  </p>
                 </div>
-                <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.7 }}>
-                  Saturn in the 7th house teaches: Choose a partner who respects your need for recognition while grounding your tendencies toward dramatic intensity. Your ideal partner is ambitious, emotionally mature, and deeply values reciprocal loyalty.
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -393,201 +380,122 @@ export default function CompleteAiAnalysis() {
           {activeTab === 'Health' && (
             <div className="space-y-7">
               <div>
-                <h4 className="font-display text-lg mb-2" style={{ color: 'var(--col-moonstone)' }}>
-                  Health & Vitality Constitution
+                <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
+                  Ayurvedic Health & Vitality Profile
                 </h4>
-                <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Physiological Constitution
-                </div>
-                <p className="text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
-                  Leo Lagna governs the heart, spine, and upper back. Cancer Moon rules the stomach, chest, and lymphatic system. Maintaining emotional balance is directly linked to your physical wellbeing — stress manifests as digestive sensitivity and back tension.
+                <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
+                  {rep.health?.constitution}
                 </p>
-              </div>
 
-              {/* Health Watch Areas 2x2 Grid */}
-              <div className="grid gap-3.5 sm:grid-cols-2">
-                {[
-                  { title: 'Heart & Circulation', priority: 'Medium', desc: 'Sun rules Leo — keep heart healthy. Regular cardio, avoid excessive heat.', label: 'Attention needed', pct: 60, barColor: '#F59E0B' },
-                  { title: 'Digestive System', priority: 'High', desc: 'Cancer Moon sensitizes stomach. Avoid emotional eating. Warm foods preferred.', label: 'Monitor closely', pct: 70, barColor: '#F59E0B' },
-                  { title: 'Spine & Back', priority: 'Medium', desc: 'Leo rules spine. Long sitting hours risky. Regular stretching essential.', label: 'Good with care', pct: 50, barColor: 'var(--col-copper)' },
-                  { title: 'Mental Health', priority: 'High', desc: 'Cancer-Leo combo needs emotional outlets. Creative expression prevents lethargy.', label: 'Active attention', pct: 75, barColor: 'var(--col-teal)' },
-                ].map((item) => (
-                  <div key={item.title} className="p-4 rounded-xl glass-card flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-xs text-[var(--col-moonstone)]">{item.title}</span>
-                        <span className="text-[10px] uppercase font-bold" style={{ color: item.barColor }}>
-                          {item.priority}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--col-moonstone-dim)] mb-3">{item.desc}</p>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[11px] font-mono-num mb-1" style={{ color: 'var(--col-moonstone-dim)' }}>
-                        <span>{item.label}</span>
-                        <span>{item.pct}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full overflow-hidden bg-white/10">
-                        <div className="h-full rounded-full" style={{ width: `${item.pct}%`, background: item.barColor }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Wellness Recommendations Sub-tabs */}
-              <div className="glass-card p-5">
-                <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Wellness Recommendations
+                <div className="text-xs uppercase font-semibold mb-3" style={{ color: '#F59E0B', letterSpacing: '0.1em' }}>
+                  Areas to Nurture
                 </div>
-                <div className="flex gap-2 mb-4">
-                  {['Diet', 'Exercise', 'Spiritual'].map((st) => (
-                    <button
-                      key={st}
-                      onClick={() => setWellnessSubTab(st)}
-                      className="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
-                      style={
-                        wellnessSubTab === st
-                          ? { background: 'var(--col-copper)', color: 'var(--col-midnight)' }
-                          : { background: 'rgba(255,255,255,0.05)', color: 'var(--col-moonstone-dim)' }
-                      }
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {(rep.health?.watchAreas || []).map((w) => (
+                    <div
+                      key={w.area}
+                      className="p-3.5 rounded-xl"
+                      style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}
                     >
-                      {st}
-                    </button>
+                      <div className="text-xs font-semibold mb-1" style={{ color: '#F59E0B' }}>
+                        {w.area}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
+                        {w.advice}
+                      </div>
+                    </div>
                   ))}
                 </div>
-
-                {wellnessSubTab === 'Diet' && (
-                  <p className="text-xs text-[var(--col-moonstone-dim)] leading-relaxed">
-                    <strong className="text-[var(--col-moonstone)]">Favorable:</strong> Warm, cooked foods. Fresh dairy products (Moon alignment). Saffron, cardamom, turmeric (Sun herbs). <br />
-                    <strong className="text-[var(--col-moonstone)]">Avoid:</strong> Ice-cold drinks, excessive pungent/spicy cuisine, and irregular meal timing.
-                  </p>
-                )}
-                {wellnessSubTab === 'Exercise' && (
-                  <p className="text-xs text-[var(--col-moonstone-dim)] leading-relaxed">
-                    <strong className="text-[var(--col-moonstone)]">Best:</strong> Morning Surya Namaskar yoga (6:00–8:00 AM). Swimming (Cancer Moon affinity with water). <br />
-                    <strong className="text-[var(--col-moonstone)]">Avoid:</strong> Extreme physical overexertion during midday Rahu Kaal.
-                  </p>
-                )}
-                {wellnessSubTab === 'Spiritual' && (
-                  <p className="text-xs text-[var(--col-moonstone-dim)] leading-relaxed">
-                    <strong className="text-[var(--col-moonstone)]">Sunday:</strong> Surya Arghya (water offering to the rising Sun). <br />
-                    <strong className="text-[var(--col-moonstone)]">Monday:</strong> Moon meditation and wearing soft white or pearl hues. <br />
-                    <strong className="text-[var(--col-moonstone)]">Saturday:</strong> Shani prayers for Saturn stabilization.
-                  </p>
-                )}
               </div>
 
-              {/* Health Timeline */}
-              <div>
-                <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Health Timeline
+              {rep.health?.recommendations && (
+                <div>
+                  <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
+                    Holistic Lifestyle Guidance
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Sattvic Diet</div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.diet}</div>
+                    </div>
+                    <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Physical Movement</div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.exercise}</div>
+                    </div>
+                    <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Mind & Spirit</div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.spiritual}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2 text-xs text-[var(--col-moonstone-dim)]">
-                  <div><strong>2024–2025:</strong> Minor health fluctuations — proactive preventive care and hydration recommended.</div>
-                  <div><strong>2026:</strong> Saturn transit — focus on joint health, stretching, and spine ergonomics.</div>
-                  <div><strong>2028+:</strong> Jupiter Mahadasha — generally excellent, revitalized vitality and robust wellbeing.</div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* ================= TAB 5: SPIRITUAL PATH ================= */}
+          {/* ================= TAB 5: SPIRITUAL ================= */}
           {activeTab === 'Spiritual Path' && (
             <div className="space-y-7">
-              {/* Soul Purpose (Atma Karaka) */}
-              <div
-                className="p-5 rounded-2xl"
-                style={{
-                  background: 'rgba(200, 130, 42, 0.08)',
-                  border: '1px solid rgba(200, 130, 42, 0.45)',
-                }}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Sun size={20} style={{ color: 'var(--col-copper)' }} />
-                  <h4 className="font-display text-lg" style={{ color: 'var(--col-moonstone)' }}>
-                    Your Atma Karaka: Sun ☉
-                  </h4>
-                </div>
-                <div className="text-xs font-semibold mb-2" style={{ color: 'var(--col-copper)' }}>
-                  आत्मकारक: सूर्य
-                </div>
-                <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.75 }}>
-                  The Sun as your soul significator means your spiritual journey is about finding your authentic self, stepping into benevolent leadership without ego, and learning to shine for others — not just yourself.
-                </p>
-              </div>
-
-              {/* Past Life Indicators */}
               <div>
-                <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Past Life Indicators
+                <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
+                  Soul Journey & Vedic Remedies
+                </h4>
+                <div className="p-4 rounded-xl mb-5" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
+                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
+                    Soul Purpose & Dharma
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--col-moonstone)', lineHeight: 1.7 }}>
+                    {rep.spiritual?.soulPurpose}
+                  </p>
                 </div>
-                <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.75 }}>
-                  Ketu in the 3rd house suggests: You were a skilled communicator, writer, or teacher in past incarnations. In this lifetime, you build upon that communicative foundation but must now develop philosophical wisdom (9th house Rahu) far beyond words alone.
-                </p>
-              </div>
 
-              {/* Spiritual Practices 6 Cards */}
-              <div>
-                <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Recommended Spiritual Practices
+                {rep.spiritual?.pastLife && (
+                  <div className="p-4 rounded-xl mb-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--col-glass-border)' }}>
+                    <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-moonstone-dim)' }}>
+                      Past Life Karmic Trajectory
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+                      {rep.spiritual.pastLife}
+                    </p>
+                  </div>
+                )}
+
+                <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
+                  Recommended Daily Practices
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[
-                    { title: 'Surya Mantra', desc: 'Recite Om Suryaya Namaha daily at sunrise' },
-                    { title: 'Om Namah Shivaya', desc: 'Saturn & Moon balancing remedy on Mondays/Saturdays' },
-                    { title: 'Gayatri Mantra', desc: '108 repetitions on Sunday mornings' },
-                    { title: 'Chandra Mantra', desc: 'Recite on Monday evenings for emotional calm' },
-                    { title: 'Silent Meditation', desc: '20 minutes daily morning or twilight minimum' },
-                    { title: 'Selfless Service', desc: 'Teaching and mentoring underprivileged seekers' },
-                  ].map((p) => (
-                    <div key={p.title} className="p-3.5 rounded-xl glass-card">
-                      <div className="text-xs font-semibold" style={{ color: 'var(--col-copper)' }}>
-                        ✦ {p.title}
-                      </div>
-                      <div className="text-xs mt-1" style={{ color: 'var(--col-moonstone-dim)' }}>
-                        {p.desc}
-                      </div>
+                <div className="grid gap-2.5 sm:grid-cols-2 mb-6">
+                  {(rep.spiritual?.practices || []).map((p) => (
+                    <div
+                      key={p}
+                      className="p-3 rounded-xl flex items-center gap-2.5"
+                      style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}
+                    >
+                      <Sparkles size={16} style={{ color: 'var(--col-teal)' }} />
+                      <span className="text-xs" style={{ color: 'var(--col-moonstone)' }}>{p}</span>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Personalized Remedies Table */}
-              <div className="glass-card p-5">
-                <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Personalized Remedies Summary
+                <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
+                  Planetary Remedies (उपाए)
                 </div>
-                <div className="text-xs text-[var(--col-copper)] mb-3">व्यक्तिगत उपाय</div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs" style={{ borderCollapse: 'collapse', color: 'var(--col-moonstone)' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--col-glass-border)' }}>
-                        <th className="text-left py-2 font-semibold" style={{ color: 'var(--col-copper)' }}>Planet</th>
-                        <th className="text-left py-2 font-semibold" style={{ color: 'var(--col-copper)' }}>Remedy</th>
-                        <th className="text-right py-2 font-semibold" style={{ color: 'var(--col-copper)' }}>Day</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { planet: 'Sun ☉', remedy: 'Offer Arghya water at sunrise', day: 'Sunday' },
-                        { planet: 'Moon ☽', remedy: 'Wear Pearl / Moonstone in silver', day: 'Monday' },
-                        { planet: 'Rahu ☊', remedy: 'Chant Rahu Stotram & feed birds', day: 'Saturday' },
-                        { planet: 'Saturn ♄', remedy: 'Offer black sesame seeds & lamp', day: 'Saturday' },
-                      ].map((r) => (
-                        <tr key={r.planet} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td className="py-2.5 font-medium">{r.planet}</td>
-                          <td className="py-2.5 text-[var(--col-moonstone-dim)]">{r.remedy}</td>
-                          <td className="py-2.5 text-right font-mono-num text-[var(--col-copper)]">{r.day}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.05)] text-[11px] text-[var(--col-moonstone-dim)] italic">
-                  Remedies are traditional Vedic suggestions. Consult a qualified Jyotishi for personalized guidance.
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {(rep.spiritual?.remedies || []).map((r) => (
+                    <div
+                      key={r.planet}
+                      className="p-3.5 rounded-xl"
+                      style={{ background: 'rgba(200, 130, 42, 0.06)', border: '1px solid rgba(200, 130, 42, 0.35)' }}
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold mb-1" style={{ color: 'var(--col-copper)' }}>
+                        <span>{r.planet}</span>
+                        <span className="text-[10px] font-normal px-2 py-0.5 rounded-full" style={{ background: 'rgba(200,130,42,0.15)' }}>
+                          {r.day}
+                        </span>
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
+                        {r.remedy}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

@@ -3,23 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function BhavaAnalysis() {
+export default function BhavaAnalysis({ houses = [] }) {
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
 
-  const houses = [
-    { n: '1st', sk: 'Lagna Bhava', domain: lang === 'hinglish' ? 'Vyaktitva & Sharir' : 'Self & Personality', planet: lang === 'hinglish' ? 'Surya, Shukra' : 'Sun, Venus', reading: lang === 'hinglish' ? 'Mazboot netritva kshamata, aakarshak vyaktitva.' : 'Strong leadership presence, charismatic personality' },
-    { n: '2nd', sk: 'Dhana Bhava', domain: lang === 'hinglish' ? 'Dhan & Kutumb' : 'Wealth & Family', planet: lang === 'hinglish' ? 'Rikt (Empty)' : 'Empty', reading: lang === 'hinglish' ? 'Lagaatar prayas se aarthik vriddhi.' : 'Financial growth through consistent effort' },
-    { n: '3rd', sk: 'Sahaja Bhava', domain: lang === 'hinglish' ? 'Sahas & Bhai-behen' : 'Siblings & Courage', planet: lang === 'hinglish' ? 'Budh' : 'Mercury', reading: lang === 'hinglish' ? 'Teez communication skills aur gyaani sahakar.' : 'Sharp communication skills, intellectual siblings' },
-    { n: '4th', sk: 'Sukha Bhava', domain: lang === 'hinglish' ? 'Ghar & Sukh' : 'Home & Happiness', planet: lang === 'hinglish' ? 'Rikt' : 'Empty', reading: lang === 'hinglish' ? 'Shant gharelu vatavaran, mata se ghanishth rishta.' : 'Peaceful home environment, strong maternal bond' },
-    { n: '5th', sk: 'Putra Bhava', domain: lang === 'hinglish' ? 'Santan & Rachnatmakta' : 'Children & Creativity', planet: lang === 'hinglish' ? 'Rikt' : 'Empty', reading: lang === 'hinglish' ? 'Rachnatmak buddhi aur shrestha gyaan.' : 'Creative intelligence, good with children' },
-    { n: '6th', sk: 'Ari Bhava', domain: lang === 'hinglish' ? 'Swasthya & Shatru' : 'Health & Enemies', planet: lang === 'hinglish' ? 'Rikt' : 'Empty', reading: lang === 'hinglish' ? 'Uttam immunity aur badhaon par vijay.' : 'Good immunity, ability to overcome obstacles' },
-    { n: '7th', sk: 'Yuvati Bhava', domain: lang === 'hinglish' ? 'Vivah & Sajhedari' : 'Marriage & Partnership', planet: lang === 'hinglish' ? 'Shani' : 'Saturn', reading: lang === 'hinglish' ? 'Gambhira aur pratibadh sajhedari thode samay baad.' : 'Serious, committed partnerships after delay' },
-    { n: '8th', sk: 'Randhra Bhava', domain: lang === 'hinglish' ? 'Aayu & Parivartan' : 'Transformation & Secrets', planet: lang === 'hinglish' ? 'Rikt' : 'Empty', reading: lang === 'hinglish' ? 'Guhya gyaan aur aadhyaatmik khoj mein ruchi.' : 'Interest in occult and hidden knowledge' },
-    { n: '9th', sk: 'Dharma Bhava', domain: lang === 'hinglish' ? 'Bhagya & Dharma' : 'Luck & Spirituality', planet: lang === 'hinglish' ? 'Rahu' : 'Rahu', reading: lang === 'hinglish' ? 'Anokha dharmik drishtikon aur videshi sampark.' : 'Unconventional spiritual path, foreign connections' },
-    { n: '10th', sk: 'Karma Bhava', domain: lang === 'hinglish' ? 'Career & Pratishtha' : 'Career & Status', planet: lang === 'hinglish' ? 'Brihaspati' : 'Jupiter', reading: lang === 'hinglish' ? 'Shikshan, salahkar ya prabandhan kshetron mein safalta.' : 'Career in teaching, consulting, or advisory roles' },
-    { n: '11th', sk: 'Labha Bhava', domain: lang === 'hinglish' ? 'Aay & Labh' : 'Gains & Social Circle', planet: lang === 'hinglish' ? 'Mangal' : 'Mars', reading: lang === 'hinglish' ? 'Mazboot social network aur prayason se labh.' : 'Strong network, gains through siblings and efforts' },
-    { n: '12th', sk: 'Vyaya Bhava', domain: lang === 'hinglish' ? 'Vyay & Moksha' : 'Loss & Liberation', planet: lang === 'hinglish' ? 'Chandra' : 'Moon', reading: lang === 'hinglish' ? 'Aatmik jhukav aur videshi sthano se labh.' : 'Spiritual inclinations, gains from foreign lands' },
+  const list = houses && houses.length > 0 ? houses : [
+    { num: 1, n: '1st', sk: 'Lagna Bhava (लग्न भाव)', domain: 'Self & Vitality', sign: 'Scorpio', rashiHi: 'Vrishchik (वृश्चिक)', ruler: 'Mars', planetDisplay: 'Rikt', reading: 'Scorpio in 1st House ruled by Mars. Magnetic willpower, deep perception, and transformative physical resilience.' },
+    { num: 2, n: '2nd', sk: 'Dhana Bhava (धन भाव)', domain: 'Wealth & Family', sign: 'Sagittarius', rashiHi: 'Dhanu (धनु)', ruler: 'Jupiter', planetDisplay: 'Rikt', reading: 'Sagittarius in 2nd House ruled by Jupiter. Generous values, truthful speech, and financial growth through ethical wisdom.' },
+    { num: 3, n: '3rd', sk: 'Sahaja Bhava (सहज भाव)', domain: 'Courage & Siblings', sign: 'Capricorn', rashiHi: 'Makar (मकर)', ruler: 'Saturn', planetDisplay: 'Rikt', reading: 'Capricorn in 3rd House ruled by Saturn. Steadfast perseverance, disciplined efforts, and strategic communication.' },
+    { num: 4, n: '4th', sk: 'Sukha Bhava (सुख भाव)', domain: 'Home & Peace', sign: 'Aquarius', rashiHi: 'Kumbh (कुंभ)', ruler: 'Saturn', planetDisplay: 'Rikt', reading: 'Aquarius in 4th House ruled by Saturn. Deep internal emotional independence, structured home life, and humanitarian mindset.' },
   ];
 
   return (
@@ -33,16 +25,16 @@ export default function BhavaAnalysis() {
         {t.bhava_title[lang]}
       </div>
       <div className="font-display mb-5" style={{ color: 'var(--col-moonstone)', fontSize: '1.5rem' }}>
-        भाव विश्लेषण
+        भाव विश्लेषण (12 Houses Analysis)
         <span className="font-body block mt-1" style={{ fontSize: '0.85rem', color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
           {t.bhava_subtitle[lang]}
         </span>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {houses.slice(0, 4).map((h, i) => (
+        {list.slice(0, 4).map((h, i) => (
           <motion.div
-            key={h.n}
+            key={h.num || h.n}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: (i % 8) * 0.06 }}
@@ -50,22 +42,33 @@ export default function BhavaAnalysis() {
             className="glass-card"
             style={{ padding: 18 }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <span className="font-mono-num" style={{ color: 'var(--col-copper)', fontWeight: 500 }}>{h.n} House</span>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="font-mono-num font-semibold" style={{ color: 'var(--col-copper)' }}>
+                {h.n || `${h.num}th`} House • {h.sign} ({h.rashiHi?.split(' ')[0] || ''})
+              </span>
+              <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(200,130,42,0.1)', color: 'var(--col-copper)' }}>
+                Lord: {h.ruler}
+              </span>
             </div>
             <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>{h.sk}</div>
-            <div className="mt-1.5" style={{ color: 'var(--col-moonstone)', fontWeight: 500, fontSize: '0.95rem' }}>{h.domain}</div>
-            <div className="mt-2 text-sm" style={{ color: 'var(--col-copper)' }}>{h.planet}</div>
-            <p className="mt-2 text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.55 }}>{h.reading}</p>
+            <div className="mt-1.5 font-medium" style={{ color: 'var(--col-moonstone)', fontSize: '0.95rem' }}>
+              {h.domain}
+            </div>
+            <div className="mt-2 text-xs" style={{ color: 'var(--col-teal)' }}>
+              Planets: <span className="font-medium">{h.planetDisplay || (h.planets?.length > 0 ? h.planets.map(p => p.name).join(', ') : 'Rikt (Empty)')}</span>
+            </div>
+            <p className="mt-2 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+              {h.reading}
+            </p>
           </motion.div>
         ))}
 
         <AnimatePresence>
           {open && (
             <div className="contents">
-              {houses.slice(4).map((h, i) => (
+              {list.slice(4).map((h, i) => (
                 <motion.div
-                  key={h.n}
+                  key={h.num || h.n}
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: (i % 8) * 0.06 }}
@@ -73,13 +76,24 @@ export default function BhavaAnalysis() {
                   className="glass-card"
                   style={{ padding: 18 }}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-mono-num" style={{ color: 'var(--col-copper)', fontWeight: 500 }}>{h.n} House</span>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="font-mono-num font-semibold" style={{ color: 'var(--col-copper)' }}>
+                      {h.n || `${h.num}th`} House • {h.sign} ({h.rashiHi?.split(' ')[0] || ''})
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(200,130,42,0.1)', color: 'var(--col-copper)' }}>
+                      Lord: {h.ruler}
+                    </span>
                   </div>
                   <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>{h.sk}</div>
-                  <div className="mt-1.5" style={{ color: 'var(--col-moonstone)', fontWeight: 500, fontSize: '0.95rem' }}>{h.domain}</div>
-                  <div className="mt-2 text-sm" style={{ color: 'var(--col-copper)' }}>{h.planet}</div>
-                  <p className="mt-2 text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.55 }}>{h.reading}</p>
+                  <div className="mt-1.5 font-medium" style={{ color: 'var(--col-moonstone)', fontSize: '0.95rem' }}>
+                    {h.domain}
+                  </div>
+                  <div className="mt-2 text-xs" style={{ color: 'var(--col-teal)' }}>
+                    Planets: <span className="font-medium">{h.planetDisplay || (h.planets?.length > 0 ? h.planets.map(p => p.name).join(', ') : 'Rikt (Empty)')}</span>
+                  </div>
+                  <p className="mt-2 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+                    {h.reading}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -90,12 +104,12 @@ export default function BhavaAnalysis() {
       <div className="mt-6 text-center">
         <button
           onClick={() => setOpen((o) => !o)}
-          className="btn-ghost"
+          className="btn-ghost cursor-pointer"
           style={{ color: 'var(--col-copper)', borderColor: 'rgba(200,130,42,0.35)' }}
         >
           {open
             ? (lang === 'hinglish' ? 'Pehle 4 ghar dikhao ↑' : 'Show first 4 houses ↑')
-            : t.show_all_houses[lang]}
+            : (lang === 'hinglish' ? 'Sabhi 12 ghar dekhein (Show all 12 houses) ↓' : t.show_all_houses[lang])}
         </button>
       </div>
     </motion.div>

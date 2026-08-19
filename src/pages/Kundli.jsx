@@ -58,7 +58,7 @@ function normalizeKundliData(raw) {
   const lat = raw.latitude || 28.6139;
   const lng = raw.longitude || 77.2090;
 
-  // Calculate real Vedic sidereal astrological details
+  // Always compute authentic real-time astronomical positions
   const vedic = calculateVedicChart({ dob, time, birthPlace, lat, lng });
 
   return {
@@ -73,17 +73,25 @@ function normalizeKundliData(raw) {
     birth_place: birthPlace,
     unknownTime: Boolean(raw.unknownTime || raw.time_unknown),
     time_unknown: Boolean(raw.time_unknown || raw.unknownTime),
-    lagna: raw.lagna || vedic.lagna,
-    rashi: raw.rashi || vedic.rashi,
-    nakshatra: raw.nakshatra || vedic.nakshatra,
-    gana: raw.gana || vedic.gana,
-    planets: raw.planets && raw.planets.length > 0 ? raw.planets : vedic.planets,
-    houses: raw.houses && raw.houses.length > 0 ? raw.houses : vedic.houses,
-    panchang: raw.panchang || vedic.panchang,
-    mahadasha: raw.mahadasha || vedic.mahadasha,
-    yogas: raw.yogas || vedic.yogas,
-    sadeSati: raw.sadeSati || vedic.sadeSati,
-    lucky: raw.lucky || vedic.lucky,
+    lagna: vedic.lagna,
+    lagnaSign: vedic.lagnaSign,
+    lagnaDegree: vedic.lagnaDegree,
+    rashi: vedic.rashi,
+    rashiSign: vedic.rashiSign,
+    rashiDegree: vedic.rashiDegree,
+    sunSign: vedic.sunSign,
+    nakshatra: vedic.nakshatra,
+    nakshatraLord: vedic.nakshatraLord,
+    nakshatraPada: vedic.nakshatraPada,
+    gana: vedic.gana,
+    planets: vedic.planets,
+    houses: vedic.houses,
+    panchang: vedic.panchang,
+    mahadasha: vedic.mahadasha,
+    ashtakvarga: vedic.ashtakvarga,
+    yogas: vedic.yogas,
+    sadeSati: vedic.sadeSati,
+    lucky: vedic.lucky,
     life_path_number: raw.life_path_number || 7,
     destiny_number: raw.destiny_number || 3,
     soul_urge_number: raw.soul_urge_number || 9,
@@ -97,7 +105,6 @@ export default function Kundli() {
 
   useEffect(() => {
     const loadData = async () => {
-      // 1. Try Supabase via current_kundli_id if available
       const kundliId = localStorage.getItem('current_kundli_id');
       if (kundliId) {
         try {
@@ -113,7 +120,6 @@ export default function Kundli() {
         }
       }
 
-      // 2. Fallback to localStorage kundli_data or jyotish_onboarding
       try {
         const storedKundli = localStorage.getItem('kundli_data');
         if (storedKundli) {
@@ -182,7 +188,7 @@ export default function Kundli() {
           <Yogas yogas={data.yogas} />
         </div>
         <div className="mt-6">
-          <AshtakvargaTable />
+          <AshtakvargaTable ashtakvarga={data.ashtakvarga} />
         </div>
         <div className="mt-6">
           <Lucky lucky={data.lucky} />
