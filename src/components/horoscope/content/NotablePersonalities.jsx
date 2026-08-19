@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { signs, famousPersonalities } from '../horoData';
 
 export default function NotablePersonalities({ selected }) {
-  const s = signs[selected] || signs[0];
-  const list = (famousPersonalities && famousPersonalities[s.en]) || (famousPersonalities && famousPersonalities.Aries) || [];
+  const s = signs[selected] || signs[0] || { en: 'Aries', name: 'Aries' };
+  const signKey = s.en || s.name || 'Aries';
+  const list = (famousPersonalities && famousPersonalities[signKey]) || (famousPersonalities && famousPersonalities.Aries) || [];
 
   return (
     <motion.div
@@ -16,7 +17,7 @@ export default function NotablePersonalities({ selected }) {
       style={{ padding: 22 }}
     >
       <div className="text-xs uppercase mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.14em' }}>
-        Notable {s.en} Personalities
+        Notable {signKey} Personalities
       </div>
       <div className="flex flex-wrap items-center gap-2.5">
         {list.map((name) => (

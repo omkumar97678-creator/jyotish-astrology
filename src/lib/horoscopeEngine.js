@@ -351,7 +351,11 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
   };
 
   return {
-    sign: signObj,
+    sign: {
+      ...signObj,
+      en: signObj.name,
+      hi: signObj.hindi ? signObj.hindi.split(' ')[0] : signObj.name,
+    },
     prediction: heroDescriptions[signObj.name] || heroDescriptions.Aries,
     energyLevel,
     aspects: aspectList,
@@ -368,3 +372,4 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
     },
   };
 }
+

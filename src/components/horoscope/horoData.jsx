@@ -1,50 +1,16 @@
 export const signs = [
-  { sym: '\u2648\uFE0E', en: 'Aries', hi: 'Mesh', range: 'Mar 21 – Apr 19', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Mars' },
-  { sym: '\u2649\uFE0E', en: 'Taurus', hi: 'Vrishabh', range: 'Apr 20 – May 20', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Venus' },
-  { sym: '\u264A\uFE0E', en: 'Gemini', hi: 'Mithun', range: 'May 21 – Jun 20', element: 'Air', elementBadge: '💨 Air', ruler: 'Mercury' },
-  { sym: '\u264B\uFE0E', en: 'Cancer', hi: 'Kark', range: 'Jun 21 – Jul 22', element: 'Water', elementBadge: '💧 Water', ruler: 'Moon' },
-  { sym: '\u264C\uFE0E', en: 'Leo', hi: 'Simha', range: 'Jul 23 – Aug 22', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Sun' },
-  { sym: '\u264D\uFE0E', en: 'Virgo', hi: 'Kanya', range: 'Aug 23 – Sep 22', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Mercury' },
-  { sym: '\u264E\uFE0E', en: 'Libra', hi: 'Tula', range: 'Sep 23 – Oct 22', element: 'Air', elementBadge: '💨 Air', ruler: 'Venus' },
-  { sym: '\u264F\uFE0E', en: 'Scorpio', hi: 'Vrishchik', range: 'Oct 23 – Nov 21', element: 'Water', elementBadge: '💧 Water', ruler: 'Mars' },
-  { sym: '\u2650\uFE0E', en: 'Sagittarius', hi: 'Dhanu', range: 'Nov 22 – Dec 21', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Jupiter' },
-  { sym: '\u2651\uFE0E', en: 'Capricorn', hi: 'Makar', range: 'Dec 22 – Jan 19', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Saturn' },
-  { sym: '\u2652\uFE0E', en: 'Aquarius', hi: 'Kumbh', range: 'Jan 20 – Feb 18', element: 'Air', elementBadge: '💨 Air', ruler: 'Saturn' },
-  { sym: '\u2653\uFE0E', en: 'Pisces', hi: 'Meen', range: 'Feb 19 – Mar 20', element: 'Water', elementBadge: '💧 Water', ruler: 'Jupiter' },
-];
-
-export const predictions = {
-  Aries: 'A surge of confidence pushes you forward today. Channel this energy into a goal you have been postponing. A brief conversation in the afternoon may open an unexpected door — speak your mind clearly.',
-  Taurus: 'Steady progress is your theme. Small consistent steps in your work or finances will compound. In the evening, a moment of comfort reminds you why patience always pays off.',
-  Gemini: 'Conversations flow easily and ideas connect quickly today. Avoid spreading yourself too thin. One focused conversation this morning can shape the rest of your week.',
-  Cancer: 'Emotions run close to the surface. Trust your intuition about a person or situation. Home and family bring warmth, so make time for a calm evening.',
-  Leo: 'Recognition for a recent effort is closer than you think. Stay generous with your attention and others will mirror it. A creative spark in the afternoon is worth noting.',
-  Virgo: 'Details matter today. A careful review prevents a small mistake from growing. Your sense of order brings calm to a chaotic room. Reward yourself tonight.',
-  Libra: 'Balance returns after a restless morning. A decision you have been weighing becomes clearer. A close relationship benefits from honest, gentle words.',
-  Scorpio: 'Intensity and insight go hand in hand. You see through a surface situation clearly. Use this clarity wisely and keep some thoughts private for now.',
-  Sagittarius: 'Adventure calls, even in small ways. A new route, book, or person expands your view. Optimism is your superpower today — share it generously.',
-  Capricorn: 'Discipline brings steady results. Your long-term plan takes a quiet step forward. Acknowledge progress, even the kind no one else notices.',
-  Aquarius: 'Original thinking solves a lingering problem. A friend values your perspective more than they admit. Stay open to an unusual suggestion this evening.',
-  Pisces: 'Imagination and empathy guide you. A creative or spiritual moment brings clarity. Protect your energy from a demanding task and rest tonight.',
-};
-
-export const aspects = {
-  Aries: [
-    { icon: '♡', title: 'Love', value: 78, label: 'Good', text: 'An honest conversation deepens a bond today.' },
-    { icon: '★', title: 'Career', value: 85, label: 'Excellent', text: 'Recognition for recent work is on its way.' },
-    { icon: '✦', title: 'Health', value: 64, label: 'Average', text: 'Pace yourself — rest is as important as action.' },
-    { icon: '₹', title: 'Finance', value: 72, label: 'Good', text: 'Steady gains; avoid impulsive spending tonight.' },
-  ],
-};
-
-export const lucky = { number: 7, color: 'Gold', time: '6 – 8 PM', direction: 'North' };
-
-export const advice = 'Trust the natural pacing of events today. When in doubt, let clarity catch up with action.';
-
-export const planets = [
-  { sym: '☉', name: 'Sun', pos: 'Leo 14°', influence: 'Vitality & Core Will' },
-  { sym: '☽', name: 'Moon', pos: 'Cancer 02°', influence: 'Intuition & Emotions' },
-  { sym: '♃', name: 'Jupiter', pos: 'Taurus 27°', influence: 'Wisdom & Growth' },
+  { sym: '♈︎', en: 'Aries', name: 'Aries', hi: 'Mesh', hindi: 'Mesh (मेष)', range: 'Mar 21 – Apr 19', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Mars' },
+  { sym: '♉︎', en: 'Taurus', name: 'Taurus', hi: 'Vrishabh', hindi: 'Vrishabh (वृषभ)', range: 'Apr 20 – May 20', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Venus' },
+  { sym: '♊︎', en: 'Gemini', name: 'Gemini', hi: 'Mithun', hindi: 'Mithun (मिथुन)', range: 'May 21 – Jun 20', element: 'Air', elementBadge: '💨 Air', ruler: 'Mercury' },
+  { sym: '♋︎', en: 'Cancer', name: 'Cancer', hi: 'Kark', hindi: 'Karka (कर्क)', range: 'Jun 21 – Jul 22', element: 'Water', elementBadge: '💧 Water', ruler: 'Moon' },
+  { sym: '♌︎', en: 'Leo', name: 'Leo', hi: 'Simha', hindi: 'Simha (सिंह)', range: 'Jul 23 – Aug 22', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Sun' },
+  { sym: '♍︎', en: 'Virgo', name: 'Virgo', hi: 'Kanya', hindi: 'Kanya (कन्या)', range: 'Aug 23 – Sep 22', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Mercury' },
+  { sym: '♎︎', en: 'Libra', name: 'Libra', hi: 'Tula', hindi: 'Tula (तुला)', range: 'Sep 23 – Oct 22', element: 'Air', elementBadge: '💨 Air', ruler: 'Venus' },
+  { sym: '♏︎', en: 'Scorpio', name: 'Scorpio', hi: 'Vrishchik', hindi: 'Vrishchik (वृश्चिक)', range: 'Oct 23 – Nov 21', element: 'Water', elementBadge: '💧 Water', ruler: 'Mars' },
+  { sym: '♐︎', en: 'Sagittarius', name: 'Sagittarius', hi: 'Dhanu', hindi: 'Dhanu (धनु)', range: 'Nov 22 – Dec 21', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Jupiter' },
+  { sym: '♑︎', en: 'Capricorn', name: 'Capricorn', hi: 'Makar', hindi: 'Makar (मकर)', range: 'Dec 22 – Jan 19', element: 'Earth', elementBadge: '🌍 Earth', ruler: 'Saturn' },
+  { sym: '♒︎', en: 'Aquarius', name: 'Aquarius', hi: 'Kumbh', hindi: 'Kumbh (कुंभ)', range: 'Jan 20 – Feb 18', element: 'Air', elementBadge: '💨 Air', ruler: 'Saturn' },
+  { sym: '♓︎', en: 'Pisces', name: 'Pisces', hi: 'Meen', hindi: 'Meen (मीन)', range: 'Feb 19 – Mar 20', element: 'Water', elementBadge: '💧 Water', ruler: 'Jupiter' },
 ];
 
 export const personalities = {

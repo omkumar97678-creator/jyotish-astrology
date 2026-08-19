@@ -7,10 +7,12 @@ import { t } from '@/translations';
 export default function ShareAndSave({ selected }) {
   const { lang } = useLang();
   const [copied, setCopied] = useState(false);
-  const s = signs[selected] || signs[0];
+  const s = signs[selected] || signs[0] || { en: 'Aries', name: 'Aries', hi: 'Mesh' };
+  const signEn = s.en || s.name || 'Aries';
+  const signHi = s.hi || (s.hindi ? s.hindi.split(' ')[0] : 'Mesh');
 
   const handleShareWhatsApp = () => {
-    const text = encodeURIComponent(`Check out today's horoscope for ${s.en} (${s.hi}) on Jyotish App: ${window.location.href}`);
+    const text = encodeURIComponent(`Check out today's horoscope for ${signEn} (${signHi}) on Jyotish App: ${window.location.href}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -34,14 +36,14 @@ export default function ShareAndSave({ selected }) {
       <div className="flex items-center gap-3">
         <button
           onClick={handleShareWhatsApp}
-          className="btn-ghost text-xs inline-flex items-center gap-1.5"
+          className="btn-ghost text-xs inline-flex items-center gap-1.5 cursor-pointer"
           style={{ padding: '8px 18px', color: 'var(--col-copper)', borderColor: 'rgba(200, 130, 42, 0.35)' }}
         >
           <span>📱</span> {t.share_whatsapp_btn[lang]}
         </button>
         <button
           onClick={handleCopyLink}
-          className="btn-ghost text-xs inline-flex items-center gap-1.5"
+          className="btn-ghost text-xs inline-flex items-center gap-1.5 cursor-pointer"
           style={{ padding: '8px 18px', color: 'var(--col-copper)', borderColor: 'rgba(200, 130, 42, 0.35)' }}
         >
           <span>🔗</span> {copied ? (lang === 'hinglish' ? 'Link Copy Ho Gaya!' : 'Link Copied!') : t.copy_link[lang]}
