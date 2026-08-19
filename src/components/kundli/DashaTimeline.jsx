@@ -1,18 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const dashas = [
-  { planet: 'Moon', sym: '☽', range: '1993–2003', dur: '10 yrs', state: 'past' },
-  { planet: 'Mars', sym: '♂', range: '2003–2010', dur: '7 yrs', state: 'past' },
-  { planet: 'Rahu', sym: '☊', range: '2010–2028', dur: '18 yrs', state: 'current' },
-  { planet: 'Jupiter', sym: '♃', range: '2028–2044', dur: '16 yrs', state: 'future' },
-  { planet: 'Saturn', sym: '♄', range: '2044–2063', dur: '19 yrs', state: 'future' },
-  { planet: 'Mercury', sym: '☿', range: '2063–2080', dur: '17 yrs', state: 'future' },
-  { planet: 'Ketu', sym: '☋', range: '2080–2087', dur: '7 yrs', state: 'future' },
-  { planet: 'Venus', sym: '♀', range: '2087–2107', dur: '20 yrs', state: 'future' },
-  { planet: 'Sun', sym: '☉', range: '2107–2113', dur: '6 yrs', state: 'future' },
-];
-
 function Pill({ d, i }) {
   const current = d.state === 'current';
   const past = d.state === 'past';
@@ -79,7 +67,21 @@ function Pill({ d, i }) {
   );
 }
 
-export default function DashaTimeline() {
+export default function DashaTimeline({ mahadasha }) {
+  const list = mahadasha?.timeline && mahadasha.timeline.length > 0
+    ? mahadasha.timeline
+    : [
+        { planet: 'Rahu', sym: '☊', range: '2004–2022', dur: '18 yrs', state: 'past' },
+        { planet: 'Jupiter', sym: '♃', range: '2022–2038', dur: '16 yrs', state: 'current' },
+        { planet: 'Saturn', sym: '♄', range: '2038–2057', dur: '19 yrs', state: 'future' },
+        { planet: 'Mercury', sym: '☿', range: '2057–2074', dur: '17 yrs', state: 'future' },
+        { planet: 'Ketu', sym: '☋', range: '2074–2081', dur: '7 yrs', state: 'future' },
+        { planet: 'Venus', sym: '♀', range: '2081–2101', dur: '20 yrs', state: 'future' },
+        { planet: 'Sun', sym: '☉', range: '2101–2107', dur: '6 yrs', state: 'future' },
+        { planet: 'Moon', sym: '☽', range: '2107–2117', dur: '10 yrs', state: 'future' },
+        { planet: 'Mars', sym: '♂', range: '2117–2124', dur: '7 yrs', state: 'future' },
+      ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -91,16 +93,16 @@ export default function DashaTimeline() {
         Complete Dasha Timeline
       </div>
       <div className="font-display mb-5" style={{ color: 'var(--col-moonstone)', fontSize: '1.5rem' }}>
-        विंशोत्तरी दशा
+        विंशोत्तरी दशा चक्र
         <span className="font-body block mt-1" style={{ fontSize: '0.85rem', color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
-          Planetary periods throughout your life
+          Continuous 120-Year Vimshottari planetary periods from birth
         </span>
       </div>
 
       <div className="overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin' }}>
         <div className="flex gap-3 min-w-max">
-          {dashas.map((d, i) => (
-            <Pill key={d.planet} d={d} i={i} />
+          {list.map((d, i) => (
+            <Pill key={`${d.planet}-${d.range}`} d={d} i={i} />
           ))}
         </div>
       </div>

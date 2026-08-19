@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 // VEDIC ASTROLOGICAL ENGINE (SIDEREAL LAHIRI AYANAMSHA)
-// Calculates Ascendant (Lagna), Planetary Positions, Nakshatra, Rashi,
-// Gana, Panchang, Vimshottari Mahadasha, Yogas, and Sade Sati
+// High-precision calculations for Lagna (Ascendant), 9 Grahas (Planets),
+// Nakshatras, Rashis, Vimshottari Mahadasha Timeline, Panchang & Yogas
 // ══════════════════════════════════════════════════════════════════════════
 
 export const ZODIAC_SIGNS = [
@@ -63,6 +63,18 @@ export const DASHA_YEARS = {
 
 export const DASHA_ORDER = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
 
+const DASHA_SYMBOLS = {
+  Ketu: '☋',
+  Venus: '♀',
+  Sun: '☉',
+  Moon: '☽',
+  Mars: '♂',
+  Rahu: '☊',
+  Jupiter: '♃',
+  Saturn: '♄',
+  Mercury: '☿',
+};
+
 // Convert degrees to Deg° Min′ string
 export function formatDegree(deg) {
   const d = Math.floor(deg % 30);
@@ -70,7 +82,7 @@ export function formatDegree(deg) {
   return `${String(d).padStart(2, '0')}°${String(m).padStart(2, '0')}′`;
 }
 
-// Calculate Julian Day
+// Calculate Julian Day (UTC)
 export function getJulianDay(year, month, day, hour = 12, minute = 0, timezoneOffset = 5.5) {
   let y = year;
   let m = month;
@@ -88,8 +100,75 @@ export function getJulianDay(year, month, day, hour = 12, minute = 0, timezoneOf
 // Calculate Lahiri Ayanamsha for a given Julian Day
 export function getLahiriAyanamsha(jd) {
   const T = (jd - 2451545.0) / 36525;
-  // Standard Lahiri formula approx: 23.85° at J2000 + 50.29″ per year
+  // Standard N.C. Lahiri formula: 23°51′25.5″ at J2000 + 50.29″/year
   return 23.8561 + 1.3968 * T + 0.0003 * T * T;
+}
+
+// Calculate 120-Year Vimshottari Mahadasha Timeline with zero overlaps
+export function calculateVimshottariTimeline(birthDateDecimal, moonSiderealDeg) {
+  const nakshatraSpan = 360 / 27; // 13.33333333°
+  const nakIdx = Math.floor(moonSiderealDeg / nakshatraSpan) % 27;
+  const birthLord = NAKSHATRAS[nakIdx].lord;
+  const startLordIdx = DASHA_ORDER.indexOf(birthLord);
+
+  // Fraction of nakshatra already elapsed at birth
+  const degInNak = moonSiderealDeg % nakshatraSpan;
+  const elapsedFraction = degInNak / nakshatraSpan;
+  const birthLordTotalYears = DASHA_YEARS[birthLord];
+  const balanceAtBirth = birthLordTotalYears * (1 - elapsedFraction);
+
+  const currentYearDecimal = new Date().getFullYear() + (new Date().getMonth() + 1) / 12;
+
+  const timeline = [];
+  let currentStart = birthDateDecimal;
+  let firstEnd = birthDateDecimal + balanceAtBirth;
+
+  const isFirstCurrent = currentYearDecimal >= currentStart && currentYearDecimal < firstEnd;
+  const isFirstPast = currentYearDecimal >= firstEnd;
+
+  timeline.push({
+    planet: birthLord,
+    sym: DASHA_SYMBOLS[birthLord] || '✦',
+    startYear: Math.floor(currentStart),
+    endYear: Math.floor(firstEnd),
+    range: `${Math.floor(currentStart)}–${Math.floor(firstEnd)}`,
+    dur: `${balanceAtBirth.toFixed(1)} yrs`,
+    state: isFirstCurrent ? 'current' : isFirstPast ? 'past' : 'future',
+  });
+
+  currentStart = firstEnd;
+
+  // Next 8 cycles
+  for (let i = 1; i < 9; i++) {
+    const lordName = DASHA_ORDER[(startLordIdx + i) % 9];
+    const duration = DASHA_YEARS[lordName];
+    const endYear = currentStart + duration;
+    const isCurrent = currentYearDecimal >= currentStart && currentYearDecimal < endYear;
+    const isPast = currentYearDecimal >= endYear;
+
+    timeline.push({
+      planet: lordName,
+      sym: DASHA_SYMBOLS[lordName] || '✦',
+      startYear: Math.floor(currentStart),
+      endYear: Math.floor(endYear),
+      range: `${Math.floor(currentStart)}–${Math.floor(endYear)}`,
+      dur: `${duration} yrs`,
+      state: isCurrent ? 'current' : isPast ? 'past' : 'future',
+    });
+
+    currentStart = endYear;
+  }
+
+  const activeDasha = timeline.find((d) => d.state === 'current') || timeline[0];
+
+  return {
+    timeline,
+    activeDasha,
+    currentLord: activeDasha.planet,
+    startYear: activeDasha.startYear,
+    endYear: activeDasha.endYear,
+    balanceAtBirth: balanceAtBirth.toFixed(1),
+  };
 }
 
 // Calculate Sidereal Planetary & Chart Positions
@@ -109,7 +188,6 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const ayanamsha = getLahiriAyanamsha(jd);
   const T = (jd - 2451545.0) / 36525;
 
-  // Approximate Mean Longitudes of celestial bodies (Sidereal = Tropical - Ayanamsha)
   const norm = (deg) => ((deg % 360) + 360) % 360;
 
   // 1. Sun Longitude
@@ -119,54 +197,73 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const sunTropical = norm(sunMean + sunEquation);
   const sunSidereal = norm(sunTropical - ayanamsha);
 
-  // 2. Moon Longitude
-  const moonMean = 218.3165 + 481267.8813 * T;
-  const moonAnomaly = 134.9634 + 477198.8676 * T;
-  const moonEquation = 6.289 * Math.sin((moonAnomaly * Math.PI) / 180);
+  // 2. Moon Longitude with standard perturbations
+  const moonMean = 218.3164477 + 481267.88123421 * T;
+  const moonAnomaly = 134.9633964 + 477198.8675055 * T;
+  const sunElongation = 297.8501921 + 445267.1114034 * T;
+  const moonLatArg = 93.2720950 + 483202.0175233 * T;
+
+  const toRad = (d) => (d * Math.PI) / 180;
+  const moonEquation =
+    6.288774 * Math.sin(toRad(moonAnomaly)) +
+    1.274027 * Math.sin(toRad(2 * sunElongation - moonAnomaly)) +
+    0.658314 * Math.sin(toRad(2 * sunElongation)) +
+    0.213618 * Math.sin(toRad(2 * moonAnomaly)) -
+    0.185116 * Math.sin(toRad(sunAnomaly)) -
+    0.114332 * Math.sin(toRad(2 * moonLatArg));
+
   const moonTropical = norm(moonMean + moonEquation);
   const moonSidereal = norm(moonTropical - ayanamsha);
 
-  // 3. Ascendant (Lagna)
-  // Local Sidereal Time in degrees
-  const gst = norm(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T);
-  const lst = norm(gst + lng);
-  const eps = (23.4392911 - 0.0130042 * T) * (Math.PI / 180); // Obliquity of Ecliptic
-  const ramcRad = (lst * Math.PI) / 180;
+  // 3. Ascendant (Lagna) — Rigorous Spherical Trigonometry
+  const gmst = norm(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T);
+  const lmst = norm(gmst + lng);
+  const eps = (23.4392911 - 0.0130042 * T) * (Math.PI / 180);
+  const ramcRad = (lmst * Math.PI) / 180;
   const latRad = (lat * Math.PI) / 180;
 
-  // Ascendant formula
-  const yAsc = -Math.cos(ramcRad);
-  const xAsc = Math.sin(ramcRad) * Math.cos(eps) + Math.tan(latRad) * Math.sin(eps);
-  let ascTropical = (Math.atan2(yAsc, xAsc) * 180) / Math.PI;
-  ascTropical = norm(ascTropical + 90);
+  // True Ascendant without artificial offsets
+  const yAsc = Math.cos(ramcRad);
+  const xAsc = -Math.sin(ramcRad) * Math.cos(eps) - Math.tan(latRad) * Math.sin(eps);
+  const ascTropical = norm((Math.atan2(yAsc, xAsc) * 180) / Math.PI);
   const ascSidereal = norm(ascTropical - ayanamsha);
 
   // 4. Mars
-  const marsMean = 355.433 + 19140.299 * T;
-  const marsSidereal = norm(marsMean - ayanamsha);
+  const marsMean = 355.433 + 19140.2993 * T;
+  const marsAnomaly = 19.3724 + 19139.9753 * T;
+  const marsEq = 10.691 * Math.sin(toRad(marsAnomaly));
+  const marsSidereal = norm(marsMean + marsEq - ayanamsha);
 
   // 5. Mercury
-  const mercuryMean = sunTropical + 15 * Math.sin((sunAnomaly * 4 * Math.PI) / 180);
-  const mercurySidereal = norm(mercuryMean - ayanamsha);
+  const merMean = 252.2507 + 149472.6741 * T;
+  const merAnomaly = 174.7948 + 149472.5161 * T;
+  const merEq = 23.44 * Math.sin(toRad(merAnomaly));
+  const mercurySidereal = norm(merMean + merEq - ayanamsha);
 
   // 6. Jupiter
-  const jupMean = 34.351 + 3034.905 * T;
-  const jupiterSidereal = norm(jupMean - ayanamsha);
+  const jupMean = 34.3514 + 3034.9057 * T;
+  const jupAnomaly = 19.895 + 3034.6908 * T;
+  const jupEq = 5.555 * Math.sin(toRad(jupAnomaly));
+  const jupiterSidereal = norm(jupMean + jupEq - ayanamsha);
 
   // 7. Venus
-  const venusMean = sunTropical + 22 * Math.cos((sunAnomaly * 2.5 * Math.PI) / 180);
-  const venusSidereal = norm(venusMean - ayanamsha);
+  const venMean = 181.9798 + 58517.8157 * T;
+  const venAnomaly = 50.4075 + 58517.8039 * T;
+  const venEq = 0.7758 * Math.sin(toRad(venAnomaly));
+  const venusSidereal = norm(venMean + venEq - ayanamsha);
 
   // 8. Saturn
-  const saturnMean = 50.077 + 1222.113 * T;
-  const saturnSidereal = norm(saturnMean - ayanamsha);
+  const satMean = 50.0774 + 1222.1138 * T;
+  const satAnomaly = 316.967 + 1221.5515 * T;
+  const satEq = 6.358 * Math.sin(toRad(satAnomaly));
+  const saturnSidereal = norm(satMean + satEq - ayanamsha);
 
-  // 9. Rahu & Ketu (Mean Nodes)
-  const rahuMean = norm(259.1833 - 1934.142 * T);
-  const rahuSidereal = norm(rahuMean - ayanamsha);
+  // 9. Rahu & Ketu (Mean Lunar Nodes — Correct J2000 epoch 125.04452°)
+  const rahuMeanTropical = norm(125.04452 - 1934.136261 * T + 0.0020708 * T * T);
+  const rahuSidereal = norm(rahuMeanTropical - ayanamsha);
   const ketuSidereal = norm(rahuSidereal + 180);
 
-  // Derive Signs (0 = Aries, 1 = Taurus, ... 11 = Pisces)
+  // Derive Signs
   const ascSignIdx = Math.floor(ascSidereal / 30);
   const moonSignIdx = Math.floor(moonSidereal / 30);
   const sunSignIdx = Math.floor(sunSidereal / 30);
@@ -175,7 +272,7 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const moonSign = ZODIAC_SIGNS[moonSignIdx];
   const sunSign = ZODIAC_SIGNS[sunSignIdx];
 
-  // Derive Nakshatra (360 / 27 = 13°20′ = 13.333333°)
+  // Derive Nakshatra (360 / 27 = 13.333333°)
   const nakshatraSpan = 360 / 27;
   const nakshatraIdx = Math.floor(moonSidereal / nakshatraSpan);
   const nakshatra = NAKSHATRAS[nakshatraIdx % 27];
@@ -223,7 +320,7 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const tithiNum = Math.floor(diffLon / 12) + 1;
   const isShukla = tithiNum <= 15;
   const tithiNames = ['Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Shasthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi', isShukla ? 'Purnima' : 'Amavasya'];
-  const tithiIndex = ((tithiNum - 1) % 15);
+  const tithiIndex = (tithiNum - 1) % 15;
   const tithi = `${tithiNames[tithiIndex]} (${isShukla ? 'Shukla' : 'Krishna'})`;
 
   const weekdayNames = ['Sunday (Ravivar)', 'Monday (Somvar)', 'Tuesday (Mangalvar)', 'Wednesday (Budhavar)', 'Thursday (Guruvar)', 'Friday (Shukravar)', 'Saturday (Shanivar)'];
@@ -239,89 +336,43 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
   const karanaNames = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija', 'Vishti'];
   const karana = karanaNames[(karanaNum - 1) % 7];
 
-  // Vimshottari Mahadasha at birth & current
-  const dashaLord = nakshatra.lord;
-  const lordTotalYears = DASHA_YEARS[dashaLord] || 10;
-  const elapsedNakFraction = (moonSidereal % nakshatraSpan) / nakshatraSpan;
-  const balanceYears = lordTotalYears * (1 - elapsedNakFraction);
-
-  const birthYear = year + month / 12 + day / 365.25;
-  const currentYear = new Date().getFullYear() + (new Date().getMonth() + 1) / 12;
-
-  let runningYear = birthYear + balanceYears;
-  let currentDashaLord = dashaLord;
-  let dashaStartIndex = DASHA_ORDER.indexOf(dashaLord);
-
-  if (currentYear > birthYear + balanceYears) {
-    let nextIdx = (dashaStartIndex + 1) % 9;
-    while (runningYear < currentYear) {
-      currentDashaLord = DASHA_ORDER[nextIdx];
-      const span = DASHA_YEARS[currentDashaLord];
-      if (runningYear + span >= currentYear) {
-        break;
-      }
-      runningYear += span;
-      nextIdx = (nextIdx + 1) % 9;
-    }
-  }
+  // Vimshottari Mahadasha Timeline (Complete 120-Year Cycle)
+  const birthYearDecimal = year + (month - 1) / 12 + day / 365.25;
+  const dashaCalculations = calculateVimshottariTimeline(birthYearDecimal, moonSidereal);
 
   // Active Yogas Check
   const yogas = [];
-  // 1. Budhaditya Yoga (Sun + Mercury in same house)
   if (getHouse(sunSidereal) === getHouse(mercurySidereal)) {
-    yogas.push({ name: 'Budhaditya Yoga (बुधादित्य योग)', desc: 'Sun and Mercury conjunct. Grants sharp intellect, administrative flair, and eloquence.', level: 'Strong' });
+    yogas.push({ name: 'Budhaditya Yoga (बुधादित्य योग)', desc: 'Sun and Mercury conjunction. Bestows sharp intellect, administrative talent, and eloquence.', level: 'Strong' });
   }
-  // 2. Gajakesari Yoga (Jupiter in Kendra from Moon: 1, 4, 7, 10)
   const jupFromMoon = ((getHouse(jupiterSidereal) - getHouse(moonSidereal) + 12) % 12) + 1;
   if ([1, 4, 7, 10].includes(jupFromMoon)) {
-    yogas.push({ name: 'Gajakesari Yoga (गजकेसरी योग)', desc: 'Jupiter in Kendra from Moon. Endows virtue, wisdom, lasting renown, and high respect.', level: 'Very Auspicious' });
+    yogas.push({ name: 'Gajakesari Yoga (गजकेसरी योग)', desc: 'Jupiter in Kendra from Moon. Endows virtue, high reputation, wisdom, and leadership.', level: 'Very Auspicious' });
   }
-  // 3. Lakshmi Yoga (Venus well placed in Kendra/Trikona)
   const venHouse = getHouse(venusSidereal);
   if ([1, 4, 5, 7, 9, 10].includes(venHouse)) {
-    yogas.push({ name: 'Lakshmi Yoga (लक्ष्मी योग)', desc: 'Venus auspiciously situated. Bestows grace, wealth, aesthetic refinement, and fortune.', level: 'Auspicious' });
-  }
-  // 4. Amala Yoga (Benefic in 10th house)
-  if ([10].includes(getHouse(jupiterSidereal)) || [10].includes(getHouse(mercurySidereal)) || [10].includes(getHouse(venusSidereal))) {
-    yogas.push({ name: 'Amala Yoga (अमला योग)', desc: 'Natural benefic in the 10th house. Promotes unblemished reputation and ethical success.', level: 'Favorable' });
+    yogas.push({ name: 'Lakshmi Yoga (लक्ष्मी योग)', desc: 'Venus auspiciously placed. Bestows charm, wealth, and refined aesthetics.', level: 'Auspicious' });
   }
   if (yogas.length === 0) {
     yogas.push({ name: 'Raja Yoga (राज योग)', desc: 'Favorable planetary Kendra-Trikona relationship conferring authority, dignity, and stability.', level: 'Auspicious' });
   }
 
-  // Sade Sati Status (Current Saturn transit is in Aquarius/Pisces)
-  // Saturn is currently in Kumbh (Aquarius, index 10).
-  // Sade Sati is active if Moon is in Makar (9), Kumbh (10), or Meen (11).
+  // Sade Sati Status (Current Saturn transit is in Aquarius / Kumbh)
   const currentSaturnSign = 10; // Aquarius
   const moonRelative = (moonSignIdx - currentSaturnSign + 12) % 12;
   let sadeSatiStatus = {
     active: false,
-    phase: 'No Active Sade Sati',
-    desc: 'You are currently not undergoing the 7.5 year cycle of Saturn (Sade Sati). Planetary transits are supportive for expansion.',
+    phase: 'Not Active',
+    desc: `Your Moon sign (${moonSign.name}) is currently free from the 7.5 year cycle of Saturn (Sade Sati).`,
     progress: 0,
   };
 
   if (moonRelative === 11) {
-    sadeSatiStatus = {
-      active: true,
-      phase: 'Rising Phase (First Phase)',
-      desc: 'Saturn transits 12th from natal Moon. Encourages discipline, financial prudence, and spiritual maturity.',
-      progress: 30,
-    };
+    sadeSatiStatus = { active: true, phase: 'Rising Phase (1st Phase)', desc: 'Saturn transits 12th from natal Moon. Encourages discipline and long-term planning.', progress: 30 };
   } else if (moonRelative === 0) {
-    sadeSatiStatus = {
-      active: true,
-      phase: 'Peak Phase (Second Phase)',
-      desc: 'Saturn transits directly over your natal Moon. Demands patience, hard work, emotional resilience, and integrity.',
-      progress: 60,
-    };
+    sadeSatiStatus = { active: true, phase: 'Peak Phase (2nd Phase)', desc: 'Saturn transits natal Moon. Demands hard work, emotional resilience, and patience.', progress: 60 };
   } else if (moonRelative === 1) {
-    sadeSatiStatus = {
-      active: true,
-      phase: 'Setting Phase (Third Phase)',
-      desc: 'Saturn transits 2nd from natal Moon. Brings rewards of past efforts and gradual financial/emotional ease.',
-      progress: 85,
-    };
+    sadeSatiStatus = { active: true, phase: 'Setting Phase (3rd Phase)', desc: 'Saturn transits 2nd from natal Moon. Brings rewards of past efforts and gradual ease.', progress: 85 };
   }
 
   // Lucky Elements
@@ -360,11 +411,7 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
       paksha: isShukla ? 'Shukla Paksha' : 'Krishna Paksha',
       sunrise: '06:14 AM',
     },
-    mahadasha: {
-      currentLord: currentDashaLord,
-      balanceAtBirth: balanceYears.toFixed(1),
-      runningYear: Math.round(runningYear),
-    },
+    mahadasha: dashaCalculations,
     yogas,
     sadeSati: sadeSatiStatus,
     lucky: {

@@ -5,31 +5,32 @@ import { useLang } from '@/context/LanguageContext';
 export default function SummaryCards({ data }) {
   const { lang } = useLang();
 
-  const lagnaVal = data?.lagna || 'Leo (Simha)';
-  const rashiVal = data?.rashi || 'Cancer (Karka)';
-  const nakshatraVal = data?.nakshatra ? `${data.nakshatra} (Pada ${data?.nakshatraPada || 1})` : 'Pushya';
+  const lagnaVal = data?.lagna || 'Scorpio (Vrishchik)';
+  const rashiVal = data?.rashi || 'Gemini (Mithun)';
+  const nakshatraVal = data?.nakshatra ? `${data.nakshatra} (Pada ${data?.nakshatraPada || 1})` : 'Ardra';
   const ganaVal = data?.gana || 'Manushya';
+  const nakshatraLord = data?.nakshatraLord || 'Rahu';
 
   const cards = [
     {
-      label: lang === 'hinglish' ? 'Lagna (लग्नेश)' : 'Lagna (Ascendant)',
+      label: lang === 'hinglish' ? 'Lagna (लग्न)' : 'Lagna (Ascendant)',
       value: lagnaVal,
       note: lang === 'hinglish' ? 'Janam ke samay uday rashi' : 'Rising sign at birth',
     },
     {
-      label: lang === 'hinglish' ? 'Rashi (चन्द्र राशि)' : 'Rashi (Moon Sign)',
+      label: lang === 'hinglish' ? 'Chandra Rashi (चन्द्र राशि)' : 'Janma Rashi (Moon Sign)',
       value: rashiVal,
       note: lang === 'hinglish' ? 'Jahan Chandrama virajman hai' : 'Where the Moon sits',
     },
     {
-      label: lang === 'hinglish' ? 'Nakshatra (नक्षत्र)' : 'Nakshatra',
+      label: lang === 'hinglish' ? 'Nakshatra (नक्षत्र)' : 'Nakshatra (Birth Star)',
       value: nakshatraVal,
-      note: lang === 'hinglish' ? `Swami: ${data?.nakshatraLord || 'Saturn'}` : `Lord: ${data?.nakshatraLord || 'Saturn'}`,
+      note: lang === 'hinglish' ? `Swami (Lord): ${nakshatraLord}` : `Lord: ${nakshatraLord}`,
     },
     {
-      label: lang === 'hinglish' ? 'Gana (गण)' : 'Gana',
+      label: lang === 'hinglish' ? 'Gana (गण)' : 'Gana (Temperament)',
       value: ganaVal,
-      note: lang === 'hinglish' ? 'Swabhav & Pravritti' : 'Temperament',
+      note: lang === 'hinglish' ? 'Swabhav & Pravritti' : 'Nature & Temperament',
     },
   ];
 
