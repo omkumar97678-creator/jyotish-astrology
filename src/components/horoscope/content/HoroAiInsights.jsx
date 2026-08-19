@@ -3,8 +3,13 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function HoroAiInsights() {
+export default function HoroAiInsights({ data }) {
   const { lang } = useLang();
+
+  const signName = data?.sign?.name || 'Aries';
+  const ruler = data?.sign?.ruler || 'Mars';
+  const transitSummary = data?.planetaryTransitSummary || 'Planetary transits activate key life domains.';
+  const mantra = data?.mantra || '“I act with righteous courage and purposeful clarity.”';
 
   return (
     <motion.div
@@ -30,19 +35,19 @@ export default function HoroAiInsights() {
             background: 'rgba(200,130,42,0.08)',
           }}
         >
-          {lang === 'hinglish' ? 'वैदिक फलकथन' : 'Vedic Forecast'}
+          {lang === 'hinglish' ? 'वैदिक फलकथन' : 'Vedic Transit Synthesis'}
         </span>
       </div>
 
       <div className="space-y-4">
         <div>
           <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-            {lang === 'hinglish' ? 'Grah Drishti & Prabhav' : 'Planetary Insight'}
+            {lang === 'hinglish' ? 'Grah Drishti & Prabhav' : 'Planetary Gochar Insight'}
           </div>
           <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.75 }}>
             {lang === 'hinglish'
-              ? 'Surya aapke pratham ghar ko urja de raha hai aur Chandrama shubh Tula rashi mein hai. Aaj vyaktigat vikas aur santulit rishton ke liye anukool avsar hain. Swami grah Mangal aapko aage badhne ki shakti de raha hai.'
-              : 'With Sun energizing your first house and Moon in harmonious Libra, today holds significant potential for both personal expression and balanced relationships. Mars, your ruling planet, provides the drive — use it wisely.'}
+              ? `${signName} ke liye swami grah ${ruler} ki sthiti shubh gochar prabhavit kar rahi hai. ${transitSummary} Aaj aatmavishwas aur santulit nirnay lene ke liye shreshtha din hai.`
+              : `For ${signName}, ruling planet ${ruler} and current transits (${transitSummary}) empower key foundational growth. Focus on balanced action and positive momentum.`}
           </p>
         </div>
 
@@ -50,12 +55,10 @@ export default function HoroAiInsights() {
 
         <div>
           <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-            {lang === 'hinglish' ? 'Aaj ka Mantra' : "Today's Mantra"}
+            {lang === 'hinglish' ? 'Aaj ka Vedic Mantra' : "Today's Vedic Mantra"}
           </div>
           <p className="text-xs italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.7 }}>
-            {lang === 'hinglish'
-              ? '“Sahas bhay ki anupsthiti nahi, balki yeh nirnay hai ki kuch aur isse zyada mahatvapurna hai.”'
-              : '“Courage is not the absence of fear, but the decision that something else is more important.”'}
+            {mantra}
           </p>
         </div>
       </div>

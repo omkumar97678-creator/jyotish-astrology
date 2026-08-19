@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import StarField from '@/components/StarField';
 import HoroHeader from '@/components/horoscope/HoroHeader';
@@ -17,11 +17,19 @@ import CompatibilityToday from '@/components/horoscope/content/CompatibilityToda
 import NotablePersonalities from '@/components/horoscope/content/NotablePersonalities';
 import ShareAndSave from '@/components/horoscope/content/ShareAndSave';
 import HoroNav from '@/components/horoscope/HoroNav';
+import { getHoroscopeForSign } from '@/lib/horoscopeEngine';
+import { useLang } from '@/context/LanguageContext';
 
 export default function Horoscope() {
-  const [selected, setSelected] = useState(0); // Aries default
+  const [selected, setSelected] = useState(0); // 0 = Aries
   const [tab, setTab] = useState('Today');
   const [revealed, setRevealed] = useState(true);
+  const { lang } = useLang();
+
+  // Dynamic real-time calculation based on astronomical transits & selected sign
+  const horoData = useMemo(() => {
+    return getHoroscopeForSign(selected, tab, lang);
+  }, [selected, tab, lang]);
 
   const selectSign = (i) => {
     setSelected(i);
@@ -55,23 +63,23 @@ export default function Horoscope() {
                   transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
-                  <HeroPrediction selected={selected} tab={tab} />
+                  <HeroPrediction selected={selected} tab={tab} data={horoData} />
 
                   {tab === 'This Week' && <WeeklyOverview selected={selected} />}
                   {tab === 'This Month' && <MonthlyHighlights selected={selected} />}
 
                   {tab === 'Today' && (
                     <>
-                      <AspectCards selected={selected} />
-                      <LuckyStrip />
+                      <AspectCards aspects={horoData.aspects} />
+                      <LuckyStrip lucky={horoData.lucky} />
                     </>
                   )}
 
-                  <PlanetaryInfluence />
-                  <AdviceOfDay />
-                  <HoroAiInsights />
+                  <PlanetaryInfluence influences={horoData.planetaryInfluences} />
+                  <AdviceOfDay advice={horoData.advice} />
+                  <HoroAiInsights data={horoData} />
 
-                  {tab === 'Today' && <PanchangToday />}
+                  {tab === 'Today' && <PanchangToday panchang={horoData.panchang} />}
                   <CompatibilityToday selected={selected} />
                   <NotablePersonalities selected={selected} />
                   <ShareAndSave selected={selected} />

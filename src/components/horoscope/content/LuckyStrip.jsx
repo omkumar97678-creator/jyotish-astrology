@@ -1,17 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { lucky } from '../horoData';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function LuckyStrip() {
+export default function LuckyStrip({ lucky }) {
   const { lang } = useLang();
 
+  const lk = lucky || { number: 7, color: 'Gold', time: '6 – 8 PM', direction: 'North' };
+
   const items = [
-    [t.lucky_number[lang], lucky.number],
-    [t.lucky_color[lang], lucky.color],
-    [t.lucky_time[lang], lucky.time],
-    [t.lucky_direction[lang], lucky.direction],
+    [t.lucky_number[lang], lk.number],
+    [t.lucky_color[lang], lk.color],
+    [t.lucky_time[lang], lk.time],
+    [t.lucky_direction[lang], lk.direction],
   ];
 
   return (
@@ -27,7 +28,7 @@ export default function LuckyStrip() {
         {items.map(([k, v]) => (
           <div key={k}>
             <div className="text-xs uppercase" style={{ color: 'var(--col-copper)', letterSpacing: '0.12em' }}>{k}</div>
-            <div className="mt-1 font-mono-num" style={{ color: 'var(--col-moonstone)', fontSize: '1.1rem' }}>{v}</div>
+            <div className="mt-1 font-mono-num font-medium" style={{ color: 'var(--col-moonstone)', fontSize: '1.1rem' }}>{v}</div>
           </div>
         ))}
       </div>

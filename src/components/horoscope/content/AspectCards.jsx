@@ -1,44 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useLang } from '@/context/LanguageContext';
-import { t } from '@/translations';
 
-export default function AspectCards() {
-  const { lang } = useLang();
-
-  const detailedAspects = [
-    {
-      icon: '♡',
-      title: t.love[lang],
-      value: 78,
-      label: lang === 'hinglish' ? 'Shreshtha' : 'Good',
-      text: lang === 'hinglish' ? 'Khulkar baat karne se rishte mein gehraai aayegi.' : 'An honest conversation deepens a bond today.',
-      tip: lang === 'hinglish' ? 'Shubh: Naye sampark aur gehre samvaad' : 'Lucky for: New connections, deep conversations',
-    },
-    {
-      icon: '★',
-      title: t.career[lang],
-      value: 85,
-      label: lang === 'hinglish' ? 'Uttam' : 'Excellent',
-      text: lang === 'hinglish' ? 'Haal hi ke parishram ka samman jald milne wala hai.' : 'Recognition for recent work is on its way.',
-      tip: lang === 'hinglish' ? 'Shubh samay: Subah ka waqt. Bachen: Shaam 4 baje ke baad ki meeting' : 'Best time: Morning hours. Avoid: Post 4PM meetings',
-    },
-    {
-      icon: '✦',
-      title: t.health[lang],
-      value: 64,
-      label: lang === 'hinglish' ? 'Madhyam' : 'Average',
-      text: lang === 'hinglish' ? 'Sanyam rakhein — aaram bhi karya jitna zaroori hai.' : 'Pace yourself — rest is as important as action.',
-      tip: lang === 'hinglish' ? 'Dhyan dein: Jal grahan aur aaram. Vyayam: Halka yoga' : 'Focus on: Rest and hydration. Exercise: Light yoga preferred',
-    },
-    {
-      icon: '₹',
-      title: t.finance[lang],
-      value: 72,
-      label: lang === 'hinglish' ? 'Shreshtha' : 'Good',
-      text: lang === 'hinglish' ? 'Sthir aay ke yog hain; bina soche kharch na karein.' : 'Steady gains; avoid impulsive spending tonight.',
-      tip: lang === 'hinglish' ? 'Bachen: Udhaar dene se. Shubh: Lambi avadhi ke nivesh' : 'Avoid: Lending money today. Good for: Long-term investments',
-    },
+export default function AspectCards({ aspects = [] }) {
+  const list = aspects && aspects.length > 0 ? aspects : [
+    { icon: '♡', title: 'Love & Relations', value: 78, label: 'Good', text: 'An honest conversation deepens mutual bonds.', tip: 'Lucky for: New connections and deep sharing' },
+    { icon: '★', title: 'Career & Status', value: 85, label: 'Excellent', text: 'Recognition for strategic effort is on its way.', tip: 'Best time: Morning hours for major initiatives' },
+    { icon: '✦', title: 'Health & Vitality', value: 68, label: 'Good', text: 'Steady stamina; pace your commitments wisely.', tip: 'Focus on: Fresh hydration and regular rest' },
+    { icon: '₹', title: 'Finance & Wealth', value: 76, label: 'Good', text: 'Favorable stability; prioritize strategic savings.', tip: 'Good for: Budget planning and long-term gains' },
   ];
 
   const labelColor = (l) =>
@@ -46,7 +14,7 @@ export default function AspectCards() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {detailedAspects.map((a, i) => (
+      {list.map((a, i) => (
         <motion.div
           key={a.title}
           initial={{ opacity: 0, y: 20 }}
@@ -59,38 +27,42 @@ export default function AspectCards() {
           <span style={{ fontSize: 24, color: 'var(--col-copper)' }}>{a.icon}</span>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium" style={{ color: 'var(--col-moonstone)', fontSize: '1rem' }}>
+              <span className="font-semibold text-sm" style={{ color: 'var(--col-moonstone)' }}>
                 {a.title}
-              </h3>
+              </span>
               <span className="text-xs font-semibold" style={{ color: labelColor(a.label) }}>
                 {a.label}
               </span>
             </div>
 
-            <div className="mt-2.5 relative" style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--r-full)' }}>
-              <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: `${a.value}%` }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.1, delay: 0.2 + i * 0.1, ease: 'easeOut' }}
-                style={{
-                  height: '100%',
-                  background: 'linear-gradient(90deg, var(--col-copper), var(--col-copper-light))',
-                  borderRadius: 'var(--r-full)',
-                }}
-              />
+            {/* Score bar */}
+            <div className="mt-2.5 flex items-center gap-3">
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${a.value}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.9, delay: 0.2 + i * 0.1 }}
+                  className="h-full rounded-full"
+                  style={{
+                    background: a.value >= 80 ? 'var(--col-teal)' : 'var(--col-copper)',
+                  }}
+                />
+              </div>
+              <span className="font-mono-num text-xs font-medium" style={{ color: 'var(--col-moonstone-dim)' }}>
+                {a.value}%
+              </span>
             </div>
 
             <p className="mt-3 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
               {a.text}
             </p>
 
-            <div
-              className="mt-3 pt-2.5 border-t border-[rgba(255,255,255,0.06)] text-[11px] font-medium"
-              style={{ color: 'var(--col-copper)' }}
-            >
-              ✦ {a.tip}
-            </div>
+            {a.tip && (
+              <div className="mt-2 text-[11px]" style={{ color: 'var(--col-copper)', opacity: 0.9 }}>
+                {a.tip}
+              </div>
+            )}
           </div>
         </motion.div>
       ))}

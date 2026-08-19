@@ -3,15 +3,23 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function PanchangToday() {
+export default function PanchangToday({ panchang }) {
   const { lang } = useLang();
 
+  const p = panchang || {
+    tithi: 'Tritiya (Shukla)',
+    nakshatra: 'Rohini',
+    yoga: 'Siddha Yoga ✦',
+    karana: 'Bava',
+    rahuKaal: '4:30 – 6:00 PM',
+  };
+
   const items = [
-    { label: lang === 'hinglish' ? 'Tithi (तिथि)' : 'Tithi', val: 'Tritiya (3rd)', isAuspicious: false },
-    { label: lang === 'hinglish' ? 'Nakshatra (नक्षत्र)' : 'Nakshatra', val: 'Rohini', isAuspicious: false },
-    { label: lang === 'hinglish' ? 'Yoga (योग)' : 'Yoga', val: 'Siddha Yoga ✦', isAuspicious: true },
-    { label: lang === 'hinglish' ? 'Karan (करण)' : 'Karana', val: 'Bava', isAuspicious: false },
-    { label: lang === 'hinglish' ? 'Rahu Kaal (राहु काल)' : 'Rahu Kaal', val: '4:30 – 6:00 PM', isWarning: true },
+    { label: lang === 'hinglish' ? 'Tithi (तिथि)' : 'Tithi', val: p.tithi, isAuspicious: false },
+    { label: lang === 'hinglish' ? 'Nakshatra (नक्षत्र)' : 'Nakshatra', val: p.nakshatra, isAuspicious: false },
+    { label: lang === 'hinglish' ? 'Yoga (योग)' : 'Yoga', val: p.yoga, isAuspicious: true },
+    { label: lang === 'hinglish' ? 'Karan (करण)' : 'Karana', val: p.karana, isAuspicious: false },
+    { label: lang === 'hinglish' ? 'Rahu Kaal (राहु काल)' : 'Rahu Kaal', val: p.rahuKaal, isWarning: true },
   ];
 
   return (
@@ -29,11 +37,11 @@ export default function PanchangToday() {
             {t.panchang_today[lang]}
           </h3>
           <p className="text-xs" style={{ color: 'var(--col-copper)' }}>
-            {lang === 'hinglish' ? 'दैनिक पंचांग — आज की गणना' : 'Daily Panchang'}
+            {lang === 'hinglish' ? 'दैनिक पंचांग — आज की लाइव खगोलीय गणना' : 'Daily Panchang — Real-time Ephemeris'}
           </p>
         </div>
         <span className="text-xs font-mono-num" style={{ color: 'var(--col-moonstone-dim)' }}>
-          Vedic Calendar
+          {p.weekday || 'Today'}
         </span>
       </div>
 
@@ -55,7 +63,7 @@ export default function PanchangToday() {
               {it.label}
             </span>
             <span
-              className="mt-1.5 font-medium text-sm"
+              className="mt-1.5 font-medium text-xs font-mono-num"
               style={{
                 color: it.isWarning
                   ? '#F59E0B'

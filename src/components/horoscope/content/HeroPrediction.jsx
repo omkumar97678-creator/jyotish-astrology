@@ -6,32 +6,33 @@ import { signs } from '../horoData';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function HeroPrediction({ selected }) {
+export default function HeroPrediction({ selected, data }) {
   const { lang } = useLang();
   const s = signs[selected] || signs[0];
 
-  const pred =
-    s.prediction ||
+  const pred = data?.prediction ||
     `Today brings a surge of cosmic vitality for ${s.en}. Focus on strategic moves and trust your intuition. High energy around collaborations will yield unexpected blessings.`;
+
+  const energy = data?.energyLevel || 78;
 
   const timeBlocks = [
     {
       emoji: '🌅',
       title: t.morning[lang],
       time: '6 AM – 12 PM',
-      desc: lang === 'hinglish' ? 'Naye irade aur focused dhyan ke liye uttam urja.' : 'High mental clarity, best for planning and setting intentions.',
+      desc: data?.timeBreakdown?.morning || (lang === 'hinglish' ? 'Naye irade aur focused dhyan ke liye uttam urja.' : 'High mental clarity, best for planning and setting intentions.'),
     },
     {
       emoji: '☀️',
       title: t.afternoon[lang],
       time: '12 PM – 6 PM',
-      desc: lang === 'hinglish' ? 'Teamwork, meeting aur execution ke liye shreshtha.' : 'Productive collaborations, swift decision-making.',
+      desc: data?.timeBreakdown?.afternoon || (lang === 'hinglish' ? 'Teamwork, meeting aur execution ke liye shreshtha.' : 'Productive collaborations, swift decision-making.'),
     },
     {
       emoji: '🌙',
       title: t.evening[lang],
       time: '6 PM – 10 PM',
-      desc: lang === 'hinglish' ? 'Aatmik shanti, vishram aur parivar ke saath samay.' : 'Time to wind down, reflect, and spend with loved ones.',
+      desc: data?.timeBreakdown?.evening || (lang === 'hinglish' ? 'Aatmik shanti, vishram aur parivar ke saath samay.' : 'Time to wind down, reflect, and spend with loved ones.'),
     },
   ];
 
@@ -76,7 +77,7 @@ export default function HeroPrediction({ selected }) {
       </div>
 
       <div className="mt-5">
-        <Stars filled={4} />
+        <Stars filled={energy >= 85 ? 5 : energy >= 70 ? 4 : 3} />
       </div>
 
       <p className="mt-6 mx-auto text-sm" style={{ color: 'var(--col-moonstone-dim)', maxWidth: 540, lineHeight: 1.8 }}>
@@ -90,13 +91,13 @@ export default function HeroPrediction({ selected }) {
             {t.energy_level[lang]}
           </span>
           <span className="font-mono-num font-bold text-sm" style={{ color: 'var(--col-copper)' }}>
-            78%
+            {energy}%
           </span>
         </div>
         <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <motion.div
             initial={{ width: 0 }}
-            whileInView={{ width: '78%' }}
+            whileInView={{ width: `${energy}%` }}
             viewport={{ once: true }}
             transition={{ duration: 1.1, ease: 'easeOut' }}
             className="h-full rounded-full"
@@ -118,36 +119,29 @@ export default function HeroPrediction({ selected }) {
         <div className="text-xs uppercase mb-4 font-semibold tracking-wider text-center sm:text-left" style={{ color: 'var(--col-copper)' }}>
           {t.day_unfolds[lang]}
         </div>
-
-        <div className="grid gap-3.5 md:grid-cols-3">
-          {timeBlocks.map((tb, i) => (
-            <motion.div
-              key={tb.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="p-4 rounded-xl flex flex-col justify-between"
+        <div className="grid gap-3 sm:grid-cols-3">
+          {timeBlocks.map((b) => (
+            <div
+              key={b.title}
+              className="p-3.5 rounded-xl text-left"
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
+                background: 'rgba(255, 255, 255, 0.02)',
                 border: '1px solid var(--col-glass-border)',
               }}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg">{tb.emoji}</span>
-                  <span className="text-[11px] font-mono-num" style={{ color: 'var(--col-copper)' }}>
-                    {tb.time}
-                  </span>
-                </div>
-                <div className="font-semibold text-sm mt-2" style={{ color: 'var(--col-moonstone)' }}>
-                  {tb.title}
-                </div>
-                <p className="text-xs mt-1.5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-                  {tb.desc}
-                </p>
+              <div className="flex items-center justify-between">
+                <span style={{ fontSize: 18 }}>{b.emoji}</span>
+                <span className="text-[11px] font-mono-num" style={{ color: 'var(--col-moonstone-dim)' }}>
+                  {b.time}
+                </span>
               </div>
-            </motion.div>
+              <div className="mt-2 font-semibold text-xs" style={{ color: 'var(--col-moonstone)' }}>
+                {b.title}
+              </div>
+              <p className="mt-1 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.55 }}>
+                {b.desc}
+              </p>
+            </div>
           ))}
         </div>
       </div>
