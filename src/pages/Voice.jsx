@@ -9,11 +9,7 @@ import Suggestions from '@/components/voice/Suggestions';
 import Conversation, { now, mock } from '@/components/voice/Conversation';
 import InputBar from '@/components/voice/InputBar';
 import SessionBar from '@/components/voice/SessionBar';
-
-const jyotishReply = (q) =>
-  q.toLowerCase().includes('career')
-    ? 'This year favors steady growth in your career. Saturn\'s transit asks for discipline, but rewards patient effort with recognition around late autumn.'
-    : 'Based on your kundli, the planetary alignment suggests a period of reflection and opportunity. Trust your intuition and stay grounded in your decisions.';
+import { generateVoiceResponse } from '@/lib/aiService';
 
 export default function Voice() {
   const [voiceState, setVoiceState] = useState('idle');
@@ -34,22 +30,48 @@ export default function Voice() {
   };
   useEffect(() => () => clearTimers(), []);
 
-  const startFlow = (userText) => {
+  const startFlow = async (userText) => {
     clearTimers();
-    if (userText) {
-      setMessages((m) => [...m, { role: 'user', text: userText, time: now() }]);
-    }
+    const query = userText || 'Tell me about my Moon sign and current astrological phase.';
+    setMessages((m) => [...m, { role: 'user', text: query, time: now() }]);
     setVoiceState('listening');
 
-    timers.current.push(setTimeout(() => setVoiceState('speaking'), 3000));
+    timers.current.push(setTimeout(() => setVoiceState('speaking'), 1200));
 
-    timers.current.push(
-      setTimeout(() => {
-        const last = userText || 'Tell me about my Moon sign personality.';
-        setMessages((m) => [...m, { role: 'jyotish', text: jyotishReply(last), time: now() }]);
-        setVoiceState('idle');
-      }, 6000)
-    );
+    try {
+      let kundliContext = null;
+      try {
+        const stored = localStorage.getItem('kundli_data') || localStorage.getItem('jyotish_onboarding');
+        if (stored) kundliContext = JSON.parse(stored);
+      } catch (e) {
+        /* ignore */
+      }
+
+      const res = await generateVoiceResponse(query, kundliContext);
+      const answer = res?.answer || 'Based on your Vedic chart, your planetary alignment brings clarity, wisdom, and auspicious progress in your personal and professional path.';
+      
+      timers.current.push(
+        setTimeout(() => {
+          setMessages((m) => [...m, { role: 'jyotish', text: answer, time: now() }]);
+          setVoiceState('idle');
+        }, 2200)
+      );
+    } catch (err) {
+      console.warn('Voice AI response error:', err);
+      timers.current.push(
+        setTimeout(() => {
+          setMessages((m) => [
+            ...m,
+            {
+              role: 'jyotish',
+              text: 'According to your Vedic birth chart, planetary alignments highlight strong intuitive growth and steady progress.',
+              time: now(),
+            },
+          ]);
+          setVoiceState('idle');
+        }, 2200)
+      );
+    }
   };
 
   const onSend = () => {
@@ -61,33 +83,42 @@ export default function Voice() {
   return (
     <div className="relative min-h-screen" style={{ background: 'var(--col-midnight)' }}>
       <StarField count={120} />
-      <main className="relative z-10 max-w-3xl mx-auto px-5 pt-28 pb-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-5 pt-28 pb-20">
         <VoiceHeader />
-        <KundliContext />
+        <div className="mt-8">
+          <KundliContext />
+        </div>
 
-        <div className="glass-card mt-6 flex flex-col items-center" style={{ padding: '36px 24px' }}>
+        <div className="mt-12 text-center flex flex-col items-center">
           <Waveform state={voiceState} />
-          <div className="my-4" />
-          <MicButton state={voiceState} onClick={() => voiceState === 'idle' && startFlow()} />
-          <div className="mt-4" />
-          <StatusText state={voiceState} />
+          <div className="mt-6">
+            <StatusText state={voiceState} />
+          </div>
+          <div className="mt-6">
+            <MicButton state={voiceState} onClick={() => startFlow()} />
+          </div>
         </div>
 
-        <div className="mt-6">
-          <Suggestions show={voiceState === 'idle' && voiceMode} onAsk={(q) => startFlow(q)} />
+        <div className="mt-10">
+          <Suggestions onSelect={(q) => startFlow(q)} />
         </div>
 
-        <Conversation messages={messages} />
+        <div className="mt-8">
+          <Conversation messages={messages} />
+        </div>
 
         <div className="mt-8">
           <InputBar
-            value={text}
-            onChange={setText}
+            text={text}
+            setText={setText}
             onSend={onSend}
             voiceMode={voiceMode}
-            onToggleVoice={() => setVoiceMode((v) => !v)}
+            setVoiceMode={setVoiceMode}
           />
-          <SessionBar seconds={sessionTime} />
+        </div>
+
+        <div className="mt-6">
+          <SessionBar time={sessionTime} />
         </div>
       </main>
     </div>

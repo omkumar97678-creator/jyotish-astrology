@@ -1,114 +1,239 @@
-const CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY;
-const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022';
+import OpenAI from 'openai';
 
-// ── Default Mock Fallbacks ───────────
-const getFallbackKundliReport = (kundliData) => ({
-  personality: {
-    overview: `With ${kundliData.lagna || 'Leo rising'} and ${kundliData.rashi || 'Cancer Moon'}, you possess a radiant natural presence balanced with profound emotional wisdom. You approach life with integrity, leading and protecting those you care for deeply.`,
-    strengths: [
-      'Natural Leadership — commanding yet approachable presence',
-      'High Emotional Intelligence — deep empathy and intuition',
-      'Analytical Mind — sharp discernment in decision making',
-      'Protective Guardian — steadfast loyalty toward loved ones',
-      'Creative Expression — refined aesthetic and artistic tastes',
-      'Resilient Spirit — learns and matures through life lessons',
-    ],
-    challenges: [
-      'Ego Management — balancing personal pride with quiet humility',
-      'Emotional Boundaries — avoiding absorbing external stress',
-      'Over-Analysis — trusting spontaneous intuition more frequently',
-    ],
-    lifePurpose: 'Your soul came to lead, illuminate, and uplift others through selfless wisdom and compassionate strength.',
-  },
-  career: {
-    overview: 'Your cosmic chart highlights exceptional ability in executive guidance, strategic planning, advisory, and creative entrepreneurship.',
-    bestFields: [
-      'Leadership & Strategic Management',
-      'Mentorship, Teaching & Advisory',
-      'Creative Arts & Media Direction',
-      'Consulting & High-Level Strategy',
-      'Health & Wellness Leadership',
-    ],
-    currentPhase: 'Favorable phase of career expansion, establishing long-term authority and valuable industry networks.',
-    timeline: [
-      { period: '2024–2025', prediction: 'Major professional milestones and recognition from senior peers.' },
-      { period: '2025–2026', prediction: 'Strategic partnerships and lucrative collaborative ventures.' },
-      { period: '2026–2027', prediction: 'Expansion into international networks and broader influence.' },
-    ],
-  },
-  love: {
-    overview: 'You love with passion, absolute loyalty, and generous devotion. Mutual respect and emotional transparency are essential for your heart.',
-    bestMatches: [
-      { sign: 'Aries (Mesh)', reason: 'Dynamic shared ambition, passion, and mutual respect.' },
-      { sign: 'Sagittarius (Dhanu)', reason: 'Philosophical harmony and joyful shared expansion.' },
-      { sign: 'Gemini (Mithun)', reason: 'Lively intellectual connection and constant inspiration.' },
-    ],
-    marriageTiming: '2025–2027 marks an auspicious planetary window for lasting harmony and sacred partnership.',
-    relationshipLesson: 'Cultivate patience and celebrate reciprocal vulnerability with your partner.',
-  },
-  health: {
-    constitution: 'Warm solar vitality with sensitive lunar digestive rhythms. Balance physical vigor with mindful nervous system rest.',
-    watchAreas: [
-      { area: 'Heart & Circulation', advice: 'Regular cardio activity and cooling hydration.' },
-      { area: 'Digestive System', advice: 'Eat warm, fresh meals at consistent hours.' },
-      { area: 'Spine & Posture', advice: 'Maintain ergonomic alignment and daily stretching.' },
-    ],
-    recommendations: {
-      diet: 'Wholesome grains, fresh fruits, turmeric, saffron, and cooling herbal infusions.',
-      exercise: 'Surya Namaskar at sunrise, swimming, and nature walks.',
-      spiritual: 'Morning sun meditation and peaceful evening breathwork.',
-    },
-  },
-  spiritual: {
-    soulPurpose: 'To discover inner sovereignty, master your passions, and shine as a benevolent guide for your community.',
-    pastLife: 'Strong communication and scholarly karma from previous cycles, evolving into universal spiritual wisdom.',
-    practices: [
-      'Surya Arghya at dawn with solar mantras',
-      'Daily 20-minute quiet contemplative meditation',
-      'Chandra and Shiva stotram on Monday evenings',
-      'Selfless guidance and community mentoring',
-      'Reading foundational Vedic and philosophical texts',
-      'Cultivating peaceful silence (Mauna) during twilight',
-    ],
-    remedies: [
-      { planet: 'Sun ☉', remedy: 'Offer Arghya water at sunrise and practice gratitude', day: 'Sunday' },
-      { planet: 'Moon ☽', remedy: 'Wear Pearl / Moonstone in pure silver; meditate by water', day: 'Monday' },
-      { planet: 'Saturn ♄', remedy: 'Light a sesame oil lamp and feed birds/animals', day: 'Saturday' },
-    ],
-  },
+// ── Config ───────────────────────────
+const AI_PROVIDER = import.meta.env.VITE_AI_PROVIDER || 'openai';
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+const CLAUDE_KEY = import.meta.env.VITE_CLAUDE_API_KEY || '';
+
+const openai = new OpenAI({
+  apiKey: OPENAI_KEY,
+  dangerouslyAllowBrowser: true,
 });
 
-// ── Generate Kundli Report ───────────
-export async function generateKundliReport(kundliData) {
-  if (!CLAUDE_API_KEY || CLAUDE_API_KEY === 'your_claude_key') {
-    return getFallbackKundliReport(kundliData);
+const isKeyValid = (k) => Boolean(k && !k.startsWith('your_'));
+
+// ── Fallback Defaults ─────────────────
+function getDefaultFallback(prompt) {
+  if (prompt.includes('Vedic kundli report')) {
+    return {
+      personality: {
+        overview: 'Endowed with natural charisma and profound emotional intelligence, your chart indicates a noble spirit with clear intuition and high ambition.',
+        strengths: ['Inspiring Leadership', 'Emotional Wisdom', 'Analytical Discerning Mind', 'Steadfast Loyalty', 'Creative Vision', 'Inner Resilience'],
+        challenges: ['Balancing Pride & Humility', 'Setting Healthy Emotional Boundaries', 'Pacing Work & Rest'],
+        lifePurpose: 'To illuminate minds, lead with dharma, and elevate your community through compassionate wisdom.',
+      },
+      career: {
+        overview: 'Exceptional capacity for guidance, strategic leadership, creative enterprise, and advisory roles.',
+        bestFields: ['Leadership & Strategy', 'Consulting & Advisory', 'Creative Arts & Media', 'Finance & Analytics', 'Holistic Wellness'],
+        currentPhase: 'Favorable planetary alignment supporting professional expansion and authoritative recognition.',
+        timeline: [
+          { period: '2024–2025', prediction: 'Significant professional milestone and recognition from senior leaders.' },
+          { period: '2025–2026', prediction: 'Strategic collaborations and lucrative growth opportunities.' },
+          { period: '2026–2027', prediction: 'Expanded authority and broader regional or international impact.' },
+        ],
+      },
+      love: {
+        overview: 'You love with deep sincerity, loyalty, and expressive warmth. Mutual respect is foundational for your heart.',
+        bestMatches: [
+          { sign: 'Aries (Mesh)', reason: 'Dynamic mutual passion and shared ambitious drive.' },
+          { sign: 'Leo (Simha)', reason: 'Radiant harmony and profound mutual celebration.' },
+          { sign: 'Sagittarius (Dhanu)', reason: 'Expansive philosophical alignment and joyful companionship.' },
+        ],
+        marriageTiming: '2025–2027 presents an auspicious planetary transit for enduring holy union.',
+        relationshipLesson: 'Practice open vulnerability and celebrate shared growth.',
+      },
+      health: {
+        constitution: 'Dynamic solar vitality paired with sensitive lunar digestive rhythm.',
+        watchAreas: [
+          { area: 'Heart & Circulation', advice: 'Engage in regular morning cardiovascular movement.' },
+          { area: 'Digestion', advice: 'Favor warm, freshly prepared sattvic meals.' },
+          { area: 'Spine & Posture', advice: 'Maintain ergonomic daily posture and stretching.' },
+        ],
+        recommendations: {
+          diet: 'Seasonal fruits, wholesome grains, cooling herbal infusions, and turmeric.',
+          exercise: 'Surya Namaskar at sunrise and brisk nature walking.',
+          spiritual: 'Morning solar meditation and peaceful twilight breathwork.',
+        },
+      },
+      spiritual: {
+        soulPurpose: 'To master inner passions and shine as a conscious, benevolent guide.',
+        pastLife: 'Scholarly wisdom and communication mastery evolving into spiritual sovereignty.',
+        practices: ['Surya Arghya at dawn', 'Mindful breathwork (Pranayama)', 'Evening reflection and silence (Mauna)', 'Studying ancient Vedic wisdom'],
+        remedies: [
+          { planet: 'Sun ☉', remedy: 'Offer water to the rising sun and practice gratitude', day: 'Sunday' },
+          { planet: 'Moon ☽', remedy: 'Wear natural Moonstone in silver; meditate near water', day: 'Monday' },
+          { planet: 'Saturn ♄', remedy: 'Light a sesame oil lamp and feed birds/animals', day: 'Saturday' },
+        ],
+      },
+    };
   }
 
+  if (prompt.includes('numerology insights')) {
+    return {
+      lifePathMeaning: 'The Seeker of Higher Truth',
+      lifePathDesc: 'Endowed with keen analytical intellect, intuitive curiosity, and deep philosophical discernment.',
+      destinyDesc: 'Natural creative expression, leadership, and inspiring communication skills.',
+      soulUrgeDesc: 'An inner longing for peace, sacred wisdom, and meaningful human connection.',
+      traits: ['Analytical', 'Intuitive', 'Visionary', 'Independent', 'Philosophical', 'Creative'],
+      insights: 'Your numbers reveal a sacred path of knowledge acquisition, mentorship, and profound spiritual maturity.',
+    };
+  }
+
+  if (prompt.includes('Vedic marriage compatibility')) {
+    return {
+      verdict: 'A deeply harmonious and mutually enriching pairing with strong emotional and temperamental synchronization.',
+      strengths: 'Emotional stability, intellectual alignment, and reciprocal respect between families.',
+      challenges: 'Maintain open dialogue regarding health and financial planning during major transitions.',
+      auspiciousTiming: '2025–2026 offers highly supportive astrological transits for wedding celebrations.',
+      recommendation: 'An auspicious and promising union supporting lifelong growth.',
+    };
+  }
+
+  if (prompt.includes('horoscope for')) {
+    return {
+      overall: 'The planetary energies bestow clarity, renewed enthusiasm, and favorable circumstances for both personal and professional endeavors.',
+      rating: 4.5,
+      energy: 82,
+      love: { rating: 'Good', prediction: 'Warmth and mutual understanding enrich your close bonds.', tip: 'Express genuine appreciation.' },
+      career: { rating: 'Excellent', prediction: 'Focused effort brings swift progress and positive acknowledgment.', tip: 'Take calculated initiative.' },
+      health: { rating: 'Good', prediction: 'Balanced stamina and positive vital energy throughout the day.', tip: 'Stay well-hydrated.' },
+      finance: { rating: 'Favorable', prediction: 'Stability in financial matters with potential for constructive gains.', tip: 'Avoid impulsive spending.' },
+      lucky: { number: 7, color: 'Golden Amber', time: '5:00 PM – 7:00 PM', direction: 'North-East' },
+      advice: 'Trust your prepared intuition and proceed with calm confidence.',
+      morningPrediction: 'Fresh clarity and productive momentum define your morning.',
+      afternoonPrediction: 'Constructive interactions and problem solving bring satisfaction.',
+      eveningPrediction: 'Relaxing twilight hours ideal for family harmony and contemplation.',
+    };
+  }
+
+  return {
+    answer: 'According to your Vedic birth chart, planetary alignments highlight strong intuitive growth and steady progress in your endeavors.',
+    followUp: 'Would you like to explore your Mahadasha timing or specific gemstone remedies?',
+  };
+}
+
+// ── Core AI caller ───────────────────
+// Tries primary provider first, falls back to other if it fails
+async function callAI(prompt, maxTokens = 1000) {
+  if (AI_PROVIDER === 'openai') {
+    if (isKeyValid(OPENAI_KEY)) {
+      try {
+        console.log('✦ Calling OpenAI (gpt-4o-mini)...');
+        return await callOpenAI(prompt, maxTokens);
+      } catch (err) {
+        console.warn('OpenAI call failed, trying Claude fallback:', err);
+      }
+    }
+    if (isKeyValid(CLAUDE_KEY)) {
+      try {
+        console.log('✦ Calling Claude fallback...');
+        return await callClaude(prompt, maxTokens);
+      } catch (err) {
+        console.warn('Claude fallback also failed:', err);
+      }
+    }
+  } else {
+    if (isKeyValid(CLAUDE_KEY)) {
+      try {
+        console.log('✦ Calling Claude...');
+        return await callClaude(prompt, maxTokens);
+      } catch (err) {
+        console.warn('Claude call failed, trying OpenAI fallback:', err);
+      }
+    }
+    if (isKeyValid(OPENAI_KEY)) {
+      try {
+        console.log('✦ Calling OpenAI fallback (gpt-4o-mini)...');
+        return await callOpenAI(prompt, maxTokens);
+      } catch (err) {
+        console.warn('OpenAI fallback also failed:', err);
+      }
+    }
+  }
+
+  // Graceful fallback if neither API key is active
+  return getDefaultFallback(prompt);
+}
+
+// ── OpenAI caller ────────────────────
+async function callOpenAI(prompt, maxTokens) {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini', // cheap + fast
+    max_tokens: maxTokens,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are an expert Vedic astrologer and numerologist. Always respond with valid JSON only. No markdown, no preamble.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
+
+  const text = response.choices[0].message.content;
+  return JSON.parse(text);
+}
+
+// ── Claude caller ─────────────────────
+async function callClaude(prompt, maxTokens) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': CLAUDE_KEY,
+      'anthropic-version': '2023-06-01',
+      'dangerously-allow-browser': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
+
+  const text = data.content[0].text;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return JSON.parse(
+      text.replace(/```json/g, '').replace(/```/g, '').trim()
+    );
+  }
+}
+
+// ── KUNDLI REPORT ────────────────────
+export async function generateKundliReport(kundliData) {
   const prompt = `
-You are an expert Vedic astrologer. Generate a detailed, personalized Vedic astrological report based on the following chart details:
+Generate a detailed personalized Vedic kundli report.
 
 User Data:
 Name: ${kundliData.name}
 Date of Birth: ${kundliData.date_of_birth}
-Lagna: ${kundliData.lagna || 'Leo'}
-Rashi (Moon Sign): ${kundliData.rashi || 'Cancer'}
-Nakshatra: ${kundliData.nakshatra || 'Pushya'}
-Life Path Number: ${kundliData.life_path_number || 7}
-Destiny Number: ${kundliData.destiny_number || 3}
+Lagna: ${kundliData.lagna}
+Rashi: ${kundliData.rashi}
+Nakshatra: ${kundliData.nakshatra}
+Life Path Number: ${kundliData.life_path_number}
+Destiny Number: ${kundliData.destiny_number}
 Planets: ${JSON.stringify(kundliData.planets || {})}
 
-Generate a JSON response with this EXACT structure:
+Return this exact JSON structure:
 {
   "personality": {
     "overview": "4-5 lines about personality",
     "strengths": ["strength1", "strength2", "strength3", "strength4", "strength5", "strength6"],
     "challenges": ["challenge1", "challenge2", "challenge3"],
-    "lifePurpose": "inspiring statement about life purpose"
+    "lifePurpose": "inspiring statement"
   },
   "career": {
     "overview": "4-5 lines about career",
     "bestFields": ["field1", "field2", "field3", "field4", "field5"],
-    "currentPhase": "current dasha career insight",
+    "currentPhase": "dasha career insight 2-3 lines",
     "timeline": [
       {"period": "2024-2025", "prediction": "..."},
       {"period": "2025-2026", "prediction": "..."},
@@ -118,188 +243,170 @@ Generate a JSON response with this EXACT structure:
   "love": {
     "overview": "4-5 lines about relationships",
     "bestMatches": [
-      {"sign": "Aries", "reason": "..."},
-      {"sign": "Leo", "reason": "..."},
-      {"sign": "Sagittarius", "reason": "..."}
+      {"sign": "Aries", "reason": "one line"},
+      {"sign": "Leo", "reason": "one line"},
+      {"sign": "Sagittarius", "reason": "one line"}
     ],
-    "marriageTiming": "2-3 lines about ideal marriage period",
-    "relationshipLesson": "key lesson for relationships"
+    "marriageTiming": "2-3 lines",
+    "relationshipLesson": "one key lesson"
   },
   "health": {
-    "constitution": "3-4 lines about health",
+    "constitution": "3-4 lines",
     "watchAreas": [
-      {"area": "Heart", "advice": "..."},
-      {"area": "Digestion", "advice": "..."},
-      {"area": "Mental Health", "advice": "..."}
+      {"area": "area name", "advice": "one line"},
+      {"area": "area name", "advice": "one line"},
+      {"area": "area name", "advice": "one line"}
     ],
     "recommendations": {
       "diet": "dietary advice",
-      "exercise": "exercise recommendations",
-      "spiritual": "spiritual health practices"
+      "exercise": "exercise advice",
+      "spiritual": "spiritual health advice"
     }
   },
   "spiritual": {
-    "soulPurpose": "3-4 lines about soul mission",
-    "pastLife": "past life indicator from chart",
+    "soulPurpose": "3-4 lines",
+    "pastLife": "past life indicator",
     "practices": ["practice1", "practice2", "practice3", "practice4", "practice5", "practice6"],
     "remedies": [
       {"planet": "Sun", "remedy": "...", "day": "Sunday"},
-      {"planet": "Moon", "remedy": "...", "day": "Monday"}
+      {"planet": "Moon", "remedy": "...", "day": "Monday"},
+      {"planet": "Saturn", "remedy": "...", "day": "Saturday"}
     ]
   }
 }
 
-Respond ONLY with valid JSON. No markdown, no preamble.
 Make it personal, warm, and insightful.
-Mix English with occasional Sanskrit terms naturally (Lagna, Rashi, Karma, Dharma).
+Use occasional Hindi/Sanskrit terms naturally (Lagna, Rashi, Karma, Dharma, Kundli).
 `;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'dangerously-allow-browser': 'true',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn('Claude API error response, falling back to local calculation');
-      return getFallbackKundliReport(kundliData);
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(clean);
-  } catch (err) {
-    console.warn('Claude API call failed, using high-quality local fallback:', err);
-    return getFallbackKundliReport(kundliData);
-  }
+  return await callAI(prompt, 2000);
 }
 
-// ── Generate Numerology Report ───────
+// ── NUMEROLOGY REPORT ────────────────
 export async function generateNumerologyReport(name, dob, numbers) {
-  const fallback = {
-    lifePathMeaning: 'The Seeker of Truth',
-    lifePathDesc: `As a Life Path ${numbers.lifePathNumber}, you are endowed with intellectual curiosity, philosophical depth, and natural analytical talent.`,
-    destinyDesc: `Your Destiny Number ${numbers.destinyNumber} highlights natural expression, inspiration, and creative influence.`,
-    soulUrgeDesc: `Your Soul Urge Number ${numbers.soulUrgeNumber} reveals an inner yearning for harmony, universal service, and higher understanding.`,
-    traits: ['Analytical', 'Intuitive', 'Visionary', 'Independent', 'Philosophical', 'Creative'],
-    insights: 'Your numbers align to create a path of intellectual leadership, spiritual discovery, and profound inner growth.',
-  };
-
-  if (!CLAUDE_API_KEY || CLAUDE_API_KEY === 'your_claude_key') {
-    return fallback;
-  }
-
   const prompt = `
-You are an expert Vedic numerologist. Generate personalized numerology insights for:
+Generate personalized numerology insights.
+
 Name: ${name}
 Date of Birth: ${dob}
 Life Path Number: ${numbers.lifePathNumber}
 Destiny Number: ${numbers.destinyNumber}
 Soul Urge Number: ${numbers.soulUrgeNumber}
 
-Respond with valid JSON only:
+Return this exact JSON:
 {
-  "lifePathMeaning": "title like 'The Seeker'",
+  "lifePathMeaning": "title like The Seeker",
   "lifePathDesc": "3-4 lines about life path",
-  "destinyDesc": "2-3 lines about destiny number",
+  "destinyDesc": "2-3 lines about destiny",
   "soulUrgeDesc": "2-3 lines about soul urge",
   "traits": ["trait1", "trait2", "trait3", "trait4", "trait5", "trait6"],
-  "insights": "3-4 lines overall numerology reading"
+  "insights": "3-4 lines overall reading"
 }
 `;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'dangerously-allow-browser': 'true',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) return fallback;
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(clean);
-  } catch {
-    return fallback;
-  }
+  return await callAI(prompt, 800);
 }
 
-// ── Generate Gun Milan Analysis ──────
+// ── GUN MILAN ANALYSIS ───────────────
 export async function generateGunMilanAnalysis(person1, person2, score, gunas) {
-  const fallback = {
-    verdict: `With ${score} out of 36 gunas matched, this union exhibits strong compatibility and temperamental harmony according to Vedic Ashta Koota principles.`,
-    strengths: 'Strong emotional synchronization, shared spiritual affinity, and enduring mutual respect.',
-    challenges: 'Nadi and health areas benefit from mindful communication and mutual support during times of change.',
-    auspiciousTiming: '2025–2027 offers auspicious astrological planetary periods for wedding rituals.',
-    recommendation: 'A highly auspicious and mutually enriching partnership for marriage.',
-  };
-
-  if (!CLAUDE_API_KEY || CLAUDE_API_KEY === 'your_claude_key') {
-    return fallback;
-  }
-
   const prompt = `
-You are a Vedic astrology expert in marriage compatibility (Gun Milan).
-Person 1: ${person1.name}, Rashi: ${person1.rashi || 'Mesh'}, Nakshatra: ${person1.nakshatra || 'Ashwini'}, Manglik: ${Boolean(person1.isManglik)}
-Person 2: ${person2.name}, Rashi: ${person2.rashi || 'Karka'}, Nakshatra: ${person2.nakshatra || 'Pushya'}, Manglik: ${Boolean(person2.isManglik)}
+Generate Vedic marriage compatibility analysis.
+
+Person 1: ${person1.name}, 
+  Rashi: ${person1.rashi || 'Mesh'}, 
+  Nakshatra: ${person1.nakshatra || 'Ashwini'},
+  Manglik: ${Boolean(person1.isManglik)}
+
+Person 2: ${person2.name}, 
+  Rashi: ${person2.rashi || 'Karka'}, 
+  Nakshatra: ${person2.nakshatra || 'Pushya'},
+  Manglik: ${Boolean(person2.isManglik)}
+
 Gun Milan Score: ${score}/36
 Guna Scores: ${JSON.stringify(gunas || {})}
 
-Respond with JSON only:
+Return this exact JSON:
 {
   "verdict": "overall assessment 3-4 lines",
-  "strengths": "relationship strengths 2-3 lines",
-  "challenges": "areas needing attention 2-3 lines",
-  "auspiciousTiming": "best marriage timing 1-2 lines",
-  "recommendation": "final recommendation 1-2 lines"
+  "strengths": "strengths 2-3 lines",
+  "challenges": "challenges 2-3 lines",
+  "auspiciousTiming": "best timing 1-2 lines",
+  "recommendation": "final advice 1-2 lines"
+}
+
+Be honest but sensitive and positive.
+`;
+  return await callAI(prompt, 600);
+}
+
+// ── DAILY HOROSCOPE ──────────────────
+export async function generateHoroscope(rashi, period = 'today') {
+  const today = new Date().toLocaleDateString('en-IN');
+
+  const prompt = `
+Generate a ${period} horoscope for ${rashi} Rashi.
+Date: ${today}
+
+Return this exact JSON:
+{
+  "overall": "3-4 line main prediction",
+  "rating": 4,
+  "energy": 75,
+  "love": {
+    "rating": "Good",
+    "prediction": "2 lines",
+    "tip": "one tip"
+  },
+  "career": {
+    "rating": "Excellent", 
+    "prediction": "2 lines",
+    "tip": "one tip"
+  },
+  "health": {
+    "rating": "Average",
+    "prediction": "2 lines", 
+    "tip": "one tip"
+  },
+  "finance": {
+    "rating": "Good",
+    "prediction": "2 lines",
+    "tip": "one tip"
+  },
+  "lucky": {
+    "number": 7,
+    "color": "Gold",
+    "time": "6-8 PM",
+    "direction": "North"
+  },
+  "advice": "one inspiring advice line",
+  "morningPrediction": "2 lines for morning",
+  "afternoonPrediction": "2 lines for afternoon",
+  "eveningPrediction": "2 lines for evening"
+}
+
+Make it specific, positive, and actionable.
+`;
+  return await callAI(prompt, 800);
+}
+
+// ── VOICE Q&A ────────────────────────
+export async function generateVoiceResponse(question, kundliContext) {
+  const prompt = `
+You are a Vedic astrology expert.
+Answer this question about the user's kundli.
+Keep answer SHORT — max 3-4 sentences.
+Conversational and warm tone.
+
+User's Kundli:
+${JSON.stringify(kundliContext || {})}
+
+User's Question: "${question}"
+
+Return JSON:
+{
+  "answer": "3-4 sentence answer",
+  "followUp": "one optional follow-up question"
 }
 `;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'dangerously-allow-browser': 'true',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) return fallback;
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(clean);
-  } catch {
-    return fallback;
-  }
+  return await callAI(prompt, 400);
 }
 
 // ── Fallback Utility ─────────────────
@@ -307,11 +414,11 @@ export async function generateWithFallback(primaryFn, fallbackFn, ...args) {
   try {
     return await primaryFn(...args);
   } catch (err) {
-    console.warn('Primary service failed, trying fallback:', err);
+    console.warn('Primary AI call failed, trying fallback:', err);
     try {
       return await fallbackFn(...args);
     } catch (fallbackErr) {
-      console.error('All services failed:', fallbackErr);
+      console.error('Both AI callers failed:', fallbackErr);
       throw fallbackErr;
     }
   }
