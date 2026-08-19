@@ -116,29 +116,31 @@ export default function GunMilan() {
             </div>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-10 text-center flex justify-center">
             <motion.button
               onClick={onMatch}
               disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn-copper px-10 py-3.5 text-base font-semibold"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="btn-copper text-base font-bold tracking-wide cursor-pointer"
               style={{
-                borderRadius: 'var(--r-full)',
-                opacity: loading ? 0.7 : 1,
+                opacity: loading ? 0.75 : 1,
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
               {loading ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin text-sm">✦</span> {t.calculating[lang]}...
+                <span className="flex items-center gap-2.5">
+                  <span className="animate-spin text-lg">✦</span> {t.calculating[lang]}...
                 </span>
               ) : (
-                `✦ ${t.check_compatibility[lang]}`
+                <span className="flex items-center gap-2.5">
+                  <span className="text-lg">✦</span> {t.check_compatibility[lang]}
+                </span>
               )}
             </motion.button>
           </div>
         </div>
+
 
         {showResults && (
           <GmResults

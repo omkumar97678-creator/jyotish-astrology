@@ -237,6 +237,41 @@ body.lang-switching {
 .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200, 130, 42, 0.35); }
 .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.btn-copper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #C8822A 0%, #E09840 50%, #C8822A 100%);
+  background-size: 200% auto;
+  color: #0D0F2B !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-full);
+  padding: 16px 42px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 25px rgba(200, 130, 42, 0.45), 0 0 0 1px rgba(200, 130, 42, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn-copper:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  background-position: right center;
+  box-shadow: 0 10px 35px rgba(200, 130, 42, 0.65), 0 0 25px rgba(224, 152, 64, 0.5);
+  color: #050714 !important;
+}
+.btn-copper:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.99);
+}
+.btn-copper:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
