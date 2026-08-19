@@ -594,3 +594,155 @@ export function calculateVedicChart({ dob, time, birthPlace, lat = 28.6139, lng 
     },
   };
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// ASHTAKOOT GUNA MILAN ENGINE (36 GUNAS)
+// Classical Parashari rules for marriage compatibility
+// ══════════════════════════════════════════════════════════════════════════
+
+export function calculateAshtakoot(p1Input, p2Input) {
+  // If p1Input / p2Input is dob object, calculate Vedic chart first
+  const c1 = p1Input.rashiSign ? p1Input : calculateVedicChart(p1Input);
+  const c2 = p2Input.rashiSign ? p2Input : calculateVedicChart(p2Input);
+
+  const getSignIndex = (signName) => {
+    const s = String(signName || '').split(' ')[0].toLowerCase();
+    const idx = ZODIAC_SIGNS.findIndex((z) => z.name.toLowerCase() === s || z.id === s);
+    return idx >= 0 ? idx : 0;
+  };
+
+  const getNakIndex = (nakName) => {
+    const n = String(nakName || '').toLowerCase();
+    const idx = NAKSHATRAS.findIndex((nak) => nak.name.toLowerCase() === n);
+    return idx >= 0 ? idx : 0;
+  };
+
+  const s1Idx = getSignIndex(c1.rashiSign || c1.rashi);
+  const s2Idx = getSignIndex(c2.rashiSign || c2.rashi);
+  const n1Idx = getNakIndex(c1.nakshatra);
+  const n2Idx = getNakIndex(c2.nakshatra);
+
+  // 1. Varna (1 Point)
+  // Brahmin: Cancer(3), Scorpio(7), Pisces(11) -> 4
+  // Kshatriya: Aries(0), Leo(4), Sagittarius(8) -> 3
+  // Vaishya: Taurus(1), Virgo(5), Capricorn(9) -> 2
+  // Shudra: Gemini(2), Libra(6), Aquarius(10) -> 1
+  const getVarnaRank = (idx) => ([3, 7, 11].includes(idx) ? 4 : [0, 4, 8].includes(idx) ? 3 : [1, 5, 9].includes(idx) ? 2 : 1);
+  const v1 = getVarnaRank(s1Idx);
+  const v2 = getVarnaRank(s2Idx);
+  const varnaScore = v1 >= v2 ? 1 : 0;
+
+  // 2. Vashya (2 Points)
+  // Chatushpada (0, 1, 8[1st half], 9[1st half]): Aries, Taurus, Sag(1-15), Cap(1-15)
+  // Manava (2, 5, 6, 8[2nd half], 10): Gemini, Virgo, Libra, Sag(16-30), Aquarius
+  // Jalachara (3, 9[2nd half], 11): Cancer, Cap(16-30), Pisces
+  // Vanachara (4): Leo
+  // Keeta (7): Scorpio
+  const getVashyaGroup = (idx) => ([0, 1].includes(idx) ? 'Chatushpada' : [2, 5, 6, 10].includes(idx) ? 'Manava' : [3, 11].includes(idx) ? 'Jalachara' : idx === 4 ? 'Vanachara' : 'Keeta');
+  const vg1 = getVashyaGroup(s1Idx);
+  const vg2 = getVashyaGroup(s2Idx);
+  let vashyaScore = 1;
+  if (vg1 === vg2) vashyaScore = 2;
+  else if ((vg1 === 'Vanachara' && vg2 === 'Chatushpada') || (vg1 === 'Chatushpada' && vg2 === 'Vanachara')) vashyaScore = 0;
+  else vashyaScore = 1;
+
+  // 3. Tara (3 Points)
+  // Count nakshatras: Janma, Sampat, Vipat, Kshema, Pratyak, Sadhana, Naidhana, Mitra, Param Mitra
+  const tCount1 = ((n2Idx - n1Idx + 27) % 9) + 1;
+  const tCount2 = ((n1Idx - n2Idx + 27) % 9) + 1;
+  const badTara = [3, 5, 7];
+  const t1Ok = !badTara.includes(tCount1);
+  const t2Ok = !badTara.includes(tCount2);
+  const taraScore = t1Ok && t2Ok ? 3 : (t1Ok || t2Ok ? 1.5 : 0);
+
+  // 4. Yoni (4 Points)
+  const nakYonis = [
+    'Horse', 'Elephant', 'Sheep', 'Serpent', 'Serpent', 'Dog', 'Cat', 'Sheep', 'Cat',
+    'Rat', 'Rat', 'Cow', 'Buffalo', 'Tiger', 'Buffalo', 'Tiger', 'Deer', 'Deer',
+    'Dog', 'Monkey', 'Mongoose', 'Monkey', 'Lion', 'Horse', 'Lion', 'Cow', 'Elephant',
+  ];
+  const y1 = nakYonis[n1Idx];
+  const y2 = nakYonis[n2Idx];
+  const enemies = [
+    ['Horse', 'Buffalo'], ['Elephant', 'Lion'], ['Sheep', 'Monkey'], ['Serpent', 'Mongoose'],
+    ['Dog', 'Deer'], ['Cat', 'Rat'], ['Cow', 'Tiger'],
+  ];
+  const isEnemy = enemies.some(([a, b]) => (y1 === a && y2 === b) || (y1 === b && y2 === a));
+  const yoniScore = y1 === y2 ? 4 : isEnemy ? 0 : 2;
+
+  // 5. Graha Maitri (5 Points)
+  const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+  const l1 = signLords[s1Idx];
+  const l2 = signLords[s2Idx];
+  const friendMap = {
+    Sun: { friends: ['Moon', 'Mars', 'Jupiter'], neutrals: ['Mercury'], enemies: ['Venus', 'Saturn'] },
+    Moon: { friends: ['Sun', 'Mercury'], neutrals: ['Mars', 'Jupiter', 'Venus', 'Saturn'], enemies: [] },
+    Mars: { friends: ['Sun', 'Moon', 'Jupiter'], neutrals: ['Venus', 'Saturn'], enemies: ['Mercury'] },
+    Mercury: { friends: ['Sun', 'Venus'], neutrals: ['Mars', 'Jupiter', 'Saturn'], enemies: ['Moon'] },
+    Jupiter: { friends: ['Sun', 'Moon', 'Mars'], neutrals: ['Saturn'], enemies: ['Mercury', 'Venus'] },
+    Venus: { friends: ['Mercury', 'Saturn'], neutrals: ['Mars', 'Jupiter'], enemies: ['Sun', 'Moon'] },
+    Saturn: { friends: ['Mercury', 'Venus'], neutrals: ['Jupiter'], enemies: ['Sun', 'Moon', 'Mars'] },
+  };
+  let maitriScore = 3;
+  if (l1 === l2) {
+    maitriScore = 5;
+  } else {
+    const f1 = friendMap[l1]?.friends?.includes(l2);
+    const e1 = friendMap[l1]?.enemies?.includes(l2);
+    const f2 = friendMap[l2]?.friends?.includes(l1);
+    const e2 = friendMap[l2]?.enemies?.includes(l1);
+    if (f1 && f2) maitriScore = 5;
+    else if ((f1 && !e2) || (f2 && !e1)) maitriScore = 4;
+    else if (!e1 && !e2) maitriScore = 3;
+    else if (e1 && e2) maitriScore = 0;
+    else maitriScore = 1;
+  }
+
+  // 6. Gana (6 Points)
+  const g1 = NAKSHATRAS[n1Idx].gana;
+  const g2 = NAKSHATRAS[n2Idx].gana;
+  let ganaScore = 0;
+  if (g1 === g2) ganaScore = 6;
+  else if ((g1 === 'Deva' && g2 === 'Manushya') || (g1 === 'Manushya' && g2 === 'Deva')) ganaScore = 5;
+  else if ((g1 === 'Manushya' && g2 === 'Rakshasa') || (g1 === 'Rakshasa' && g2 === 'Manushya')) ganaScore = 1;
+  else ganaScore = 0;
+
+  // 7. Bhakoot (7 Points)
+  // Distance from 1 to 2
+  const bDist = ((s2Idx - s1Idx + 12) % 12) + 1;
+  // 1/1, 1/7, 3/11, 4/10 are auspicious (7 points)
+  // 2/12, 5/9, 6/8 are inauspicious (0 points)
+  const goodBhakoot = [1, 7, 3, 11, 4, 10];
+  const bhakootScore = goodBhakoot.includes(bDist) ? 7 : 0;
+
+  // 8. Nadi (8 Points)
+  const nakNadis = [
+    'Adi', 'Madhya', 'Antya', 'Antya', 'Madhya', 'Adi', 'Adi', 'Madhya', 'Antya',
+    'Antya', 'Madhya', 'Adi', 'Adi', 'Madhya', 'Antya', 'Antya', 'Madhya', 'Adi',
+    'Adi', 'Madhya', 'Antya', 'Antya', 'Madhya', 'Adi', 'Adi', 'Madhya', 'Antya',
+  ];
+  const nd1 = nakNadis[n1Idx];
+  const nd2 = nakNadis[n2Idx];
+  const nadiScore = nd1 !== nd2 ? 8 : 0;
+
+  const totalScore = varnaScore + vashyaScore + taraScore + yoniScore + maitriScore + ganaScore + bhakootScore + nadiScore;
+
+  return {
+    person1: { ...c1, varna: v1, vashya: vg1, yoni: y1, nadi: nd1 },
+    person2: { ...c2, varna: v2, vashya: vg2, yoni: y2, nadi: nd2 },
+    totalScore,
+    maxScore: 36,
+    isAuspicious: totalScore >= 18,
+    gunas: {
+      varna: { max: 1, scored: varnaScore },
+      vashya: { max: 2, scored: vashyaScore },
+      tara: { max: 3, scored: taraScore },
+      yoni: { max: 4, scored: yoniScore },
+      maitri: { max: 5, scored: maitriScore },
+      gana: { max: 6, scored: ganaScore },
+      bhakoot: { max: 7, scored: bhakootScore },
+      nadi: { max: 8, scored: nadiScore },
+    },
+  };
+}
+

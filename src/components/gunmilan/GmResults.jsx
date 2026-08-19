@@ -10,7 +10,7 @@ import AiAnalysisSection from './AiAnalysisSection';
 import WeddingElements from './WeddingElements';
 import GmActions from './GmActions';
 
-export default function GmResults({ tryAgain, p1, p2 }) {
+export default function GmResults({ tryAgain, p1, p2, ashtakoot, analysisResult }) {
   return (
     <AnimatePresence>
       <motion.div
@@ -21,31 +21,31 @@ export default function GmResults({ tryAgain, p1, p2 }) {
         className="mt-12 space-y-8"
       >
         {/* Section 1: Couple Header */}
-        <CoupleHeader p1={p1} p2={p2} />
+        <CoupleHeader p1={p1} p2={p2} ashtakoot={ashtakoot} />
 
         {/* Section 2: Expandable 8 Guna Breakdown */}
-        <GunaTable />
+        <GunaTable gunaScores={ashtakoot?.gunas} />
 
         {/* Section 3: Nakshatra Compatibility */}
-        <NakshatraAnalysis />
+        <NakshatraAnalysis p1={p1} p2={p2} ashtakoot={ashtakoot} />
 
         {/* Section 4: Compatibility by Life Area */}
-        <LifeAreaCompatibility />
+        <LifeAreaCompatibility ashtakoot={ashtakoot} />
 
         {/* Section 5: Manglik Analysis & Remedies */}
-        <ManglikAnalysis p1={p1} p2={p2} />
+        <ManglikAnalysis p1={p1} p2={p2} ashtakoot={ashtakoot} />
 
         {/* Section 6: Vedha & Rajju Checks */}
-        <VedhaRajjuSection />
+        <VedhaRajjuSection ashtakoot={ashtakoot} />
 
-        {/* Section 7: Detailed AI Analysis */}
-        <AiAnalysisSection />
+        {/* Section 7: Detailed Astrological Analysis */}
+        <AiAnalysisSection analysis={analysisResult} ashtakoot={ashtakoot} />
 
         {/* Section 8: Auspicious Wedding Elements */}
-        <WeddingElements />
+        <WeddingElements ashtakoot={ashtakoot} />
 
         {/* Bottom Actions & Share Row */}
-        <GmActions tryAgain={tryAgain} p1={p1} p2={p2} />
+        <GmActions tryAgain={tryAgain} p1={p1} p2={p2} ashtakoot={ashtakoot} />
       </motion.div>
     </AnimatePresence>
   );

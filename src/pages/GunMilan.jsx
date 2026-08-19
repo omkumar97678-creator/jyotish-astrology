@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { t } from '@/translations';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { generateGunMilanAnalysis } from '@/lib/aiService';
+import { calculateAshtakoot } from '@/lib/vedicAstrology';
 
 const empty = {
   name: '',
@@ -26,44 +27,46 @@ export default function GunMilan() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [ashtakootResult, setAshtakootResult] = useState(null);
 
   const formRef = React.useRef(null);
 
   const onMatch = async () => {
     setLoading(true);
-    const score = 28;
-    const gunaScores = {
-      varna: { max: 1, scored: 1 },
-      vashya: { max: 2, scored: 2 },
-      tara: { max: 3, scored: 3 },
-      yoni: { max: 4, scored: 4 },
-      maitri: { max: 5, scored: 5 },
-      gana: { max: 6, scored: 5 },
-      bhakoot: { max: 7, scored: 4 },
-      nadi: { max: 8, scored: 4 },
-    };
 
     try {
-      // 1. Generate compatibility analysis
-      const analysis = await generateGunMilanAnalysis(p1, p2, score, gunaScores);
+      // 1. Calculate Real Vedic Ashtakoot Guna Milan (36 Gunas)
+      const ashtakoot = calculateAshtakoot(p1, p2);
+      setAshtakootResult(ashtakoot);
+
+      const score = ashtakoot.totalScore;
+      const gunaScores = ashtakoot.gunas;
+
+      // 2. Generate compatibility analysis via AI
+      const analysis = await generateGunMilanAnalysis(
+        { ...p1, rashi: ashtakoot.person1.rashi, nakshatra: ashtakoot.person1.nakshatra },
+        { ...p2, rashi: ashtakoot.person2.rashi, nakshatra: ashtakoot.person2.nakshatra },
+        score,
+        gunaScores
+      );
       setAnalysisResult(analysis);
 
-      // 2. Save report to Supabase if user is logged in
+      // 3. Save report to Supabase if user is logged in
       if (user && isSupabaseConfigured()) {
-        const p1Dob = p1.dob.year ? `${p1.dob.year}-${String(p1.dob.month).padStart(2, '0')}-${String(p1.dob.day).padStart(2, '0')}` : '1995-05-15';
-        const p2Dob = p2.dob.year ? `${p2.dob.year}-${String(p2.dob.month).padStart(2, '0')}-${String(p2.dob.day).padStart(2, '0')}` : '1996-08-20';
+        const p1Dob = p1.dob?.year ? `${p1.dob.year}-${String(p1.dob.month || 1).padStart(2, '0')}-${String(p1.dob.day || 1).padStart(2, '0')}` : '1995-05-15';
+        const p2Dob = p2.dob?.year ? `${p2.dob.year}-${String(p2.dob.month || 1).padStart(2, '0')}-${String(p2.dob.day || 1).padStart(2, '0')}` : '1996-08-20';
 
         await supabase.from('gun_milan_reports').insert({
           user_id: user.id,
           person1_name: p1.name || 'Person 1',
           person1_dob: p1Dob,
-          person1_rashi: 'Mesh (Aries)',
+          person1_rashi: ashtakoot.person1.rashi,
           person2_name: p2.name || 'Person 2',
           person2_dob: p2Dob,
-          person2_rashi: 'Karka (Cancer)',
+          person2_rashi: ashtakoot.person2.rashi,
           total_score: score,
           guna_scores: gunaScores,
-          ai_analysis: analysis.verdict || 'Good compatibility',
+          ai_analysis: analysis?.verdict || 'Vedic compatibility computed',
         });
       }
     } catch (e) {
@@ -99,41 +102,53 @@ export default function GunMilan() {
                 transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                 className="flex items-center justify-center rounded-full"
                 style={{
-                  width: 54, height: 54, fontSize: 26,
-                  background: 'var(--col-midnight-mid)',
-                  border: '1px solid rgba(200,130,42,0.45)',
+                  width: 52,
+                  height: 52,
+                  background: 'rgba(10,12,18,0.92)',
+                  border: '1px solid var(--col-copper)',
+                  boxShadow: '0 0 24px rgba(200,130,42,0.4)',
                   color: 'var(--col-copper)',
-                  boxShadow: '0 0 24px rgba(200,130,42,0.3)',
+                  fontSize: 22,
                 }}
               >
-                ⚭
+                ♥
               </motion.span>
             </div>
           </div>
 
           <div className="mt-8 text-center">
-            <button
-              type="button"
-              disabled={loading}
+            <motion.button
               onClick={onMatch}
-              className="btn-primary animate-glow-pulse w-full sm:w-auto text-sm sm:text-base py-4 px-10 cursor-pointer"
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn-copper px-10 py-3.5 text-base font-semibold"
+              style={{
+                borderRadius: 'var(--r-full)',
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
             >
               {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                  <span>Calculating 36 Gunas...</span>
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin text-sm">✦</span> {t.calculating[lang]}...
                 </span>
               ) : (
-                t.check_btn[lang]
+                `✦ ${t.check_compatibility[lang]}`
               )}
-            </button>
-            <p className="mt-3 text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-              {t.gunmilan_note[lang]}
-            </p>
+            </motion.button>
           </div>
         </div>
 
-        {showResults && <GmResults tryAgain={tryAgain} p1={p1} p2={p2} analysis={analysisResult} />}
+        {showResults && (
+          <GmResults
+            tryAgain={tryAgain}
+            p1={p1}
+            p2={p2}
+            ashtakoot={ashtakootResult}
+            analysisResult={analysisResult}
+          />
+        )}
       </main>
     </div>
   );
