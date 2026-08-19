@@ -1,4 +1,4 @@
-export const t = {
+const rawTranslations = {
   // ── NAVBAR ──────────────────────
   nav_kundli: {
     en: 'Kundli',
@@ -567,5 +567,30 @@ export const t = {
     en: 'Sign In',
     hinglish: 'Sign In'
   },
+  advice_of_day: {
+    en: 'Advice of the Day',
+    hinglish: 'आज का ज्योतिषीय परामर्श'
+  },
+  check_compatibility: {
+    en: 'Check Compatibility',
+    hinglish: 'गुण मिलान करें'
+  },
+  calculating: {
+    en: 'Calculating',
+    hinglish: 'गणना हो रही है'
+  },
 };
 
+export const t = new Proxy(rawTranslations, {
+  get(target, prop) {
+    if (typeof prop === 'string' && prop in target) {
+      return target[prop];
+    }
+    // Universal defensive fallback so t[any_prop][lang] NEVER crashes with undefined error
+    const fallbackText = typeof prop === 'string' ? prop.replace(/_/g, ' ') : '';
+    return {
+      en: fallbackText,
+      hinglish: fallbackText,
+    };
+  },
+});
