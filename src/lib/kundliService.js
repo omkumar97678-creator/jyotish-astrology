@@ -70,6 +70,7 @@ export async function saveKundli(userId, kundliData) {
   localStorage.setItem('current_kundli_id', localId);
 
   if (!isSupabaseConfigured()) {
+    console.log('Supabase not configured, saved to local cache');
     return localRecord;
   }
 
@@ -87,45 +88,67 @@ export async function saveKundli(userId, kundliData) {
       }
     }
 
+    // Format time for Postgres TIME column (HH:MM:SS or null)
+    let formattedTime = null;
+    if (!kundliData.time_unknown && kundliData.time_of_birth) {
+      const parts = String(kundliData.time_of_birth).split(':');
+      if (parts.length >= 2) {
+        const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+        const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+        formattedTime = `${h}:${m}:00`;
+      }
+    }
+
+    // Format date for Postgres DATE column (YYYY-MM-DD)
+    let formattedDate = '1995-05-15';
+    if (kundliData.date_of_birth && String(kundliData.date_of_birth).includes('-')) {
+      formattedDate = kundliData.date_of_birth;
+    } else if (kundliData.dob?.year) {
+      formattedDate = `${kundliData.dob.year}-${String(kundliData.dob.month || 1).padStart(2, '0')}-${String(kundliData.dob.day || 1).padStart(2, '0')}`;
+    }
+
     const payload = {
       user_id: effectiveUserId,
-      name: kundliData.name || 'Seeker',
-      date_of_birth: kundliData.date_of_birth || '1995-05-15',
-      time_of_birth: kundliData.time_of_birth || null,
+      name: String(kundliData.name || 'Seeker').trim(),
+      date_of_birth: formattedDate,
+      time_of_birth: formattedTime,
       time_unknown: Boolean(kundliData.time_unknown),
-      birth_place: kundliData.birth_place || kundliData.birthPlace || 'New Delhi',
-      latitude: kundliData.latitude || 28.6139,
-      longitude: kundliData.longitude || 77.2090,
+      birth_place: String(kundliData.birth_place || kundliData.birthPlace || 'New Delhi').trim(),
+      latitude: parseFloat(kundliData.latitude) || 28.6139,
+      longitude: parseFloat(kundliData.longitude) || 77.2090,
       timezone: kundliData.timezone || 'Asia/Kolkata',
       lagna: kundliData.lagna || 'Leo (Simha)',
       rashi: kundliData.rashi || 'Cancer (Karka)',
       nakshatra: kundliData.nakshatra || 'Pushya',
       gana: kundliData.gana || 'Manushya',
-      planets: kundliData.planets || null,
-      houses: kundliData.houses || null,
-      panchang: kundliData.panchang || null,
-      life_path_number: kundliData.life_path_number || 7,
-      destiny_number: kundliData.destiny_number || 3,
-      soul_urge_number: kundliData.soul_urge_number || 9,
-      ai_report: kundliData.ai_report || null,
+      planets: Array.isArray(kundliData.planets) ? kundliData.planets : [],
+      houses: Array.isArray(kundliData.houses) ? kundliData.houses : [],
+      panchang: kundliData.panchang || {},
+      life_path_number: parseInt(kundliData.life_path_number, 10) || 7,
+      destiny_number: parseInt(kundliData.destiny_number, 10) || 3,
+      soul_urge_number: parseInt(kundliData.soul_urge_number, 10) || 9,
+      ai_report: kundliData.ai_report || {},
       is_default: Boolean(kundliData.is_default ?? true),
-      updated_at: new Date().toISOString(),
     };
 
+    console.log('✦ Saving Kundli to Supabase with payload:', payload);
+
+    let query;
     if (isUUID(kundliData.id)) {
       payload.id = kundliData.id;
+      query = supabase.from('kundlis').upsert(payload).select().single();
+    } else {
+      query = supabase.from('kundlis').insert(payload).select().single();
     }
 
-    const { data, error } = await supabase
-      .from('kundlis')
-      .upsert(payload)
-      .select()
-      .single();
+    const { data, error } = await query;
 
     if (error) {
-      console.warn('Supabase saveKundli error, using local fallback:', error);
+      console.error('✦ Supabase saveKundli error:', error);
       return localRecord;
     }
+
+    console.log('✦ Kundli successfully saved to Supabase! Row ID:', data?.id);
 
     if (data?.id) {
       localStorage.setItem('current_kundli_id', data.id);
@@ -133,7 +156,7 @@ export async function saveKundli(userId, kundliData) {
     }
     return data;
   } catch (err) {
-    console.warn('Supabase saveKundli exception, using local fallback:', err);
+    console.error('✦ Supabase saveKundli exception:', err);
     return localRecord;
   }
 }
