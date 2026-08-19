@@ -3,41 +3,58 @@
 -- Run this in Supabase Dashboard -> SQL Editor
 -- =========================================================
 
+-- Enable UUID extension if not already enabled
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- TABLE 1: User Profiles
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
-  email TEXT UNIQUE,
+  email TEXT,
   avatar_url TEXT,
   language_preference TEXT DEFAULT 'en',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION handle_new_user()
+-- Grant schema and table access
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+
+-- Fail-Safe Auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, full_name, email)
+  INSERT INTO public.profiles (id, full_name, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'full_name',
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     NEW.email
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE
+  SET
+    full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+    email = COALESCE(EXCLUDED.email, public.profiles.email),
+    updated_at = NOW();
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Prevent trigger errors from failing user signup
+    RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- TABLE 2: Kundlis
-CREATE TABLE IF NOT EXISTS kundlis (
+CREATE TABLE IF NOT EXISTS public.kundlis (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   
   -- Input data
   name TEXT NOT NULL,
@@ -72,9 +89,9 @@ CREATE TABLE IF NOT EXISTS kundlis (
 );
 
 -- TABLE 3: Gun Milan Reports
-CREATE TABLE IF NOT EXISTS gun_milan_reports (
+CREATE TABLE IF NOT EXISTS public.gun_milan_reports (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   
   -- Person 1
   person1_name TEXT NOT NULL,
@@ -104,16 +121,16 @@ CREATE TABLE IF NOT EXISTS gun_milan_reports (
 );
 
 -- TABLE 4: Saved Horoscopes
-CREATE TABLE IF NOT EXISTS horoscope_preferences (
+CREATE TABLE IF NOT EXISTS public.horoscope_preferences (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
   rashi TEXT,
   notification_enabled BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- TABLE 5: Daily Horoscopes Cache
-CREATE TABLE IF NOT EXISTS horoscope_cache (
+CREATE TABLE IF NOT EXISTS public.horoscope_cache (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rashi TEXT NOT NULL,
   date DATE NOT NULL,
@@ -124,9 +141,9 @@ CREATE TABLE IF NOT EXISTS horoscope_cache (
 );
 
 -- TABLE 6: Consultations
-CREATE TABLE IF NOT EXISTS consultations (
+CREATE TABLE IF NOT EXISTS public.consultations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id),
+  user_id UUID REFERENCES public.profiles(id),
   astrologer_name TEXT,
   scheduled_at TIMESTAMPTZ,
   status TEXT DEFAULT 'pending',
@@ -140,44 +157,49 @@ CREATE TABLE IF NOT EXISTS consultations (
 -- =========================================================
 
 -- Enable RLS on all tables
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE kundlis ENABLE ROW LEVEL SECURITY;
-ALTER TABLE gun_milan_reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE horoscope_preferences ENABLE ROW LEVEL SECURITY;
-ALTER TABLE horoscope_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kundlis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gun_milan_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.horoscope_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.horoscope_cache ENABLE ROW LEVEL SECURITY;
 
--- Profiles: users see and update only their own
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+-- Profiles: users see, insert, and update their own
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
-  ON profiles FOR SELECT
+  ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
+  ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
 -- Kundlis: users see and manage only their own
-DROP POLICY IF EXISTS "Users can CRUD own kundlis" ON kundlis;
+DROP POLICY IF EXISTS "Users can CRUD own kundlis" ON public.kundlis;
 CREATE POLICY "Users can CRUD own kundlis"
-  ON kundlis FOR ALL
+  ON public.kundlis FOR ALL
   USING (auth.uid() = user_id);
 
 -- Gun Milan: users see and manage only their own
-DROP POLICY IF EXISTS "Users can CRUD own reports" ON gun_milan_reports;
+DROP POLICY IF EXISTS "Users can CRUD own reports" ON public.gun_milan_reports;
 CREATE POLICY "Users can CRUD own reports"
-  ON gun_milan_reports FOR ALL
+  ON public.gun_milan_reports FOR ALL
   USING (auth.uid() = user_id);
 
 -- Horoscope preferences: own only
-DROP POLICY IF EXISTS "Users can CRUD own preferences" ON horoscope_preferences;
+DROP POLICY IF EXISTS "Users can CRUD own preferences" ON public.horoscope_preferences;
 CREATE POLICY "Users can CRUD own preferences"
-  ON horoscope_preferences FOR ALL
+  ON public.horoscope_preferences FOR ALL
   USING (auth.uid() = user_id);
 
 -- Horoscope cache: everyone can read
-DROP POLICY IF EXISTS "Anyone can read horoscope cache" ON horoscope_cache;
+DROP POLICY IF EXISTS "Anyone can read horoscope cache" ON public.horoscope_cache;
 CREATE POLICY "Anyone can read horoscope cache"
-  ON horoscope_cache FOR SELECT
+  ON public.horoscope_cache FOR SELECT
   TO anon, authenticated
   USING (true);
