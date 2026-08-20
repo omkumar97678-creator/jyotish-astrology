@@ -57,7 +57,7 @@ function normalizeKundliData(raw) {
     minute24 = parseInt(parts[1] || '0', 10) || 0;
     hour24 = h;
     time = {
-      hour: String(h > 12 ? h - 12 : h === 0 ? 12 : h),
+      hour: String(h > 12 ? h - 12 : (h === 0 ? 12 : h)),
       minute: String(minute24).padStart(2, '0'),
       period: h >= 12 ? 'PM' : 'AM',
     };
@@ -114,6 +114,13 @@ function normalizeKundliData(raw) {
     dashas: chart.dashas,
     current_dasha: chart.currentDasha,
     is_manglik: chart.isManglik,
+
+    // Auxiliary Systems
+    panchang: chart.panchang,
+    yogas: chart.yogas,
+    sadeSati: chart.sadeSati,
+    ashtakvarga: chart.ashtakvarga,
+    lucky: chart.lucky,
 
     // Numerology
     life_path_number: raw.life_path_number || numerology.lifePathNumber,
@@ -203,7 +210,7 @@ export default function Kundli() {
           <BhavaAnalysis houses={data.houses} />
         </div>
         <div className="mt-6">
-          <Mahadasha mahadasha={data.mahadasha} nakshatra={data.nakshatra} />
+          <Mahadasha currentDasha={data.current_dasha} dashas={data.dashas} mahadasha={data.mahadasha} nakshatra={data.nakshatra} />
         </div>
         <div className="mt-6">
           <DashaTimeline dashas={data.dashas} mahadasha={data.mahadasha} />

@@ -3,13 +3,18 @@ import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
-export default function Mahadasha({ mahadasha, nakshatra }) {
+export default function Mahadasha({ currentDasha, dashas, mahadasha, nakshatra }) {
   const { lang } = useLang();
 
-  const active = mahadasha?.activeDasha || {};
-  const lord = active.planet || mahadasha?.currentLord || 'Jupiter';
-  const start = active.startYear || mahadasha?.startYear || 2022;
-  const end = active.endYear || mahadasha?.endYear || 2038;
+  const active =
+    currentDasha ||
+    (dashas && Array.isArray(dashas) && dashas.find((d) => d.isCurrent)) ||
+    mahadasha?.activeDasha ||
+    {};
+
+  const lord = active.lord || active.planet || mahadasha?.currentLord || 'Jupiter';
+  const start = active.start || active.startYear || mahadasha?.startYear || 2018;
+  const end = active.end || active.endYear || mahadasha?.endYear || 2034;
   const now = new Date().getFullYear();
   const progress = Math.min(100, Math.max(5, ((now - start) / Math.max(1, end - start)) * 100));
 
@@ -46,11 +51,6 @@ export default function Mahadasha({ mahadasha, nakshatra }) {
       </div>
       <div className="mt-2 text-sm" style={{ color: 'var(--col-moonstone)' }}>
         Birth Nakshatra: <span style={{ color: 'var(--col-copper)' }}>{nakshatra || 'Ardra'}</span>
-        {mahadasha?.balanceAtBirth && (
-          <span className="ml-3 font-mono-num text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-            (Balance at birth: {mahadasha.balanceAtBirth} yrs)
-          </span>
-        )}
       </div>
       <p className="mt-3 text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.7 }}>
         {lang === 'hinglish'

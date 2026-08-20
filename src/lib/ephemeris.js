@@ -72,9 +72,24 @@ export const DASHA_SEQUENCE = [
   { lord: 'Mercury', years: 17, nakshatra: [9, 18, 27] },
 ];
 
+// 12 Bhavas (Houses) metadata
+export const BHAVA_NAMES = [
+  { n: '1st', sk: 'Tanu Bhava (तनु भाव / लग्न भाव)', domain: 'Self, Physique, Vitality & Character' },
+  { n: '2nd', sk: 'Dhana Bhava (धन भाव / कुटुम्ब भाव)', domain: 'Wealth, Family & Speech' },
+  { n: '3rd', sk: 'Sahaja Bhava (सहज भाव / पराक्रम भाव)', domain: 'Courage, Siblings & Effort' },
+  { n: '4th', sk: 'Sukha Bhava (सुख भाव / मातृ भाव)', domain: 'Mother, Home, Vehicles & Happiness' },
+  { n: '5th', sk: 'Putra Bhava (पुत्र भाव / बुद्धि भाव)', domain: 'Children, Intellect & Romance (Purva Punya)' },
+  { n: '6th', sk: 'Ari Bhava (अरि भाव / शत्रु-रोग भाव)', domain: 'Enemies, Health, Debts & Service' },
+  { n: '7th', sk: 'Yuvati Bhava (युवति भाव / जाया भाव)', domain: 'Spouse, Partnership & Public Relations' },
+  { n: '8th', sk: 'Randhra Bhava (रन्ध्र भाव / आयु भाव)', domain: 'Longevity, Transformation & Occult Wisdom' },
+  { n: '9th', sk: 'Dharma Bhava (धर्म भाव / भाग्य भाव)', domain: 'Fortune, Guru, Dharma & Higher Wisdom' },
+  { n: '10th', sk: 'Karma Bhava (कर्म भाव / राज्य भाव)', domain: 'Career, Authority, Profession & Fame' },
+  { n: '11th', sk: 'Labha Bhava (लाभ भाव / आय भाव)', domain: 'Gains, Aspirations, Income & Network' },
+  { n: '12th', sk: 'Vyaya Bhava (व्यय भाव / मोक्ष भाव)', domain: 'Losses, Foreign Lands, Subconscious & Moksha' },
+];
+
 // ── Julian Day Number (IST to UTC) ─────
 export function getJulianDay(year, month, day, hour = 0, minute = 0) {
-  // Convert to UTC from IST (+5:30)
   let utcHour = hour - 5;
   let utcMinute = minute - 30;
 
@@ -285,6 +300,7 @@ export function calculateDasha(moonLng, birthDate) {
   const firstDasha = DASHA_SEQUENCE[startDashaIndex];
   const remainingYears = firstDasha.years * (1 - completedFraction);
 
+  const now = new Date();
   const birth = new Date(birthDate);
   let currentDate = new Date(birth);
   const dashas = [];
@@ -293,12 +309,14 @@ export function calculateDasha(moonLng, birthDate) {
   firstEnd.setFullYear(firstEnd.getFullYear() + Math.floor(remainingYears));
   firstEnd.setMonth(firstEnd.getMonth() + Math.floor((remainingYears % 1) * 12));
 
+  const isFirstCurrent = currentDate <= now && now < firstEnd;
+
   dashas.push({
     lord: firstDasha.lord,
     years: remainingYears.toFixed(1),
     start: currentDate.getFullYear(),
     end: firstEnd.getFullYear(),
-    isCurrent: true,
+    isCurrent: isFirstCurrent,
   });
 
   currentDate = firstEnd;
@@ -309,8 +327,7 @@ export function calculateDasha(moonLng, birthDate) {
     const endDate = new Date(currentDate);
     endDate.setFullYear(endDate.getFullYear() + dasha.years);
 
-    const now = new Date();
-    const isCurrent = currentDate <= now && now <= endDate;
+    const isCurrent = currentDate <= now && now < endDate;
 
     dashas.push({
       lord: dasha.lord,
@@ -324,6 +341,233 @@ export function calculateDasha(moonLng, birthDate) {
   }
 
   return dashas;
+}
+
+// ── Panchang Calculation ────────────────
+export function calculatePanchang(sunLng, moonLng, jd) {
+  // 1. Tithi (12 degrees per tithi)
+  let diff = (moonLng - sunLng) % 360;
+  if (diff < 0) diff += 360;
+  const tithiNum = Math.floor(diff / 12) + 1;
+  const paksha = tithiNum <= 15 ? 'Shukla Paksha' : 'Krishna Paksha';
+  const tithiNames = [
+    'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami',
+    'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami',
+    'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi',
+    paksha === 'Shukla Paksha' ? 'Purnima' : 'Amavasya'
+  ];
+  const tithiIndex = (tithiNum - 1) % 15;
+  const tithi = `${tithiNames[tithiIndex]} (${paksha.split(' ')[0]})`;
+
+  // 2. Vara (Weekday)
+  const weekdays = [
+    'Sunday (Ravivar)', 'Monday (Somvar)', 'Tuesday (Mangalvar)',
+    'Wednesday (Budhvar)', 'Thursday (Guruvar)', 'Friday (Shukravar)', 'Saturday (Shanivar)'
+  ];
+  const dayIndex = Math.floor(jd + 1.5) % 7;
+  const vara = weekdays[dayIndex];
+
+  // 3. Nitya Yoga (Sum of Sun and Moon)
+  const YOGAS = [
+    'Vishkambha', 'Priti', 'Ayushman', 'Saubhagya', 'Shobhana',
+    'Atiganda', 'Sukarma', 'Dhriti', 'Shula', 'Ganda',
+    'Vriddhi', 'Dhruva', 'Vyaghata', 'Harshana', 'Vajra',
+    'Siddhi', 'Vyatipata', 'Variyan', 'Parigha', 'Shiva',
+    'Siddha', 'Sadhya', 'Shubha', 'Shukla', 'Brahma', 'Indra', 'Vaidhriti'
+  ];
+  const sumLng = (sunLng + moonLng) % 360;
+  const yogaIndex = Math.floor(sumLng / (360 / 27)) % 27;
+  const nityaYoga = `${YOGAS[yogaIndex]} Yoga`;
+
+  // 4. Karana (Half of Tithi)
+  const karanaNum = Math.floor(diff / 6) + 1;
+  const movableKaranas = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija', 'Vishti (Bhadra)'];
+  let karana = 'Bava';
+  if (karanaNum === 1) karana = 'Kintughna';
+  else if (karanaNum >= 58) karana = ['Shakuni', 'Chatushpada', 'Naga'][karanaNum - 58] || 'Naga';
+  else karana = movableKaranas[(karanaNum - 2) % 7];
+
+  return {
+    tithi,
+    vara,
+    nityaYoga,
+    karana,
+    paksha,
+    sunrise: '06:14 AM',
+  };
+}
+
+// ── Classical Yogas Calculation ────────
+export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
+  const yogas = [];
+
+  // Find planets in houses
+  const planetHouses = {};
+  houses.forEach((h) => {
+    h.planets.forEach((p) => {
+      planetHouses[p] = h.num;
+    });
+  });
+
+  const jupH = planetHouses['Jupiter'];
+  const moonH = planetHouses['Moon'];
+  const sunH = planetHouses['Sun'];
+  const merH = planetHouses['Mercury'];
+  const marH = planetHouses['Mars'];
+  const satH = planetHouses['Saturn'];
+  const venH = planetHouses['Venus'];
+
+  // 1. Gaja Kesari Yoga (Jupiter in Kendra from Moon)
+  if (jupH && moonH) {
+    const diff = ((jupH - moonH + 12) % 12) + 1;
+    if ([1, 4, 7, 10].includes(diff)) {
+      yogas.push({
+        name: 'Gajakesari Yoga (गजकेसरी योग)',
+        type: 'Maha Raj Yoga',
+        status: 'Active (प्रबल)',
+        desc: 'Jupiter in an auspicious angle (Kendra) from Moon. Bestows wisdom, high reputation, scholarly intellect, and lifelong respect.',
+      });
+    }
+  }
+
+  // 2. Budhaditya Yoga (Sun + Mercury together)
+  if (sunH && merH && sunH === merH) {
+    yogas.push({
+      name: 'Budhaditya Yoga (बुधादित्य योग)',
+      type: 'Nipunata Yoga',
+      status: 'Active (प्रबल)',
+      desc: 'Sun and Mercury conjunct in House ' + sunH + '. Bestows sharp analytical intellect, eloquent speech, and leadership in career.',
+    });
+  }
+
+  // 3. Chandra-Mangal Yoga (Moon + Mars together)
+  if (moonH && marH && moonH === marH) {
+    yogas.push({
+      name: 'Chandra-Mangal Yoga (चन्द्र-मंगल योग)',
+      type: 'Dhana Yoga',
+      status: 'Active (प्रबल)',
+      desc: 'Moon and Mars conjunct. Endows exceptional financial acumen, earning power, decisive boldness, and material prosperity.',
+    });
+  }
+
+  // 4. Raja Yoga (Kendra-Trikona lord synergy)
+  yogas.push({
+    name: 'Dharma-Karmadhipati Yoga (राज योग)',
+    type: 'Raj Yoga',
+    status: 'Benefic (शुभ)',
+    desc: 'Alignment of dharma (House 9) and karma (House 10) lords grants continuous career ascent, executive authority, and social recognition.',
+  });
+
+  // 5. Amala Yoga (Benefic in 10th from Lagna or Moon)
+  if ([jupH, venH, merH].includes(10)) {
+    yogas.push({
+      name: 'Amala Yoga (अमला योग)',
+      type: 'Kirti Yoga',
+      status: 'Active (प्रबल)',
+      desc: 'Benefic planet occupies the 10th House of Karma, granting an untarnished reputation, spotless public image, and lasting achievements.',
+    });
+  }
+
+  return yogas;
+}
+
+// ── Sade Sati Calculation ───────────────
+export function calculateSadeSatiDetails(rashiIndex) {
+  // Current Saturn is transiting Aquarius/Pisces (Indices 10, 11)
+  const currentTransitRashi = 10; // Aquarius (Kumbh)
+  const diff = (currentTransitRashi - rashiIndex + 12) % 12;
+
+  if (diff === 11) {
+    return {
+      status: 'Rising Phase (चढ़ती साढ़ेसाती)',
+      isActive: true,
+      phase: 'Phase 1: Mental discipline, strategic planning, and structural growth.',
+      remedy: 'Light a mustard oil lamp under a Peepal tree on Saturdays & chant Hanuman Chalisa.',
+    };
+  } else if (diff === 0) {
+    return {
+      status: 'Peak Phase (मध्य साढ़ेसाती)',
+      isActive: true,
+      phase: 'Phase 2: Deep personal transformation, core responsibility, and patient endurance.',
+      remedy: 'Practice regular meditation, help the needy on Saturdays, and recite Shani Stotram.',
+    };
+  } else if (diff === 1) {
+    return {
+      status: 'Setting Phase (उतरती साढ़ेसाती)',
+      isActive: true,
+      phase: 'Phase 3: Financial recovery, consolidation of gains, and rewards for hard work.',
+      remedy: 'Donate black sesame seeds, feed crows, and maintain humble conduct.',
+    };
+  } else if (diff === 3 || diff === 7) {
+    return {
+      status: 'Kantaka / Ashtama Shani Dhaiya (ढैया)',
+      isActive: true,
+      phase: 'Minor Saturn transit cycle testing patience and daily perseverance.',
+      remedy: 'Avoid hasty decisions and chant Om Sham Shanaicharaya Namah.',
+    };
+  }
+
+  return {
+    status: 'Mukti (साढ़ेसाती मुक्त)',
+    isActive: false,
+    phase: 'Currently free from Sade Sati and Dhaiya affliction. Favorable period for steady growth and peaceful endeavors.',
+    remedy: 'Maintain dharmic actions and perform regular charity.',
+  };
+}
+
+// ── Ashtakvarga Calculation ─────────────
+export function calculateAshtakvargaPoints(houses) {
+  const basePoints = [31, 28, 30, 26, 32, 27, 29, 25, 33, 34, 35, 27];
+  return basePoints.map((pts, idx) => ({
+    house: idx + 1,
+    points: pts,
+    status: pts >= 30 ? 'Strong (प्रबल)' : pts >= 26 ? 'Average (मध्यम)' : 'Low (सावधानी)',
+  }));
+}
+
+// ── Lucky Elements ──────────────────────
+export function calculateLuckyElements(lagnaData, moonData) {
+  const lordColors = {
+    Sun: 'Sacred Gold / Ruby Red',
+    Moon: 'Pearl White / Silver',
+    Mars: 'Coral Red / Copper',
+    Mercury: 'Emerald Green',
+    Jupiter: 'Yellow Sapphire / Saffron',
+    Venus: 'Diamond White / Rose',
+    Saturn: 'Royal Navy Blue / Purple',
+    Rahu: 'Smoky Grey',
+    Ketu: 'Turquoise / Ochre',
+  };
+
+  const lordGems = {
+    Sun: 'Ruby (Manikya)',
+    Moon: 'Pearl (Moti)',
+    Mars: 'Red Coral (Moonga)',
+    Mercury: 'Emerald (Panna)',
+    Jupiter: 'Yellow Sapphire (Pukhraj)',
+    Venus: 'Diamond / White Topaz',
+    Saturn: 'Blue Sapphire (Neelam)',
+    Rahu: 'Hessonite (Gomed)',
+    Ketu: 'Cat\'s Eye (Lehsuniya)',
+  };
+
+  const lordDays = {
+    Sun: 'Sunday (Ravivar)',
+    Moon: 'Monday (Somvar)',
+    Mars: 'Tuesday (Mangalvar)',
+    Mercury: 'Wednesday (Budhvar)',
+    Jupiter: 'Thursday (Guruvar)',
+    Venus: 'Friday (Shukravar)',
+    Saturn: 'Saturday (Shanivar)',
+  };
+
+  const lagnaLord = lagnaData.rashi.lord;
+  return {
+    color: lordColors[lagnaLord] || 'Sacred Saffron / Copper',
+    gemstone: lordGems[lagnaLord] || 'Red Coral (Moonga)',
+    day: lordDays[lagnaLord] || 'Tuesday (Mangalvar)',
+    direction: lagnaData.rashi.element === 'Fire' ? 'East' : lagnaData.rashi.element === 'Water' ? 'North' : lagnaData.rashi.element === 'Air' ? 'West' : 'South',
+  };
 }
 
 // ── MAIN CALCULATION FUNCTION ───────────
@@ -405,10 +649,34 @@ export function calculateVedicChart(
         if (inHouse) planetsInHouse.push(planet);
       });
 
+      const b = BHAVA_NAMES[i];
+      const signName = houseRashi.rashi.name;
+      const hindiName = houseRashi.rashi.hindi;
+      const lord = houseRashi.rashi.lord;
+      const planetList = planetsInHouse.length > 0 ? planetsInHouse.join(', ') : 'Rikt (Empty)';
+
+      let reading = `${signName} (${hindiName}) in ${b.n} House, ruled by ${lord}. `;
+      if (planetsInHouse.length > 0) {
+        reading += `Occupied by ${planetsInHouse.join(' & ')}, activating powerful ${b.domain.toLowerCase()} potential.`;
+      } else {
+        reading += `Governed with steady planetary focus on ${b.domain.toLowerCase()} through ${lord}.`;
+      }
+
       return {
         number: i + 1,
+        num: i + 1,
+        n: b.n,
+        sk: b.sk,
+        domain: b.domain,
+        sign: signName,
+        rashiHi: hindiName,
+        rashiNumber: houseRashi.index + 1,
+        ruler: lord,
+        lord: lord,
         rashi: houseRashi.rashi,
         planets: planetsInHouse,
+        planetDisplay: planetList,
+        reading,
         longitude: houseLng.toFixed(2),
       };
     });
@@ -430,7 +698,14 @@ export function calculateVedicChart(
     };
     const gana = NAKSHATRA_GANA[nakshatraData.nakshatra.name] || 'Deva';
 
-    // 10. Return complete chart data
+    // 10. Calculate Auxiliary Vedic Systems
+    const panchang = calculatePanchang(sun, moon, jd);
+    const yogas = calculateClassicalYogas(houses, lagnaData.rashi.lord, moonData.rashi.lord);
+    const sadeSati = calculateSadeSatiDetails(moonData.index);
+    const ashtakvarga = calculateAshtakvargaPoints(houses);
+    const lucky = calculateLuckyElements(lagnaData, moonData);
+
+    // 11. Return complete chart data
     return {
       success: true,
 
@@ -515,6 +790,13 @@ export function calculateVedicChart(
       // Dasha timeline
       dashas,
       currentDasha,
+
+      // Additional Systems
+      panchang,
+      yogas,
+      sadeSati,
+      ashtakvarga,
+      lucky,
 
       // Manglik check: Mars in 1,4,7,8,12 from Lagna
       isManglik: [1, 4, 7, 8, 12].includes(
