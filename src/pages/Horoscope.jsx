@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import StarField from '@/components/StarField';
 import HoroHeader from '@/components/horoscope/HoroHeader';
@@ -17,23 +17,99 @@ import CompatibilityToday from '@/components/horoscope/content/CompatibilityToda
 import NotablePersonalities from '@/components/horoscope/content/NotablePersonalities';
 import ShareAndSave from '@/components/horoscope/content/ShareAndSave';
 import HoroNav from '@/components/horoscope/HoroNav';
-import { getHoroscopeForSign } from '@/lib/horoscopeEngine';
+import { getHoroscopeForSign, getOrGenerateHoroscope } from '@/lib/horoscopeEngine';
 import { useLang } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { signs } from '@/components/horoscope/horoData';
 
 export default function Horoscope() {
   const [selected, setSelected] = useState(0); // 0 = Aries
   const [tab, setTab] = useState('Today');
   const [revealed, setRevealed] = useState(true);
+  const [horoData, setHoroData] = useState(() => getHoroscopeForSign(0, 'Today', 'en'));
   const { lang } = useLang();
+  const { user } = useAuth();
 
-  // Dynamic real-time calculation based on astronomical transits & selected sign
-  const horoData = useMemo(() => {
-    return getHoroscopeForSign(selected, tab, lang);
+  // Load user's saved preference or natal rashi on mount
+  useEffect(() => {
+    const loadUserPreference = async () => {
+      if (user && isSupabaseConfigured()) {
+        try {
+          const { data } = await supabase
+            .from('horoscope_preferences')
+            .select('rashi')
+            .eq('user_id', user.id)
+            .single();
+
+          if (data?.rashi) {
+            const idx = signs.findIndex(
+              (s) => s.en.toLowerCase() === data.rashi.toLowerCase() || s.name.toLowerCase() === data.rashi.toLowerCase()
+            );
+            if (idx >= 0) setSelected(idx);
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      // Fallback to localStorage kundli rashi
+      try {
+        const stored = localStorage.getItem('kundli_data');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const rashiStr = String(parsed.rashi || parsed.rashiSign || '').split(' ')[0];
+          const idx = signs.findIndex((s) => s.en.toLowerCase() === rashiStr.toLowerCase() || s.hi.toLowerCase() === rashiStr.toLowerCase());
+          if (idx >= 0) setSelected(idx);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    loadUserPreference();
+  }, [user]);
+
+  // Fetch or retrieve cached horoscope data
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchHoroscope = async () => {
+      const data = await getOrGenerateHoroscope(selected, tab, lang);
+      if (isMounted) {
+        setHoroData(data);
+      }
+    };
+
+    fetchHoroscope();
+    return () => {
+      isMounted = false;
+    };
   }, [selected, tab, lang]);
+
+  // Save rashi preference to Supabase
+  const saveHoroscopePreference = async (rashiName) => {
+    if (!user || !isSupabaseConfigured()) return;
+    try {
+      await supabase
+        .from('horoscope_preferences')
+        .upsert({
+          user_id: user.id,
+          rashi: rashiName,
+          notification_enabled: false,
+        });
+      console.log('Horoscope preference saved ✅');
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
+  };
 
   const selectSign = (i) => {
     setSelected(i);
     setRevealed(true);
+    const rashiName = signs[i]?.en || 'Aries';
+    saveHoroscopePreference(rashiName);
   };
 
   return (
@@ -70,16 +146,16 @@ export default function Horoscope() {
 
                   {tab === 'Today' && (
                     <>
-                      <AspectCards aspects={horoData.aspects} />
-                      <LuckyStrip lucky={horoData.lucky} />
+                      <AspectCards aspects={horoData?.aspects} />
+                      <LuckyStrip lucky={horoData?.lucky} />
                     </>
                   )}
 
-                  <PlanetaryInfluence influences={horoData.planetaryInfluences} />
-                  <AdviceOfDay advice={horoData.advice} />
+                  <PlanetaryInfluence influences={horoData?.planetaryInfluences} />
+                  <AdviceOfDay advice={horoData?.advice} />
                   <HoroAiInsights data={horoData} />
 
-                  {tab === 'Today' && <PanchangToday panchang={horoData.panchang} />}
+                  {tab === 'Today' && <PanchangToday panchang={horoData?.panchang} />}
                   <CompatibilityToday selected={selected} />
                   <NotablePersonalities selected={selected} />
                   <ShareAndSave selected={selected} />
@@ -87,7 +163,7 @@ export default function Horoscope() {
               </AnimatePresence>
 
               <div className="pt-4">
-                <HoroNav selected={selected} setSelected={setSelected} />
+                <HoroNav selected={selected} setSelected={selectSign} />
               </div>
             </motion.div>
           )}

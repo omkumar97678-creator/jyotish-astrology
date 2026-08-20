@@ -373,3 +373,56 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
   };
 }
 
+// ── Supabase Cached Horoscope Fetcher ─────────────
+import { supabase, isSupabaseConfigured } from './supabase';
+
+export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', lang = 'en') {
+  const safeIdx = (signIndex + 12) % 12;
+  const rashiName = ZODIAC_SIGNS[safeIdx]?.name || 'Aries';
+  const today = new Date().toISOString().split('T')[0];
+  const normalizedPeriod = String(period || 'today').toLowerCase().replace('this ', '');
+
+  // 1. Check Supabase cache first
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: cached, error } = await supabase
+        .from('horoscope_cache')
+        .select('content')
+        .eq('rashi', rashiName)
+        .eq('date', today)
+        .eq('period', normalizedPeriod)
+        .single();
+
+      if (!error && cached?.content) {
+        console.log('Horoscope from cache ✅');
+        return cached.content;
+      }
+    } catch {
+      /* Cache miss or network fallback */
+    }
+  }
+
+  // 2. Not in cache — calculate dynamically from Gochar engine
+  const generated = getHoroscopeForSign(signIndex, period, lang);
+
+  // 3. Save to Supabase cache
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase
+        .from('horoscope_cache')
+        .upsert({
+          rashi: rashiName,
+          date: today,
+          period: normalizedPeriod,
+          content: generated,
+        });
+      console.log('Horoscope generated + cached ✅');
+    } catch (err) {
+      console.warn('Horoscope cache save notice:', err);
+    }
+  }
+
+  return generated;
+}
+
+

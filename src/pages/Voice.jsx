@@ -9,8 +9,15 @@ import Suggestions from '@/components/voice/Suggestions';
 import Conversation, { mock } from '@/components/voice/Conversation';
 import SessionBar from '@/components/voice/SessionBar';
 import { generateVoiceResponse } from '@/lib/aiService';
+import { useAuth } from '@/context/AuthContext';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+const isUUID = (str) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
 
 export default function Voice() {
+  const { user } = useAuth();
   const [voiceState, setVoiceState] = useState('idle');
   const [messages, setMessages] = useState(mock);
   const [seconds, setSeconds] = useState(0);
@@ -18,6 +25,7 @@ export default function Voice() {
   const [textInput, setTextInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [kundliData, setKundliData] = useState({});
+  const [sessionId, setSessionId] = useState(null);
 
   // ── FIX 1: Session Timer ──────────────
   useEffect(() => {
@@ -37,7 +45,53 @@ export default function Voice() {
     }
   }, []);
 
-  // ── FIX 4: Handle Send Message ────────
+  // ── FIX 4.1: Create Voice Session in Supabase ──
+  useEffect(() => {
+    const createSession = async () => {
+      if (!user || !isSupabaseConfigured()) return;
+      try {
+        const kundliId = localStorage.getItem('current_kundli_id');
+        const { data, error } = await supabase
+          .from('voice_sessions')
+          .insert({
+            user_id: user.id,
+            kundli_id: isUUID(kundliId) ? kundliId : null,
+            messages: [],
+            session_duration: 0,
+          })
+          .select()
+          .single();
+
+        if (!error && data?.id) {
+          setSessionId(data.id);
+          console.log('Voice session created ✅', data.id);
+        }
+      } catch (err) {
+        console.error('Session create failed:', err);
+      }
+    };
+
+    createSession();
+  }, [user]);
+
+  // ── FIX 4.2: Save Messages to Supabase ──
+  const saveMessages = async (updatedMessages) => {
+    if (!sessionId || !isSupabaseConfigured()) return;
+    try {
+      await supabase
+        .from('voice_sessions')
+        .update({
+          messages: updatedMessages,
+          session_duration: seconds,
+        })
+        .eq('id', sessionId);
+      console.log('Voice session messages saved ✅');
+    } catch (err) {
+      console.error('Messages save failed:', err);
+    }
+  };
+
+  // ── FIX 4.3: Handle Send Message ───────
   const handleSendMessage = async (text) => {
     if (!text || !text.trim()) return;
     const queryText = text.trim();
@@ -52,7 +106,9 @@ export default function Voice() {
         minute: '2-digit',
       }),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    const afterUserMessages = [...messages, userMsg];
+    setMessages(afterUserMessages);
+    saveMessages(afterUserMessages);
 
     // Show typing indicator
     setIsTyping(true);
@@ -75,7 +131,9 @@ export default function Voice() {
           minute: '2-digit',
         }),
       };
-      setMessages((prev) => [...prev, aiMsg]);
+      const finalMessages = [...afterUserMessages, aiMsg];
+      setMessages(finalMessages);
+      saveMessages(finalMessages);
     } catch (err) {
       console.warn('Voice response error:', err);
       const errorMsg = {
@@ -84,7 +142,9 @@ export default function Voice() {
         text: 'Sorry, could not connect. Please try again.',
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      const finalMessages = [...afterUserMessages, errorMsg];
+      setMessages(finalMessages);
+      saveMessages(finalMessages);
     } finally {
       setIsTyping(false);
       setVoiceState('idle');

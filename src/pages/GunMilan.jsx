@@ -31,6 +31,44 @@ export default function GunMilan() {
 
   const formRef = React.useRef(null);
 
+  const saveGunMilanReport = async (ashtakoot, analysis) => {
+    if (!user || !isSupabaseConfigured()) return;
+    
+    try {
+      const p1Dob = p1.dob?.year ? `${p1.dob.year}-${String(p1.dob.month || 1).padStart(2, '0')}-${String(p1.dob.day || 1).padStart(2, '0')}` : '1995-05-15';
+      const p2Dob = p2.dob?.year ? `${p2.dob.year}-${String(p2.dob.month || 1).padStart(2, '0')}-${String(p2.dob.day || 1).padStart(2, '0')}` : '1996-08-20';
+
+      const p1Time = p1.unknownTime ? null : (p1.time?.hour ? `${String(p1.time.hour).padStart(2, '0')}:${String(p1.time.minute || '00').padStart(2, '0')}:00` : null);
+      const p2Time = p2.unknownTime ? null : (p2.time?.hour ? `${String(p2.time.hour).padStart(2, '0')}:${String(p2.time.minute || '00').padStart(2, '0')}:00` : null);
+
+      await supabase
+        .from('gun_milan_reports')
+        .insert({
+          user_id: user.id,
+          person1_name: p1.name || 'Person 1',
+          person1_dob: p1Dob,
+          person1_time: p1Time,
+          person1_place: p1.birthPlace || '',
+          person1_rashi: ashtakoot?.person1?.rashi || 'Scorpio',
+          person1_nakshatra: ashtakoot?.person1?.nakshatra || 'Jyeshtha',
+          person1_is_manglik: Boolean(p1.isManglik),
+          person2_name: p2.name || 'Person 2',
+          person2_dob: p2Dob,
+          person2_time: p2Time,
+          person2_place: p2.birthPlace || '',
+          person2_rashi: ashtakoot?.person2?.rashi || 'Virgo',
+          person2_nakshatra: ashtakoot?.person2?.nakshatra || 'Hasta',
+          person2_is_manglik: Boolean(p2.isManglik),
+          total_score: ashtakoot?.totalScore || 28,
+          guna_scores: ashtakoot?.gunas || {},
+          ai_analysis: analysis?.verdict || ''
+        });
+      console.log('Gun Milan report saved ✅');
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
+  };
+
   const onMatch = async () => {
     setLoading(true);
 
@@ -51,24 +89,8 @@ export default function GunMilan() {
       );
       setAnalysisResult(analysis);
 
-      // 3. Save report to Supabase if user is logged in
-      if (user && isSupabaseConfigured()) {
-        const p1Dob = p1.dob?.year ? `${p1.dob.year}-${String(p1.dob.month || 1).padStart(2, '0')}-${String(p1.dob.day || 1).padStart(2, '0')}` : '1995-05-15';
-        const p2Dob = p2.dob?.year ? `${p2.dob.year}-${String(p2.dob.month || 1).padStart(2, '0')}-${String(p2.dob.day || 1).padStart(2, '0')}` : '1996-08-20';
-
-        await supabase.from('gun_milan_reports').insert({
-          user_id: user.id,
-          person1_name: p1.name || 'Person 1',
-          person1_dob: p1Dob,
-          person1_rashi: ashtakoot.person1.rashi,
-          person2_name: p2.name || 'Person 2',
-          person2_dob: p2Dob,
-          person2_rashi: ashtakoot.person2.rashi,
-          total_score: score,
-          guna_scores: gunaScores,
-          ai_analysis: analysis?.verdict || 'Vedic compatibility computed',
-        });
-      }
+      // 3. Save report to Supabase
+      await saveGunMilanReport(ashtakoot, analysis);
     } catch (e) {
       console.warn('Gun Milan calculation or DB save error:', e);
     } finally {
@@ -140,7 +162,6 @@ export default function GunMilan() {
             </motion.button>
           </div>
         </div>
-
 
         {showResults && (
           <GmResults
