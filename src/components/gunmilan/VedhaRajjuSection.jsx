@@ -5,8 +5,17 @@ import { useLang } from '@/context/LanguageContext';
 
 export default function VedhaRajjuSection({ calculatedData }) {
   const { lang } = useLang();
-  const nak1 = calculatedData?.nakshatra1 || 'Ashwini';
-  const nak2 = calculatedData?.nakshatra2 || 'Pushya';
+  const rawNak1 = calculatedData?.nakshatra1 || 'Ashwini';
+  const rawNak2 = calculatedData?.nakshatra2 || 'Pushya';
+
+  const cleanName = (str) => {
+    if (!str) return 'Ashwini';
+    const first = String(str).split(' ')[0].replace(/[^a-zA-Z]/g, '');
+    return NAKSHATRA_NUM[first] ? first : (Object.keys(NAKSHATRA_NUM).find(k => str.includes(k)) || 'Ashwini');
+  };
+
+  const nak1 = cleanName(rawNak1);
+  const nak2 = cleanName(rawNak2);
 
   const n1 = NAKSHATRA_NUM[nak1] || 1;
   const n2 = NAKSHATRA_NUM[nak2] || 1;

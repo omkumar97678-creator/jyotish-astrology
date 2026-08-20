@@ -8,8 +8,17 @@ export default function NakshatraAnalysis({ p1, p2, calculatedData }) {
   const boyName = p1?.name?.trim() || 'Person 1';
   const girlName = p2?.name?.trim() || 'Person 2';
 
-  const nak1 = calculatedData?.nakshatra1 || 'Ashwini';
-  const nak2 = calculatedData?.nakshatra2 || 'Pushya';
+  const rawNak1 = calculatedData?.nakshatra1 || 'Ashwini';
+  const rawNak2 = calculatedData?.nakshatra2 || 'Pushya';
+
+  const cleanName = (str) => {
+    if (!str) return 'Ashwini';
+    const first = String(str).split(' ')[0].replace(/[^a-zA-Z]/g, '');
+    return NAKSHATRA_DETAILS[first] ? first : (Object.keys(NAKSHATRA_DETAILS).find(k => str.includes(k)) || 'Ashwini');
+  };
+
+  const nak1 = cleanName(rawNak1);
+  const nak2 = cleanName(rawNak2);
 
   const details1 = NAKSHATRA_DETAILS[nak1] || { ruler: 'Mercury', quality: 'Sharp', symbol: 'Star' };
   const details2 = NAKSHATRA_DETAILS[nak2] || { ruler: 'Moon', quality: 'Soft', symbol: 'Hand' };

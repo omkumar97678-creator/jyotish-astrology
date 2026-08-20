@@ -21,7 +21,13 @@ export default function GunaTable({ gunaScores }) {
   };
 
   const rows = defaultGunaMeta.map((g) => {
-    const scoredVal = gunaScores?.[g.key]?.scored ?? gunaScores?.[g.key] ?? g.max;
+    const item = gunaScores?.[g.key];
+    let scoredVal = g.max;
+    if (typeof item === 'object' && item !== null) {
+      scoredVal = item.obtained ?? item.scored ?? item.score ?? g.max;
+    } else if (typeof item === 'number') {
+      scoredVal = item;
+    }
     return {
       ...g,
       score: scoredVal,
