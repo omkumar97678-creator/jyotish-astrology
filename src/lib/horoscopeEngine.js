@@ -227,24 +227,33 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
   const planetaryInfluences = [
     {
       sym: rulerTransit.sym,
-      name: `${rulerPlanetName} (Ruler)`,
+      name: lang === 'hinglish' ? `${rulerPlanetName} (Ruler Grah)` : `${rulerPlanetName} (Ruler)`,
       pos: `${rulerTransit.sign} ${rulerTransit.deg}`,
-      house: `House ${rulerHouse}`,
-      influence: `Ruling planet in H${rulerHouse} gives core vitality & focused momentum.`,
+      house: lang === 'hinglish' ? `${rulerHouse}va Ghar` : `House ${rulerHouse}`,
+      influence:
+        lang === 'hinglish'
+          ? `Swami grah ${rulerHouse}ve ghar me hone se aatmavishwas aur karya kshamta badhti hai.`
+          : `Ruling planet in H${rulerHouse} gives core vitality & focused momentum.`,
     },
     {
       sym: transits.moon.sym,
-      name: 'Moon Transit',
+      name: lang === 'hinglish' ? 'Chandra Gochar' : 'Moon Transit',
       pos: `${transits.moon.sign} ${transits.moon.deg}`,
-      house: `House ${moonHouse}`,
-      influence: `Chandra in H${moonHouse} activates daily emotions & intuitive flow.`,
+      house: lang === 'hinglish' ? `${moonHouse}va Ghar` : `House ${moonHouse}`,
+      influence:
+        lang === 'hinglish'
+          ? `Chandra ${moonHouse}ve sthan me dainik manosthiti aur prernadayak soch ko sakriya karta hai.`
+          : `Chandra in H${moonHouse} activates daily emotions & intuitive flow.`,
     },
     {
       sym: transits.jupiter.sym,
-      name: 'Jupiter Transit',
+      name: lang === 'hinglish' ? 'Guru Gochar' : 'Jupiter Transit',
       pos: `${transits.jupiter.sign} ${transits.jupiter.deg}`,
-      house: `House ${jupHouse}`,
-      influence: `Guru in H${jupHouse} expands wisdom, dharma & auspicious opportunities.`,
+      house: lang === 'hinglish' ? `${jupHouse}va Ghar` : `House ${jupHouse}`,
+      influence:
+        lang === 'hinglish'
+          ? `Brihaspati ${jupHouse}ve ghar me gyaan, bhagya aur naye shubh avasaron ka vistar karta hai.`
+          : `Guru in H${jupHouse} expands wisdom, dharma & auspicious opportunities.`,
     },
   ];
 
@@ -265,18 +274,18 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
   };
 
   const luckyColorsMap = {
-    Aries: 'Coral Red / Amber',
-    Taurus: 'Pastel Pink / White',
-    Gemini: 'Emerald Green',
-    Cancer: 'Pearl White / Silver',
-    Leo: 'Golden Yellow / Ruby',
-    Virgo: 'Forest Green',
-    Libra: 'Diamond White / Rose',
-    Scorpio: 'Crimson / Maroon',
-    Sagittarius: 'Bright Yellow / Saffron',
-    Capricorn: 'Royal Navy / Charcoal',
-    Aquarius: 'Electric Blue / Violet',
-    Pisces: 'Golden Yellow / Sea Green',
+    Aries: lang === 'hinglish' ? 'Munga Laal / Kesariya' : 'Coral Red / Amber',
+    Taurus: lang === 'hinglish' ? 'Gulabi / Shwet' : 'Pastel Pink / White',
+    Gemini: lang === 'hinglish' ? 'Emerald Green (Panna Hara)' : 'Emerald Green',
+    Cancer: lang === 'hinglish' ? 'Moti Shwet / Chandi' : 'Pearl White / Silver',
+    Leo: lang === 'hinglish' ? 'Swarnim Peela / Manikya' : 'Golden Yellow / Ruby',
+    Virgo: lang === 'hinglish' ? 'Gadha Hara (Forest Green)' : 'Forest Green',
+    Libra: lang === 'hinglish' ? 'Heera Shwet / Gulabi' : 'Diamond White / Rose',
+    Scorpio: lang === 'hinglish' ? 'Gehra Laal / Maroon' : 'Crimson / Maroon',
+    Sagittarius: lang === 'hinglish' ? 'Kesar / Peela' : 'Bright Yellow / Saffron',
+    Capricorn: lang === 'hinglish' ? 'Navy Blue / Charcoal' : 'Royal Navy / Charcoal',
+    Aquarius: lang === 'hinglish' ? 'Electric Blue / Jamuni' : 'Electric Blue / Violet',
+    Pisces: lang === 'hinglish' ? 'Kesar Peela / Sea Green' : 'Golden Yellow / Sea Green',
   };
 
   const luckyTimeMap = {
@@ -295,18 +304,18 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
   };
 
   const luckyDirectionMap = {
-    Aries: 'East',
-    Taurus: 'South',
-    Gemini: 'West',
-    Cancer: 'North',
-    Leo: 'East',
-    Virgo: 'South',
-    Libra: 'West',
-    Scorpio: 'North',
-    Sagittarius: 'East',
-    Capricorn: 'South',
-    Aquarius: 'West',
-    Pisces: 'North',
+    Aries: lang === 'hinglish' ? 'Purva (East)' : 'East',
+    Taurus: lang === 'hinglish' ? 'Dakshin (South)' : 'South',
+    Gemini: lang === 'hinglish' ? 'Pashchim (West)' : 'West',
+    Cancer: lang === 'hinglish' ? 'Uttar (North)' : 'North',
+    Leo: lang === 'hinglish' ? 'Purva (East)' : 'East',
+    Virgo: lang === 'hinglish' ? 'Dakshin (South)' : 'South',
+    Libra: lang === 'hinglish' ? 'Pashchim (West)' : 'West',
+    Scorpio: lang === 'hinglish' ? 'Uttar (North)' : 'North',
+    Sagittarius: lang === 'hinglish' ? 'Purva (East)' : 'East',
+    Capricorn: lang === 'hinglish' ? 'Dakshin (South)' : 'South',
+    Aquarius: lang === 'hinglish' ? 'Pashchim (West)' : 'West',
+    Pisces: lang === 'hinglish' ? 'Uttar (North)' : 'North',
   };
 
   const lucky = {
@@ -319,35 +328,89 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
 
   // Sign descriptions
   const heroDescriptions = {
-    Aries: `Today brings high vitality and proactive drive for ${signObj.name}. With ruling planet Mars in ${transits.mars.sign} and Sun energizing your ${sunHouse}th house, your natural leadership and strategic execution will unlock rewarding breakthroughs.`,
-    Taurus: `Steady perseverance and practical elegance guide ${signObj.name} today. Venus transiting your ${venHouse}th house fosters harmonious interactions in personal and financial matters.`,
-    Gemini: `Mental agility and witty communication define ${signObj.name} today. With Mercury active in your ${merHouse}th house, conversations flow smoothly and creative problem-solving yields quick gains.`,
-    Cancer: `Intuitive depth and emotional warmth enrich ${signObj.name} today. The Moon transiting your ${moonHouse}th house brings clarity to personal goals and domestic peace.`,
-    Leo: `Radiant confidence and magnetic charisma illuminate ${signObj.name} today. The Sun transiting your ${sunHouse}th house strengthens your authoritative voice and creative endeavors.`,
-    Virgo: `Analytical precision and systematic mastery empower ${signObj.name} today. Mercury in your ${merHouse}th house ensures smooth organization and efficient task completion.`,
-    Libra: `Diplomatic grace, aesthetic charm, and harmonious balance bless ${signObj.name} today. Venus in your ${venHouse}th house enhances mutual understanding and creative negotiations.`,
-    Scorpio: `Deep discernment and transformative focus empower ${signObj.name} today. Mars in your ${marsHouse}th house gives you the stamina to see through surface situations and achieve victory.`,
-    Sagittarius: `Expansive optimism and visionary learning inspire ${signObj.name} today. Guru in your ${jupHouse}th house broadens your philosophical horizons and invites fortunate opportunities.`,
-    Capricorn: `Disciplined execution and strategic maturity reward ${signObj.name} today. Saturn in your ${satHouse}th house reinforces long-term milestones and solid foundational growth.`,
-    Aquarius: `Innovative thinking and progressive humanitarian insight guide ${signObj.name} today. Your original perspective solves lingering puzzles and earns genuine respect.`,
-    Pisces: `Intuitive empathy, artistic flow, and spiritual serenity accompany ${signObj.name} today. Jupiter in your ${jupHouse}th house elevates your creative vision and brings inner peace.`,
+    Aries:
+      lang === 'hinglish'
+        ? `Aaj Mesh (Aries) rashi ke liye tez urja aur sahas ka din hai. Swami grah Mangal aur Surya aapke ${sunHouse}ve ghar ko urja de rahe hain, jisse naitrutva aur karyon me safalta milegi.`
+        : `Today brings high vitality and proactive drive for ${signObj.name}. With ruling planet Mars in ${transits.mars.sign} and Sun energizing your ${sunHouse}th house, your natural leadership and strategic execution will unlock rewarding breakthroughs.`,
+    Taurus:
+      lang === 'hinglish'
+        ? `Dhairya aur sthirta aaj Vrishabh (Taurus) ke liye margdarshak rahenge. Shukra ${venHouse}ve ghar me hone se vyaktigat aur aarthik maamlon me anukoolta aayegi.`
+        : `Steady perseverance and practical elegance guide ${signObj.name} today. Venus transiting your ${venHouse}th house fosters harmonious interactions in personal and financial matters.`,
+    Gemini:
+      lang === 'hinglish'
+        ? `Boudhik chusthi aur prabhavi samvaad aaj Mithun (Gemini) ki pehchan hain. Budh ${merHouse}ve ghar me sakriya hai, jisse baat-cheet aasan hogi aur naye vishleshnatmak vichaar labh denge.`
+        : `Mental agility and witty communication define ${signObj.name} today. With Mercury active in your ${merHouse}th house, conversations flow smoothly and creative problem-solving yields quick gains.`,
+    Cancer:
+      lang === 'hinglish'
+        ? `Antargyaan aur bhavnatmak sneh aaj Kark (Cancer) rashi ko samriddh banata hai. Chandra ${moonHouse}ve sthan me hone se vyaktigat lakshyon aur gharelu shanti me spasht-ta aayegi.`
+        : `Intuitive depth and emotional warmth enrich ${signObj.name} today. The Moon transiting your ${moonHouse}th house brings clarity to personal goals and domestic peace.`,
+    Leo:
+      lang === 'hinglish'
+        ? `Aatmavishwas aur aakarshan aaj Simha (Leo) ko chamkayenge. Surya ${sunHouse}ve ghar me hone se aapki aawaz aur rachnatmak karyon ko majbooti milegi.`
+        : `Radiant confidence and magnetic charisma illuminate ${signObj.name} today. The Sun transiting your ${sunHouse}th house strengthens your authoritative voice and creative endeavors.`,
+    Virgo:
+      lang === 'hinglish'
+        ? `Kanya (Virgo) ke liye aaj ka din baareekiyon par dhyan aur karyon ko vyavasthit karne ka hai. Budh ${merHouse}ve sthan me har kaam ko samay par pura karwayega.`
+        : `Analytical precision and systematic mastery empower ${signObj.name} today. Mercury in your ${merHouse}th house ensures smooth organization and efficient task completion.`,
+    Libra:
+      lang === 'hinglish'
+        ? `Samanjasya aur aakarshan aaj Tula (Libra) ko aashirvaad dete hain. Shukra ${venHouse}ve sthan me aapsi samajh aur rachnatmak baatcheet ko badhava dega.`
+        : `Diplomatic grace, aesthetic charm, and harmonious balance bless ${signObj.name} today. Venus in your ${venHouse}th house enhances mutual understanding and creative negotiations.`,
+    Scorpio:
+      lang === 'hinglish'
+        ? `Gehri samajh aur transformational drishti aaj Vrishchik (Scorpio) ki taakat hai. Mangal ${marsHouse}ve ghar me chunautiyon ko jeet me badalne ka bal pradan karega.`
+        : `Deep discernment and transformative focus empower ${signObj.name} today. Mars in your ${marsHouse}th house gives you the stamina to see through surface situations and achieve victory.`,
+    Sagittarius:
+      lang === 'hinglish'
+        ? `Aashavadi soch aur naya seekhne ki lalak aaj Dhanu (Sagittarius) ko aage badhayegi. Guru ${jupHouse}ve ghar me gyaan aur naye shubh avasar lekar aayega.`
+        : `Expansive optimism and visionary learning inspire ${signObj.name} today. Guru in your ${jupHouse}th house broadens your philosophical horizons and invites fortunate opportunities.`,
+    Capricorn:
+      lang === 'hinglish'
+        ? `Anushasan aur samajhdari aaj Makar (Capricorn) ko uchit puraskar degi. Shani ${satHouse}ve ghar me lambi avadhi ke lakshyon ko majboot buniyaad dega.`
+        : `Disciplined execution and strategic maturity reward ${signObj.name} today. Saturn in your ${satHouse}th house reinforces long-term milestones and solid foundational growth.`,
+    Aquarius:
+      lang === 'hinglish'
+        ? `Naye vichaar aur manavtavadi drishtikon aaj Kumbh (Aquarius) ka margdarshan karenge. Aapki anokhi soch mushkil samasyaon ka aasan hal nikalegi.`
+        : `Innovative thinking and progressive humanitarian insight guide ${signObj.name} today. Your original perspective solves lingering puzzles and earns genuine respect.`,
+    Pisces:
+      lang === 'hinglish'
+        ? `Kalaatmak bahaav aur aatmik shanti aaj Meen (Pisces) ke sath hai. Guru ${jupHouse}ve sthan me aapki kalpana aur aatmik gyaan ko unchayi par le jayega.`
+        : `Intuitive empathy, artistic flow, and spiritual serenity accompany ${signObj.name} today. Jupiter in your ${jupHouse}th house elevates your creative vision and brings inner peace.`,
   };
 
-  const adviceText = `Trust the natural pacing of planetary transits today. For ${signObj.name}, focusing on clear communication and steady action ensures maximum dharmic success.`;
+  const adviceText =
+    lang === 'hinglish'
+      ? `Grah gochar ki prakritik gati par bharosa rakhein. Spasht samvaad aur niyamit parishram se dharmanukool safalta milegi.`
+      : `Trust the natural pacing of planetary transits today. For ${signObj.name}, focusing on clear communication and steady action ensures maximum dharmic success.`;
 
   const mantras = {
-    Aries: '“Om Kram Kreem Kroum Sah Bhaumaya Namah — I act with righteous courage and purposeful clarity.”',
-    Taurus: '“Om Dram Dreem Droum Sah Shukraya Namah — I embrace serenity, beauty, and abundant patience.”',
-    Gemini: '“Om Bram Breem Broum Sah Budhaya Namah — My intellect is sharp, adaptable, and aligned with truth.”',
-    Cancer: '“Om Shram Shreem Shroum Sah Chandraya Namah — My intuition is clear, peaceful, and profoundly grounded.”',
-    Leo: '“Om Hram Hreem Hroum Sah Suryaya Namah — I shine with dharmic warmth, courage, and benevolence.”',
-    Virgo: '“Om Bram Breem Broum Sah Budhaya Namah — I bring order, precision, and conscious healing to my work.”',
-    Libra: '“Om Dram Dreem Droum Sah Shukraya Namah — I cultivate harmony, justice, and graceful connection.”',
-    Scorpio: '“Om Kram Kreem Kroum Sah Bhaumaya Namah — My inner willpower transforms every obstacle into victory.”',
-    Sagittarius: '“Om Gram Greem Groum Sah Gurave Namah — I expand in wisdom, truth, and boundless optimism.”',
-    Capricorn: '“Om Pram Preem Proum Sah Shanaishcharaya Namah — My discipline, patience, and integrity build lasting legacy.”',
-    Aquarius: '“Om Sham Shanaishcharaya Namah — I innovate with humanitarian vision and authentic truth.”',
-    Pisces: '“Om Brim Brihaspataye Namah — My compassion, creative intuition, and spiritual faith guide me.”',
+    Aries: lang === 'hinglish' ? '“Om Kram Kreem Kroum Sah Bhaumaya Namah — Sahas aur spashtata ke sath aage badhein.”' : '“Om Kram Kreem Kroum Sah Bhaumaya Namah — I act with righteous courage and purposeful clarity.”',
+    Taurus: lang === 'hinglish' ? '“Om Dram Dreem Droum Sah Shukraya Namah — Shanti aur dhairya se samriddhi aati hai.”' : '“Om Dram Dreem Droum Sah Shukraya Namah — I embrace serenity, beauty, and abundant patience.”',
+    Gemini: lang === 'hinglish' ? '“Om Bram Breem Broum Sah Budhaya Namah — Meri boudhik kshamta aur vaani shubh hai.”' : '“Om Bram Breem Broum Sah Budhaya Namah — My intellect is sharp, adaptable, and aligned with truth.”',
+    Cancer: lang === 'hinglish' ? '“Om Shram Shreem Shroum Sah Chandraya Namah — Antarmukh shanti aur pavitra manosthiti.”' : '“Om Shram Shreem Shroum Sah Chandraya Namah — My intuition is clear, peaceful, and profoundly grounded.”',
+    Leo: lang === 'hinglish' ? '“Om Hram Hreem Hroum Sah Suryaya Namah — Tej, aatmavishwas aur naitrutva ka vikas ho.”' : '“Om Hram Hreem Hroum Sah Suryaya Namah — I shine with dharmic warmth, courage, and benevolence.”',
+    Virgo: lang === 'hinglish' ? '“Om Bram Breem Broum Sah Budhaya Namah — Karya me nipunata aur kushal vyavastha.”' : '“Om Bram Breem Broum Sah Budhaya Namah — I bring order, precision, and conscious healing to my work.”',
+    Libra: lang === 'hinglish' ? '“Om Dram Dreem Droum Sah Shukraya Namah — Samanjasya aur saundarya se jeevan sajta hai.”' : '“Om Dram Dreem Droum Sah Shukraya Namah — I cultivate harmony, justice, and graceful connection.”',
+    Scorpio: lang === 'hinglish' ? '“Om Kram Kreem Kroum Sah Bhaumaya Namah — Dridh ichhashakti se har baadha paar hoti hai.”' : '“Om Kram Kreem Kroum Sah Bhaumaya Namah — My inner willpower transforms every obstacle into victory.”',
+    Sagittarius: lang === 'hinglish' ? '“Om Gram Greem Groum Sah Gurave Namah — Gyaan, satya aur aashawadi soch ka vistar.”' : '“Om Gram Greem Groum Sah Gurave Namah — I expand in wisdom, truth, and boundless optimism.”',
+    Capricorn: lang === 'hinglish' ? '“Om Pram Preem Proum Sah Shanaishcharaya Namah — Parishram aur nishtha se sthir vikas hota hai.”' : '“Om Pram Preem Proum Sah Shanaishcharaya Namah — My discipline, patience, and integrity build lasting legacy.”',
+    Aquarius: lang === 'hinglish' ? '“Om Sham Shanaishcharaya Namah — Naye vichar aur manavseva se aashirvaad milta hai.”' : '“Om Sham Shanaishcharaya Namah — I innovate with humanitarian vision and authentic truth.”',
+    Pisces: lang === 'hinglish' ? '“Om Brim Brihaspataye Namah — Daya, aatmik vishwas aur shanti mera margdarshan karti hai.”' : '“Om Brim Brihaspataye Namah — My compassion, creative intuition, and spiritual faith guide me.”',
+  };
+
+  const timeBreakdown = {
+    morning:
+      lang === 'hinglish'
+        ? 'Subah ka samay nayi urja aur mansik spasht-ta se bhara hai, dainik karyon ko organize karne ke liye uttam.'
+        : 'Fresh mental clarity and proactive energy help organize your day efficiently.',
+    afternoon:
+      lang === 'hinglish'
+        ? 'Dopehar me karyakshetra me sahyog, mahatvapurna baatcheet aur samasyaon ke safal samadhan ka samay hai.'
+        : 'Productive interactions, collaborative agreements, and strategic problem-solving.',
+    evening:
+      lang === 'hinglish'
+        ? 'Sandhya ka samay parivar ke sath samay bitane, shant dhyan aur aatm-chintan ke liye atyant shubh hai.'
+        : 'Peaceful twilight hours ideal for family warmth, restful reflection, and recharge.',
   };
 
   return {
@@ -365,11 +428,7 @@ export function getHoroscopeForSign(signIndex = 0, period = 'Today', lang = 'en'
     mantra: mantras[signObj.name] || mantras.Aries,
     panchang: transits.panchang,
     planetaryTransitSummary: `Sun in ${transits.sun.sign} (${transits.sun.deg}), Moon in ${transits.moon.sign} (${transits.moon.deg}), Mars in ${transits.mars.sign} (${transits.mars.deg}), Jupiter in ${transits.jupiter.sign} (${transits.jupiter.deg}), Saturn in ${transits.saturn.sign} (${transits.saturn.deg}).`,
-    timeBreakdown: {
-      morning: 'Fresh mental clarity and proactive energy help organize your day efficiently.',
-      afternoon: 'Productive interactions, collaborative agreements, and strategic problem-solving.',
-      evening: 'Peaceful twilight hours ideal for family warmth, restful reflection, and recharge.',
-    },
+    timeBreakdown,
   };
 }
 
@@ -381,6 +440,7 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
   const rashiName = ZODIAC_SIGNS[safeIdx]?.name || 'Aries';
   const today = new Date().toISOString().split('T')[0];
   const normalizedPeriod = String(period || 'today').toLowerCase().replace('this ', '');
+  const cacheKey = `${rashiName}_${lang}`;
 
   // 1. Check Supabase cache first
   if (isSupabaseConfigured()) {
@@ -388,7 +448,7 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
       const { data: cached, error } = await supabase
         .from('horoscope_cache')
         .select('content')
-        .eq('rashi', rashiName)
+        .eq('rashi', cacheKey)
         .eq('date', today)
         .eq('period', normalizedPeriod)
         .maybeSingle();
@@ -412,7 +472,7 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
         .from('horoscope_cache')
         .upsert(
           {
-            rashi: rashiName,
+            rashi: cacheKey,
             date: today,
             period: normalizedPeriod,
             content: generated,
@@ -423,7 +483,7 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
       if (error) {
         // Fallback to plain insert if unique constraint is missing
         const { error: insertErr } = await supabase.from('horoscope_cache').insert({
-          rashi: rashiName,
+          rashi: cacheKey,
           date: today,
           period: normalizedPeriod,
           content: generated,
@@ -443,6 +503,3 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
 
   return generated;
 }
-
-
-

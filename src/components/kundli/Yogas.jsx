@@ -6,23 +6,28 @@ import { t } from '@/translations';
 export default function Yogas({ yogas }) {
   const { lang } = useLang();
 
-  const list = yogas && yogas.length > 0 ? yogas : [
+  const defaultYogas = [
     {
-      name: 'Gaj Kesari Yoga',
-      desc: lang === 'hinglish' ? 'Chandrama se kendra mein Guru — gyaan aur samriddhi lata hai' : 'Jupiter in angular house from Moon — brings wisdom and prosperity',
-      level: 'Very Auspicious',
+      name: 'Gajakesari Yoga (गजकेसरी योग)',
+      desc: 'Jupiter in angular house from Moon — brings wisdom, leadership and prosperity.',
+      descHinglish: 'Chandrama se kendra mein Guru — gyaan, uchh maan-samman aur aarthik samriddhi dilata hai.',
+      level: 'Maha Raj Yoga (प्रबल)',
     },
     {
-      name: 'Budhaditya Yoga',
-      desc: lang === 'hinglish' ? 'Surya aur Budh ki yuti — teez buddhi aur communication' : 'Sun and Mercury conjunction — sharp intellect and communication',
-      level: 'Strong',
+      name: 'Budhaditya Yoga (बुधादित्य योग)',
+      desc: 'Sun and Mercury conjunction — sharp intellect, persuasive speech and executive clarity.',
+      descHinglish: 'Surya aur Budh ki yuti — tezz buddhi, nipunata aur prabhavshali communication pradan karti hai.',
+      level: 'Nipunata Yoga (प्रबल)',
     },
     {
-      name: 'Lakshmi Yoga',
-      desc: lang === 'hinglish' ? 'Shubh grah kendra mein — samriddhi aur maan-samman' : 'Auspicious Kendra alignment — brings prosperity and honor',
-      level: 'Auspicious',
+      name: 'Dharma-Karmadhipati Yoga (राज योग)',
+      desc: 'Alignment of 9th and 10th lords — grants continuous career ascent and recognition.',
+      descHinglish: 'Navam aur Dasham bhav ke swami ka sanyog — nirantar career vriddhi aur samajik pratishtha dilata hai.',
+      level: 'Raj Yoga (शुभ)',
     },
   ];
+
+  const list = yogas && yogas.length > 0 ? yogas : defaultYogas;
 
   return (
     <motion.div
@@ -36,6 +41,11 @@ export default function Yogas({ yogas }) {
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {list.map((y, i) => {
+          const desc =
+            lang === 'hinglish'
+              ? y.descHinglish || y.descHi || y.desc
+              : y.desc;
+
           return (
             <motion.div
               key={y.name}
@@ -57,11 +67,11 @@ export default function Yogas({ yogas }) {
                     borderRadius: 'var(--r-full)',
                   }}
                 >
-                  {y.level || (lang === 'hinglish' ? 'शुभ योग' : 'Auspicious')}
+                  {y.status || y.type || y.level || (lang === 'hinglish' ? 'शुभ योग' : 'Auspicious')}
                 </span>
               </div>
               <p className="mt-3 text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-                {y.desc}
+                {desc}
               </p>
             </motion.div>
           );

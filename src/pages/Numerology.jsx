@@ -8,8 +8,10 @@ import Lucky from '@/components/numerology/Lucky';
 import NumInsights from '@/components/numerology/NumInsights';
 import NumActions from '@/components/numerology/NumActions';
 import { getCompleteNumerology } from '@/lib/kundliService';
+import { useLang } from '@/context/LanguageContext';
 
 export default function Numerology() {
+  const { lang } = useLang();
   const [numData, setNumData] = useState(null);
 
   useEffect(() => {
@@ -34,9 +36,9 @@ export default function Numerology() {
       /* fallback */
     }
 
-    const calculated = getCompleteNumerology(name, dob);
+    const calculated = getCompleteNumerology(name, dob, lang);
     setNumData(calculated);
-  }, []);
+  }, [lang]);
 
   if (!numData) return null;
 

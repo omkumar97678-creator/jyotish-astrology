@@ -18,18 +18,31 @@ export default function BhavaAnalysis({ houses = [] }) {
           const domain = h.domain || 'Key Life Domain';
 
           let planetDisplay = 'Rikt (Empty)';
-          if (h.planetDisplay) {
+          let hasPlanets = false;
+          if (h.planetDisplay && h.planetDisplay !== 'Rikt (Empty)') {
             planetDisplay = h.planetDisplay;
+            hasPlanets = true;
           } else if (h.planets && h.planets.length > 0) {
             planetDisplay =
               typeof h.planets[0] === 'string'
                 ? h.planets.join(', ')
                 : h.planets.map((p) => p.name || p.label).join(', ');
+            hasPlanets = true;
           }
 
-          const reading =
-            h.reading ||
-            `${sign} (${rashiHi}) in House ${num}, ruled by ${ruler}. Influencing ${domain.toLowerCase()}.`;
+          let reading = '';
+          if (lang === 'hinglish') {
+            reading = `${num}ve ghar me ${sign} (${rashiHi}) rashi sthit hai, jiske swami ${ruler} hain. Yeh aapke ${domain} ke kshetra ko sakriya aur prabhavshali banata hai.`;
+            if (hasPlanets) {
+              reading += ` Is bhav me ${planetDisplay} sthit hain, jo iske prabhav ko aur balwan karte hain.`;
+            } else {
+              reading += ` Swami grah ${ruler} ke shubh prabhav se is kshetra me sthirta bani rehti hai.`;
+            }
+          } else {
+            reading =
+              h.reading ||
+              `${sign} (${rashiHi}) in House ${num}, ruled by ${ruler}. Influencing ${domain.toLowerCase()}.`;
+          }
 
           return {
             num,

@@ -13,8 +13,8 @@ export default function CompleteAiAnalysis({ report, data }) {
   const nakshatra = data?.nakshatra || 'Ardra';
   const name = data?.name || 'Seeker';
 
-  // Dynamic fallback report builder personalized to user's real chart
-  const defaultReport = {
+  // Dynamic fallback report builder in English
+  const defaultReportEn = {
     personality: {
       overview: `With ${lagna} as your Ascendant and ${rashi} as your Chandra Rashi in ${nakshatra} nakshatra, your chart combines intense inner willpower with exceptional intellectual adaptability. You possess natural strategic discernment, deep emotional perception, and magnetic presence. People recognize your competence and intuitive insight.`,
       strengths: [
@@ -88,6 +88,84 @@ export default function CompleteAiAnalysis({ report, data }) {
       ],
     },
   };
+
+  // Dynamic fallback report builder in Hinglish
+  const defaultReportHinglish = {
+    personality: {
+      overview: `${lagna} Lagna aur ${rashi} Chandra Rashi (${nakshatra} nakshatra) ke sath, aapki kundli me dridh aatmavishwas aur tezz boudhik anukoolan ka shreshtha sanyog hai. Aapme prakritik roop se ran-neetik samajh, gehri bhavnatmak drishti aur aakarshak vyaktitva hai. Log aapki kshamta aur antargyaan ka samman karte hain.`,
+      strengths: [
+        `Ran-neetik Soch — ${lagna} Lagna se gehra dhyan, focus aur spasht drishti milti hai.`,
+        `Tezz Dimag — ${rashi} Chandra Rashi se jaldi seekhne aur naye vicharon ki kshamta milti hai.`,
+        `Ladne Ka Jazba — Mushkilon aur chunautiyon ko paar karne ki ajeeb aatmik shakti.`,
+        `Sahi Parakh — Asliyat aur chhupe huye uddeshya ko pehchanne ki kshamta.`,
+        `Prernadayak Vaani — ${nakshatra} nakshatra ki urja se nayi khoj aur aakarshak abhivyakti.`,
+        `Nishtha & Suraksha — Apne parivar aur aadarshon ke prati poori tarah samarpit.`,
+      ],
+      challenges: [
+        { title: 'Bhavnaon Ko Chhupana', desc: 'Apni gehri feelings ko jaldi share na karna. Bharosemand logon se khulkar baat karein.' },
+        { title: 'Zyaada Sochna (Overthinking)', desc: 'Chandra ke Mithun me hone se dimag zyaada daudta hai. Dhyan aur pranayam karein.' },
+        { title: 'Tez Urja Ka Santulan', desc: 'Scorpio urja bahut intense hoti hai; aage badhne ke sath aaram ka bhi dhyan rakhein.' },
+      ],
+      lifePurpose: `“Aapki aatma chunautiyon ko gyaan me badalne, chhupe satya ko prakashit karne aur aatmik sahas ke sath dusron ko prerna dene aayi hai.”`,
+    },
+    career: {
+      overview: `Aapki kundli me leadership, ran-neetik vishleshan, research, technology, communication aur advisory kshetron ke liye shreshth kshamta hai. Aap problem-solving aur specialized karyon me safal hote hain.`,
+      bestFields: [
+        'Leadership & Management (प्रबंधन)',
+        'IT, Data & Engineering (तकनीक)',
+        'Research & Analytics (शोध एवं विश्लेषण)',
+        'Consulting & Mentorship (सलाहकार)',
+        'Media & Communication (मीडिया एवं लेखन)',
+        'Finance & Holistic Health (वित्त एवं स्वास्थ्य)',
+      ],
+      currentPhase: `Vartaman grah dasha boudhik vistar, career restructure aur sammanit sthiti ko poora samarthan de rahi hai.`,
+      timeline: [
+        { period: '2024–2025', prediction: 'Vyavsayik sthirta, skill enhancement aur mahatvapurna buniyaad ka nirmaan.' },
+        { period: '2025–2026', prediction: 'Zimmedariyon me vriddhi, labhdayak avasar aur sahyogiyon se prashansa.' },
+        { period: '2026–2027', prediction: 'Bade milestones, swantantrata aur lambi avadhi ki sthir sthiti.' },
+      ],
+    },
+    love: {
+      overview: `Rishton me aap mansik talmel aur sachi bhavnatmak nishtha chahte hain. Aapsi aadar, boudhik baatcheet aur wafadari aapke sambandhon ki neev hain.`,
+      bestMatches: [
+        { sign: 'Cancer (Kark)', reason: 'Gehri bhavnatmak samajh, sneh aur parivarik shanti.' },
+        { sign: 'Pisces (Meen)', reason: 'Aatmik samanjasya, intuitive depth aur aapsi sahyog.' },
+        { sign: 'Taurus (Vrishabh)', reason: 'Sthirta, dharatal par judav aur anukool vipreet aakarshan.' },
+      ],
+      marriageTiming: 'Guru (Brihaspati) ka gochar aur anukool dasha vivah aur sthir sambandhon ke liye shubh yog banate hain.',
+      relationshipLesson: 'Swatantrata ke sath thoda emotional open-pan layein, partner ke sath mann ki baat baantein.',
+    },
+    health: {
+      constitution: `Pitta (tej aur pachan urja) aur Vata (mansik gati) ka sanyog. Niyamit dhyan se uchh vitality bani rehti hai.`,
+      watchAreas: [
+        { area: 'Tantrika Tantra & Dimag', advice: 'Mansik thakan se bachein; dainik dhyan aur screen-time kam karein.' },
+        { area: 'Pachan & Metabolism', advice: 'Garam, taaza sattvic bhojan aur samay par khana lein.' },
+        { area: 'Stamina & Shareer', advice: 'Paryapt paani piyein aur subah halka yoga / stretch karein.' },
+      ],
+      recommendations: {
+        diet: 'Paushtik anaaj, badam, taaze mausam ke fal aur gunguna paani.',
+        exercise: 'Pratahkal Surya Namaskar, hariyali me tehalna aur restorative yoga.',
+        spiritual: 'Dainik Anulom-Vilom pranayam aur sandhya samay shant baithna.',
+      },
+    },
+    spiritual: {
+      soulPurpose: 'Mansik chanchalta se dhyan aur aatm-shanti ki or badhna, apne boudhik gyaan ko dharma ki seva me lagana.',
+      pastLife: 'Pichhle janmon me gyaan, adhyayan aur khoj ki sadhana ki, ab uchhatar aatmik mukti ki or pragati hai.',
+      practices: [
+        'Pranayam (Anulom-Vilom) roz subah 10 minute',
+        'Gayatri Mantra ya Mahamrityunjaya Mantra jaap',
+        'Ravivar ko ugte Surya ko taambe ke lote se jal arpit karein',
+        'Pakshiyon ko daana aur niyamit daan-punya karein',
+      ],
+      remedies: [
+        { planet: 'Sun ☉', remedy: 'Subah Surya ko arghya dein aur gratitude vyakt karein', day: 'Sunday (Ravivar)' },
+        { planet: 'Mars ♂ (Lagna Lord)', remedy: 'Hanuman Chalisa ka path karein ya vyayam karein', day: 'Tuesday (Mangalvar)' },
+        { planet: 'Jupiter ♃', remedy: 'Guruon ka samman karein aur peeli vastuon ka daan karein', day: 'Thursday (Guruvar)' },
+      ],
+    },
+  };
+
+  const defaultReport = lang === 'hinglish' ? defaultReportHinglish : defaultReportEn;
 
   let parsedReport = report;
   if (typeof report === 'string') {
@@ -191,10 +269,10 @@ export default function CompleteAiAnalysis({ report, data }) {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-2" style={{ color: 'var(--col-moonstone)' }}>
-                  Personalized Personality Profile for {name}
+                  {lang === 'hinglish' ? `${name} Ka Vyaktitva Profile` : `Personalized Personality Profile for ${name}`}
                 </h4>
                 <div className="text-xs uppercase font-semibold mt-4 mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Core Identity Synthesis
+                  {lang === 'hinglish' ? 'Mukhya Pehchan & Vyaktitva' : 'Core Identity Synthesis'}
                 </div>
                 <p className="text-sm" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
                   {rep.personality?.overview}
@@ -203,7 +281,7 @@ export default function CompleteAiAnalysis({ report, data }) {
 
               <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
-                  Auspicious Strengths ✦
+                  {lang === 'hinglish' ? 'Shubh Taakat (Strengths) ✦' : 'Auspicious Strengths ✦'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {(Array.isArray(rep.personality?.strengths) ? rep.personality.strengths : defaultReport.personality.strengths).map((s) => (
@@ -223,7 +301,7 @@ export default function CompleteAiAnalysis({ report, data }) {
 
               <div>
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: '#F59E0B', letterSpacing: '0.1em' }}>
-                  Areas to Cultivate & Balance
+                  {lang === 'hinglish' ? 'Dhyan Dene Yogya Kshetra' : 'Areas to Cultivate & Balance'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {(Array.isArray(rep.personality?.challenges) ? rep.personality.challenges : defaultReport.personality.challenges).map((item, idx) => {
@@ -252,7 +330,7 @@ export default function CompleteAiAnalysis({ report, data }) {
               {rep.personality?.lifePurpose && (
                 <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
                   <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
-                    Core Life Purpose
+                    {lang === 'hinglish' ? 'Jeevan Ka Mukhya Lakshya (Life Purpose)' : 'Core Life Purpose'}
                   </div>
                   <p className="text-xs italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>
                     {rep.personality.lifePurpose}
@@ -267,14 +345,14 @@ export default function CompleteAiAnalysis({ report, data }) {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
-                  Career & Vocational Destiny
+                  {lang === 'hinglish' ? 'Career & Karya Kshetra' : 'Career & Vocational Destiny'}
                 </h4>
                 <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
                   {rep.career?.overview}
                 </p>
 
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Best Suited Fields & Callings
+                  {lang === 'hinglish' ? 'Sarvashreshtha Karya Kshetra (Best Fields)' : 'Best Suited Fields & Callings'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {(Array.isArray(rep.career?.bestFields) ? rep.career.bestFields : defaultReport.career.bestFields).map((f) => (
@@ -293,7 +371,7 @@ export default function CompleteAiAnalysis({ report, data }) {
               {rep.career?.currentPhase && (
                 <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
                   <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
-                    Current Planetary Period Insight
+                    {lang === 'hinglish' ? 'Vartaman Dasha & Career Prabhav' : 'Current Planetary Period Insight'}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
                     {rep.career.currentPhase}
@@ -304,7 +382,7 @@ export default function CompleteAiAnalysis({ report, data }) {
               {rep.career?.timeline && Array.isArray(rep.career.timeline) && (
                 <div>
                   <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                    Career Horizon Predictions
+                    {lang === 'hinglish' ? 'Aane Wale Varshon Ki Bhavishyavani' : 'Career Horizon Predictions'}
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {rep.career.timeline.map((item) => (
@@ -332,14 +410,14 @@ export default function CompleteAiAnalysis({ report, data }) {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
-                  Relationship & Marriage Dynamics
+                  {lang === 'hinglish' ? 'Prem & Vaivahik Sambandh' : 'Relationship & Marriage Dynamics'}
                 </h4>
                 <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
                   {rep.love?.overview}
                 </p>
 
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Auspicious Compatibility Alignment
+                  {lang === 'hinglish' ? 'Shubh Rashi Anukoolta (Best Matches)' : 'Auspicious Compatibility Alignment'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {(Array.isArray(rep.love?.bestMatches) ? rep.love.bestMatches : defaultReport.love.bestMatches).map((m) => (
@@ -363,7 +441,7 @@ export default function CompleteAiAnalysis({ report, data }) {
               {rep.love?.marriageTiming && (
                 <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
                   <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
-                    Marriage & Union Timing
+                    {lang === 'hinglish' ? 'Vivah Ka Shubh Samay' : 'Marriage & Union Timing'}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>
                     {rep.love.marriageTiming}
@@ -378,14 +456,14 @@ export default function CompleteAiAnalysis({ report, data }) {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
-                  Ayurvedic Health & Vitality Profile
+                  {lang === 'hinglish' ? 'Swasthya & Ayurvedic Urja' : 'Ayurvedic Health & Vitality Profile'}
                 </h4>
                 <p className="text-sm mb-5" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.8 }}>
                   {rep.health?.constitution}
                 </p>
 
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: '#F59E0B', letterSpacing: '0.1em' }}>
-                  Areas to Nurture
+                  {lang === 'hinglish' ? 'Dhyan Dene Yogya Kshetra' : 'Areas to Nurture'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {(Array.isArray(rep.health?.watchAreas) ? rep.health.watchAreas : defaultReport.health.watchAreas).map((w) => (
@@ -408,19 +486,19 @@ export default function CompleteAiAnalysis({ report, data }) {
               {rep.health?.recommendations && (
                 <div>
                   <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
-                    Holistic Lifestyle Guidance
+                    {lang === 'hinglish' ? 'Dainik Jeevan Shaili Margdarshan' : 'Holistic Lifestyle Guidance'}
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Sattvic Diet</div>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>{lang === 'hinglish' ? 'Sattvic Aahar' : 'Sattvic Diet'}</div>
                       <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.diet}</div>
                     </div>
                     <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Physical Movement</div>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>{lang === 'hinglish' ? 'Vyayam & Yoga' : 'Physical Movement'}</div>
                       <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.exercise}</div>
                     </div>
                     <div className="p-3.5 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>Mind & Spirit</div>
+                      <div className="text-xs font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>{lang === 'hinglish' ? 'Dhyan & Chintan' : 'Mind & Spirit'}</div>
                       <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>{rep.health.recommendations.spiritual}</div>
                     </div>
                   </div>
@@ -434,11 +512,11 @@ export default function CompleteAiAnalysis({ report, data }) {
             <div className="space-y-7">
               <div>
                 <h4 className="font-display text-lg mb-4" style={{ color: 'var(--col-moonstone)' }}>
-                  Soul Journey & Vedic Remedies
+                  {lang === 'hinglish' ? 'Aatmik Yatra & Vedic Upay' : 'Soul Journey & Vedic Remedies'}
                 </h4>
                 <div className="p-4 rounded-xl mb-5" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
                   <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
-                    Soul Purpose & Dharma
+                    {lang === 'hinglish' ? 'Aatmik Lakshya & Dharma' : 'Soul Purpose & Dharma'}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--col-moonstone)', lineHeight: 1.7 }}>
                     {rep.spiritual?.soulPurpose}
@@ -448,7 +526,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                 {rep.spiritual?.pastLife && (
                   <div className="p-4 rounded-xl mb-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--col-glass-border)' }}>
                     <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-moonstone-dim)' }}>
-                      Past Life Karmic Trajectory
+                      {lang === 'hinglish' ? 'Purva Janam Ka Karmic Prabhav' : 'Past Life Karmic Trajectory'}
                     </div>
                     <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
                       {rep.spiritual.pastLife}
@@ -457,7 +535,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                 )}
 
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-teal)', letterSpacing: '0.1em' }}>
-                  Recommended Daily Practices
+                  {lang === 'hinglish' ? 'Dainik Shubh Sadhana' : 'Recommended Daily Practices'}
                 </div>
                 <div className="grid gap-2.5 sm:grid-cols-2 mb-6">
                   {(Array.isArray(rep.spiritual?.practices) ? rep.spiritual.practices : defaultReport.spiritual.practices).map((p) => (
@@ -473,7 +551,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                 </div>
 
                 <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                  Planetary Remedies (उपाए)
+                  {lang === 'hinglish' ? 'Grah Shanti Upay (उपाए)' : 'Planetary Remedies (उपाए)'}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {(Array.isArray(rep.spiritual?.remedies) ? rep.spiritual.remedies : defaultReport.spiritual.remedies).map((r) => (

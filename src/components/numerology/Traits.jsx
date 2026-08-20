@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '@/context/LanguageContext';
 
 export default function Traits({ traits = ['Analytical', 'Intuitive', 'Independent', 'Spiritual', 'Creative', 'Visionary'] }) {
+  const { lang } = useLang();
   const list = traits && traits.length > 0 ? traits : ['Analytical', 'Intuitive', 'Independent', 'Spiritual', 'Creative', 'Visionary'];
 
   return (
@@ -13,7 +15,7 @@ export default function Traits({ traits = ['Analytical', 'Intuitive', 'Independe
       className="mt-12"
     >
       <h2 className="font-display text-center mb-7" style={{ fontSize: 'clamp(26px, 4vw, 36px)', color: 'var(--col-moonstone)' }}>
-        Your Core Numerology Traits
+        {lang === 'hinglish' ? 'Aapke Mukhya Ank Jyotish Gun (Core Traits)' : 'Your Core Numerology Traits'}
       </h2>
       <div className="flex flex-wrap justify-center gap-3">
         {list.map((t, i) => (

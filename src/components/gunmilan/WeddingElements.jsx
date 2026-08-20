@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '@/context/LanguageContext';
 
 export default function WeddingElements({ calculatedData }) {
-  const rashi1 = calculatedData?.rashi1 || 'Virgo';
-  const rashi2 = calculatedData?.rashi2 || 'Virgo';
+  const { lang } = useLang();
 
   // Derive auspicious colors based on Rashi elements
   const colors = [
-    { name: 'Sacred Saffron / Gold', dot: '#EAB308' },
-    { name: 'Warm Copper / Coral', dot: '#C8822A' },
-    { name: 'Emerald Teal', dot: '#2AABA8' },
+    { name: lang === 'hinglish' ? 'Kesar / Peela (Gold)' : 'Sacred Saffron / Gold', dot: '#EAB308' },
+    { name: lang === 'hinglish' ? 'Tamra / Laal (Coral)' : 'Warm Copper / Coral', dot: '#C8822A' },
+    { name: lang === 'hinglish' ? 'Emerald Panna' : 'Emerald Teal', dot: '#2AABA8' },
   ];
 
   return (
@@ -22,7 +22,7 @@ export default function WeddingElements({ calculatedData }) {
     >
       <div>
         <h3 className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>
-          Auspicious Wedding Elements
+          {lang === 'hinglish' ? 'Shubh Vivah Tatva & Muhurat' : 'Auspicious Wedding Elements'}
         </h3>
         <p className="text-xs" style={{ color: 'var(--col-copper)' }}>
           शुभ विवाह तत्व एवं मुहूर्त संकेत
@@ -40,7 +40,7 @@ export default function WeddingElements({ calculatedData }) {
           style={{ padding: 22 }}
         >
           <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.12em' }}>
-            Lucky Wedding Attire Colors
+            {lang === 'hinglish' ? 'Shubh Vastra Ke Rang (Lucky Colors)' : 'Lucky Wedding Attire Colors'}
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm font-medium" style={{ color: 'var(--col-moonstone)' }}>
             {colors.map((c) => (
@@ -51,7 +51,9 @@ export default function WeddingElements({ calculatedData }) {
             ))}
           </div>
           <div className="mt-2 text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-            Avoid dark shades like black or dark grey during primary rituals.
+            {lang === 'hinglish'
+              ? 'Mukhya vivah rasmon ke dauran kaale (black) aur dark grey rangon se bachein.'
+              : 'Avoid dark shades like black or dark grey during primary rituals.'}
           </div>
         </motion.div>
 
@@ -65,13 +67,16 @@ export default function WeddingElements({ calculatedData }) {
           style={{ padding: 22 }}
         >
           <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.12em' }}>
-            Auspicious Days & Muhurat Direction
+            {lang === 'hinglish' ? 'Shubh Din & Mandap Disha' : 'Auspicious Days & Muhurat Direction'}
           </div>
           <div className="text-sm font-medium" style={{ color: 'var(--col-moonstone)' }}>
-            Thursday (Brihaspativar) & Friday (Shukravar)
+            {lang === 'hinglish' ? 'Brihaspativar (Guruvar) & Shukravar' : 'Thursday (Brihaspativar) & Friday (Shukravar)'}
           </div>
           <div className="mt-1 text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
-            Favorable Mandap Direction: <span style={{ color: 'var(--col-copper)', fontWeight: 600 }}>North-East (Ishanya)</span>
+            {lang === 'hinglish' ? 'Shubh Mandap Disha: ' : 'Favorable Mandap Direction: '}
+            <span style={{ color: 'var(--col-copper)', fontWeight: 600 }}>
+              {lang === 'hinglish' ? 'Ishanya Disha (North-East)' : 'North-East (Ishanya)'}
+            </span>
           </div>
         </motion.div>
       </div>

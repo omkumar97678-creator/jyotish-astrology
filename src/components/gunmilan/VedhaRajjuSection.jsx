@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { NAKSHATRA_NUM } from '@/lib/gunMilanCalc';
+import { useLang } from '@/context/LanguageContext';
 
 export default function VedhaRajjuSection({ calculatedData }) {
+  const { lang } = useLang();
   const nak1 = calculatedData?.nakshatra1 || 'Ashwini';
   const nak2 = calculatedData?.nakshatra2 || 'Pushya';
 
@@ -36,7 +38,7 @@ export default function VedhaRajjuSection({ calculatedData }) {
     >
       <div>
         <h3 className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>
-          Additional Compatibility Checks
+          {lang === 'hinglish' ? 'Anya Anukoolta Parikshan' : 'Additional Compatibility Checks'}
         </h3>
         <p className="text-xs" style={{ color: 'var(--col-copper)' }}>
           वेध और राज्जु परीक्षण
@@ -60,7 +62,7 @@ export default function VedhaRajjuSection({ calculatedData }) {
           <div>
             <div className="flex items-center justify-between gap-2 mb-2">
               <h4 className="font-semibold text-base" style={{ color: 'var(--col-moonstone)' }}>
-                Rajju (Longevity & Health Check)
+                {lang === 'hinglish' ? 'Rajju Parikshan (Aayu & Swasthya)' : 'Rajju (Longevity & Health Check)'}
               </h4>
               <span
                 className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
@@ -70,18 +72,24 @@ export default function VedhaRajjuSection({ calculatedData }) {
                   border: `1px solid ${!isRajjuDosha ? 'rgba(42, 171, 168, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
                 }}
               >
-                {!isRajjuDosha ? '✓ Pass (शुभ)' : '⚠ Caution (मध्यम)'}
+                {!isRajjuDosha ? (lang === 'hinglish' ? '✓ Shubh (Pass)' : '✓ Pass (शुभ)') : (lang === 'hinglish' ? '⚠ Savdhani (Caution)' : '⚠ Caution (मध्यम)')}
               </span>
             </div>
             <div
               className="text-sm font-semibold mb-2"
               style={{ color: !isRajjuDosha ? 'var(--col-teal)' : '#F59E0B' }}
             >
-              {!isRajjuDosha ? '✓ No Rajju Dosha' : `⚠ Same Rajju Group (${rajju1})`}
+              {!isRajjuDosha
+                ? (lang === 'hinglish' ? '✓ Rajju Dosh Nahi Hai' : '✓ No Rajju Dosha')
+                : (lang === 'hinglish' ? `⚠ Ek Hi Rajju Group (${rajju1})` : `⚠ Same Rajju Group (${rajju1})`)}
             </div>
             <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
               {!isRajjuDosha
-                ? `Partners' birth stars fall in distinct Rajju bands (${rajju1} and ${rajju2}), which is highly auspicious for long marital happiness and mutual well-being.`
+                ? lang === 'hinglish'
+                  ? `Dono ke janam nakshatra alag-alag Rajju shreni (${rajju1} aur ${rajju2}) me aate hain, jo lambi aayu aur sukhad vaivahik jeevan ke liye atyant shubh hai.`
+                  : `Partners' birth stars fall in distinct Rajju bands (${rajju1} and ${rajju2}), which is highly auspicious for long marital happiness and mutual well-being.`
+                : lang === 'hinglish'
+                ? `Dono nakshatra ${rajju1} Rajju me aate hain. Vedic jyotish ke anusar uchh Guna aur Bhakoot ank iska uchit santulan bana dete hain.`
                 : `Both nakshatras align with ${rajju1} Rajju. In Vedic astrology, strong Guna and Bhakoot points provide effective protective counter-balance.`}
             </p>
           </div>
@@ -103,7 +111,7 @@ export default function VedhaRajjuSection({ calculatedData }) {
           <div>
             <div className="flex items-center justify-between gap-2 mb-2">
               <h4 className="font-semibold text-base" style={{ color: 'var(--col-moonstone)' }}>
-                Vedha (Cosmic Affliction Check)
+                {lang === 'hinglish' ? 'Vedha Parikshan (Grah Pratikoolta)' : 'Vedha (Planetary Resistance Check)'}
               </h4>
               <span
                 className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
@@ -113,19 +121,25 @@ export default function VedhaRajjuSection({ calculatedData }) {
                   border: `1px solid ${!isVedha ? 'rgba(42, 171, 168, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
                 }}
               >
-                {!isVedha ? '✓ Pass (दोष मुक्त)' : '⚠ Vedha Present'}
+                {!isVedha ? (lang === 'hinglish' ? '✓ Shubh (Pass)' : '✓ Pass (शुभ)') : (lang === 'hinglish' ? '⚠ Savdhani (Caution)' : '⚠ Caution (मध्यम)')}
               </span>
             </div>
             <div
               className="text-sm font-semibold mb-2"
               style={{ color: !isVedha ? 'var(--col-teal)' : '#F59E0B' }}
             >
-              {!isVedha ? '✓ No Vedha Dosha' : '⚠ Vedha Star Resistance'}
+              {!isVedha
+                ? (lang === 'hinglish' ? '✓ Vedha Dosh Mukt' : '✓ Vedha Dosha Free')
+                : (lang === 'hinglish' ? '⚠ Nakshatra Vedha Sanyog' : '⚠ Nakshatra Vedha Present')}
             </div>
             <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
               {!isVedha
-                ? 'No adverse magnetic star resistance (Vedha) is present between the two nakshatras, ensuring peaceful domestic relations and smooth life decisions.'
-                : 'Mild star resistance observed. Respecting personal boundaries and transparent mutual communication dissolves any minor friction.'}
+                ? lang === 'hinglish'
+                  ? 'Dono nakshatron ke beech koi Vedha (rukawat) nahi hai. Yatra, jeevan shaili aur parivarik shanti me poora sahyog rahega.'
+                  : 'No adverse magnetic star resistance (Vedha) between birth constellations. Promotes unhindered mutual understanding and life progress.'
+                : lang === 'hinglish'
+                ? 'Nakshatra Vedha ki sthiti me shant baat-cheet aur aapsi samman se har chunauti aasaani se hal ho sakti hai.'
+                : 'Minor star friction detected. Open communication and mutual respect will easily harmonize day-to-day decisions.'}
             </p>
           </div>
         </motion.div>

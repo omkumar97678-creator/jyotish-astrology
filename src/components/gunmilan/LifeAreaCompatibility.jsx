@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '@/context/LanguageContext';
 
 export default function LifeAreaCompatibility({ calculatedData }) {
+  const { lang } = useLang();
   const la = calculatedData?.lifeAreas || {
     love: 85,
     career: 80,
@@ -12,60 +14,78 @@ export default function LifeAreaCompatibility({ calculatedData }) {
   };
 
   const getBadge = (pct) => {
-    if (pct >= 80) return { label: 'Excellent', type: 'teal' };
-    if (pct >= 60) return { label: 'Good', type: 'copper' };
-    if (pct >= 40) return { label: 'Moderate', type: 'amber' };
-    return { label: 'Attention', type: 'rose' };
+    if (pct >= 80) return { label: lang === 'hinglish' ? 'Uttam (Best)' : 'Excellent', type: 'teal' };
+    if (pct >= 60) return { label: lang === 'hinglish' ? 'Achha (Good)' : 'Good', type: 'copper' };
+    if (pct >= 40) return { label: lang === 'hinglish' ? 'Madhyam' : 'Moderate', type: 'amber' };
+    return { label: lang === 'hinglish' ? 'Dhyan Dein' : 'Attention', type: 'rose' };
   };
 
   const areas = [
     {
       icon: '♡',
-      title: 'Love & Attraction',
+      title: lang === 'hinglish' ? 'Prem & Aakarshan' : 'Love & Attraction',
       pct: la.love,
       badge: getBadge(la.love).label,
       badgeType: getBadge(la.love).type,
-      desc: 'Emotional warmth, romantic resonance, and mutual psychological attraction.',
+      desc:
+        lang === 'hinglish'
+          ? 'Bhavnatmak sneh, romantic anukoolta aur aapsi prem sambandh ka gehra bandhan.'
+          : 'Emotional warmth, romantic resonance, and mutual psychological attraction.',
     },
     {
       icon: '₹',
-      title: 'Career & Prosperity',
+      title: lang === 'hinglish' ? 'Career & Samridhi' : 'Career & Prosperity',
       pct: la.career,
       badge: getBadge(la.career).label,
       badgeType: getBadge(la.career).type,
-      desc: 'Shared ambitions, intellectual synchronization, and vocational support.',
+      desc:
+        lang === 'hinglish'
+          ? 'Sajha aakankshayein, boudhik talmel aur aarthik vikas me ek doosre ka sahyog.'
+          : 'Shared ambitions, intellectual synchronization, and vocational support.',
     },
     {
       icon: '⚕',
-      title: 'Health & Vitality',
+      title: lang === 'hinglish' ? 'Swasthya & Urja' : 'Health & Vitality',
       pct: la.health,
       badge: getBadge(la.health).label,
       badgeType: getBadge(la.health).type,
-      desc: 'Nadi & Tara harmony promoting physiological wellness and longevity.',
+      desc:
+        lang === 'hinglish'
+          ? 'Nadi aur Tara ka shubh sanyog lambi aayu aur sharirik swasthya ko badhava deta hai.'
+          : 'Nadi & Tara harmony promoting physiological wellness and longevity.',
     },
     {
       icon: '🏠',
-      title: 'Family & Harmony',
+      title: lang === 'hinglish' ? 'Parivar & Shanti' : 'Family & Harmony',
       pct: la.family,
       badge: getBadge(la.family).label,
       badgeType: getBadge(la.family).type,
-      desc: 'Domestic values, family prosperity, and constructive generational growth.',
+      desc:
+        lang === 'hinglish'
+          ? 'Ghar-parivar ke sanskar, aapsi samman aur parivarik vikas me poori shanti.'
+          : 'Domestic values, family prosperity, and constructive generational growth.',
     },
     {
       icon: '♂',
-      title: 'Physical Compatibility',
+      title: lang === 'hinglish' ? 'Sharirik Anukoolta' : 'Physical Compatibility',
       pct: la.physical,
       badge: getBadge(la.physical).label,
       badgeType: getBadge(la.physical).type,
-      desc: 'Yoni attraction and temperamental vitality balance between partners.',
+      desc:
+        lang === 'hinglish'
+          ? 'Yoni milan se aapsi aakarshan aur jeevan-urja ka anukool santulan bana rehta hai.'
+          : 'Yoni attraction and temperamental vitality balance between partners.',
     },
     {
       icon: '✦',
-      title: 'Spiritual Path',
+      title: lang === 'hinglish' ? 'Adhyatmik Marg' : 'Spiritual Path',
       pct: la.spiritual,
       badge: getBadge(la.spiritual).label,
       badgeType: getBadge(la.spiritual).type,
-      desc: 'Gana temperament alignment, ethical values, and shared dharmic philosophy.',
+      desc:
+        lang === 'hinglish'
+          ? 'Gana samanjasya, dharmik dharana aur naitik mulyon par sajha vishwas.'
+          : 'Gana temperament alignment, ethical values, and shared dharmic philosophy.',
     },
   ];
 
@@ -79,7 +99,7 @@ export default function LifeAreaCompatibility({ calculatedData }) {
     >
       <div>
         <h3 className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>
-          Compatibility by Life Area
+          {lang === 'hinglish' ? 'Jeevan Kshetron Me Anukoolta' : 'Compatibility by Life Area'}
         </h3>
         <p className="text-xs" style={{ color: 'var(--col-copper)' }}>
           जीवन क्षेत्र अनुकूलता
@@ -99,53 +119,52 @@ export default function LifeAreaCompatibility({ calculatedData }) {
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2.5">
-                  <span style={{ fontSize: 18, color: 'var(--col-copper)' }}>{a.icon}</span>
-                  <h4 className="font-semibold text-sm" style={{ color: 'var(--col-moonstone)' }}>
+                <div className="flex items-center gap-2">
+                  <span style={{ color: 'var(--col-copper)', fontSize: 16 }}>{a.icon}</span>
+                  <span className="font-semibold text-sm" style={{ color: 'var(--col-moonstone)' }}>
                     {a.title}
-                  </h4>
+                  </span>
                 </div>
                 <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                   style={
                     a.badgeType === 'teal'
-                      ? { background: 'rgba(42, 171, 168, 0.15)', color: 'var(--col-teal)', border: '1px solid rgba(42, 171, 168, 0.35)' }
+                      ? { background: 'rgba(42,171,168,0.12)', color: 'var(--col-teal)', border: '1px solid rgba(42,171,168,0.3)' }
                       : a.badgeType === 'copper'
-                      ? { background: 'rgba(200, 130, 42, 0.15)', color: 'var(--col-copper)', border: '1px solid rgba(200, 130, 42, 0.35)' }
-                      : { background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', border: '1px solid rgba(245, 158, 11, 0.35)' }
+                      ? { background: 'rgba(200,130,42,0.12)', color: 'var(--col-copper)', border: '1px solid rgba(200,130,42,0.3)' }
+                      : a.badgeType === 'amber'
+                      ? { background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }
+                      : { background: 'rgba(239,68,68,0.12)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }
                   }
                 >
                   {a.badge}
                 </span>
               </div>
 
-              {/* Dynamic percentage bar */}
-              <div className="space-y-1.5 mb-3">
-                <div className="flex justify-between text-xs font-mono-num font-semibold">
-                  <span style={{ color: 'var(--col-moonstone-dim)' }}>Score</span>
-                  <span style={{ color: 'var(--col-copper)' }}>{a.pct}%</span>
-                </div>
-                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${a.pct}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    className="h-full rounded-full"
-                    style={{
-                      background:
-                        a.badgeType === 'teal'
-                          ? 'linear-gradient(90deg, var(--col-teal), #4FD1C5)'
-                          : 'linear-gradient(90deg, var(--col-copper), var(--col-copper-light))',
-                    }}
-                  />
-                </div>
+              <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: 'var(--col-moonstone-dim)' }}>
+                <span>{lang === 'hinglish' ? 'Anukoolta' : 'Score'}</span>
+                <span className="font-mono-num font-bold" style={{ color: 'var(--col-copper)' }}>
+                  {a.pct}%
+                </span>
               </div>
-
-              <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.55 }}>
-                {a.desc}
-              </p>
+              <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--r-full)', overflow: 'hidden' }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${a.pct}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  style={{
+                    height: '100%',
+                    background: a.pct >= 80 ? 'var(--col-teal)' : a.pct >= 60 ? 'var(--col-copper)' : '#F59E0B',
+                    borderRadius: 'var(--r-full)',
+                  }}
+                />
+              </div>
             </div>
+
+            <p className="mt-4 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
+              {a.desc}
+            </p>
           </motion.div>
         ))}
       </div>

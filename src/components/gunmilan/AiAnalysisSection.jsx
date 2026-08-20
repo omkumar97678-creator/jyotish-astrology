@@ -10,39 +10,47 @@ export default function AiAnalysisSection({ aiAnalysis, calculatedData }) {
 
   const verdictText =
     aiAnalysis?.verdict ||
-    `With ${totalScore} out of 36 gunas matched (${label}), this union possesses solid foundational compatibility. The planetary temperaments and birth stars support harmonious domestic stability, mutual respect, and fruitful shared aspirations.`;
+    (lang === 'hinglish'
+      ? `36 me se ${totalScore} Gun milte hain (${label}). Yeh sanyog ek mazboot aur sakaratmak vaivahik buniyaad darshata hai. Grah sthitiyan aur nakshatra aapsi samman, parivarik sthirta aur aarthik unnati me poora sahyog dete hain.`
+      : `With ${totalScore} out of 36 gunas matched (${label}), this union possesses solid foundational compatibility. The planetary temperaments and birth stars support harmonious domestic stability, mutual respect, and fruitful shared aspirations.`);
 
   const strengthsText =
     aiAnalysis?.strengths ||
-    `High mutual attraction and intellectual synchronization. The ${calculatedData?.rashi1 || 'First'} and ${calculatedData?.rashi2 || 'Second'} sign combination encourages emotional empathy, family harmony, and collective prosperity.`;
+    (lang === 'hinglish'
+      ? `Aapsi aakarshan aur boudhik talmel shreshth hai. ${calculatedData?.rashi1 || 'First'} aur ${calculatedData?.rashi2 || 'Second'} rashiyon ka sanyog bhavnatmak samajh, parivarik shanti aur aarthik vikas ko badhava deta hai.`
+      : `High mutual attraction and intellectual synchronization. The ${calculatedData?.rashi1 || 'First'} and ${calculatedData?.rashi2 || 'Second'} sign combination encourages emotional empathy, family harmony, and collective prosperity.`);
 
   const challengesText =
     aiAnalysis?.challenges ||
     aiAnalysis?.areasToNurture ||
-    `Nurture open communication during periods of stress. Honoring each other's individual independence and decision-making styles will fortify long-term emotional trust.`;
+    (lang === 'hinglish'
+      ? `Tanaav ke samay aapas me khulkar aur shanti se baat karein. Ek doosre ke vyaktigat vicharon aur decisions ka aadar karne se rishta aur mazboot hoga.`
+      : `Nurture open communication during periods of stress. Honoring each other's individual independence and decision-making styles will fortify long-term emotional trust.`);
 
   const timingText =
     aiAnalysis?.auspiciousTiming ||
-    `Planetary transits of Jupiter (Guru) over the coming 12–18 months create highly auspicious and blessed windows for marital commitment and new auspicious beginnings.`;
+    (lang === 'hinglish'
+      ? `Agle 12–18 mahinon me Brihaspati (Guru) ka gochar vivah aur manglik karyon ke liye atyant shubh aur kalyankari yog bana raha hai.`
+      : `Planetary transits of Jupiter (Guru) over the coming 12–18 months create highly auspicious and blessed windows for marital commitment and new auspicious beginnings.`);
 
   const sections = [
     {
-      title: '✦ Overall Verdict',
+      title: lang === 'hinglish' ? '✦ Sampurna Mulyankan (Overall Verdict)' : '✦ Overall Verdict',
       body: verdictText,
       accent: 'var(--col-copper)',
     },
     {
-      title: '♡ Relationship Strengths',
+      title: lang === 'hinglish' ? '♡ Sambandh Ki Taakat (Strengths)' : '♡ Relationship Strengths',
       body: strengthsText,
       accent: 'var(--col-teal)',
     },
     {
-      title: '⚠ Areas to Nurture',
+      title: lang === 'hinglish' ? '⚠ Dhyan Dene Yogya Baatein' : '⚠ Areas to Nurture',
       body: challengesText,
       accent: '#F59E0B',
     },
     {
-      title: '✦ Auspicious Time to Marry',
+      title: lang === 'hinglish' ? '✦ Vivah Ka Shubh Samay' : '✦ Auspicious Time to Marry',
       body: timingText,
       accent: 'var(--col-copper-light)',
     },
@@ -72,7 +80,7 @@ export default function AiAnalysisSection({ aiAnalysis, calculatedData }) {
       <div className="flex items-center gap-2 mb-6">
         <span style={{ color: 'var(--col-copper)', fontSize: 22 }}>✦</span>
         <h3 className="font-display text-xl" style={{ color: 'var(--col-moonstone)' }}>
-          Detailed Compatibility Insights
+          {lang === 'hinglish' ? 'Gahan Milan Vishleshan' : 'Detailed Compatibility Insights'}
         </h3>
       </div>
 
