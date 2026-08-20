@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI, Modality, ThinkingLevel } from '@google/genai';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -87,7 +87,7 @@ export class GeminiLiveSession {
   }
 
   // ── Initialize session ────────────────
-  async start(kundliData) {
+  async start(kundliData, voiceName = 'Zephyr') {
     try {
       this.client = new GoogleGenAI({ 
         apiKey: GEMINI_API_KEY 
@@ -102,16 +102,15 @@ export class GeminiLiveSession {
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: {
-                voiceName: 'Zephyr'
+                voiceName: voiceName || 'Zephyr'
               }
-            },
-            languageCode: 'en-IN'
+            }
           },
           systemInstruction: {
             parts: [{ text: systemPrompt }]
           },
           thinkingConfig: {
-            thinkingLevel: 'minimal'
+            thinkingLevel: ThinkingLevel.MINIMAL
           }
         },
         callbacks: {
