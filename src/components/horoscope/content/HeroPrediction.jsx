@@ -2,23 +2,25 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import ZodiacIcon from '@/components/ZodiacIcon';
 import Stars from './Stars';
-import { signs } from '../horoData';
+import { SIGNS_DATA, signs } from '../horoData';
 import { useLang } from '@/context/LanguageContext';
 import { t } from '@/translations';
 
 export default function HeroPrediction({ selected, data }) {
   const { lang } = useLang();
-  const s = data?.sign || signs[selected] || signs[0] || { en: 'Aries', name: 'Aries', hi: 'Mesh', range: 'Mar 21 – Apr 19', element: 'Fire', elementBadge: '🔥 Fire', ruler: 'Mars' };
 
-  const signEn = s.en || s.name || 'Aries';
-  const signHi = s.hi || (s.hindi ? s.hindi.split(' ')[0] : 'Mesh');
-  const signRange = s.range || 'Mar 21 – Apr 19';
-  const signElement = s.element || 'Fire';
-  const signBadge = s.elementBadge || '🔥 Fire';
-  const signRuler = s.ruler || 'Mars';
+  const selectedSign = signs[selected]?.en || data?.sign?.en || data?.sign?.name || 'Aries';
+  const signInfo = SIGNS_DATA[selectedSign] || SIGNS_DATA['Aries'];
 
-  const pred = data?.prediction ||
-    `Today brings a surge of cosmic vitality for ${signEn}. Focus on strategic moves and trust your intuition. High energy around collaborations will yield unexpected blessings.`;
+  const signDates = signInfo.dates;
+  const signElement = signInfo.element;
+  const signEmoji = signInfo.emoji;
+  const signHindi = signInfo.hindi;
+  const signRuled = signInfo.ruled;
+
+  const pred =
+    data?.prediction ||
+    `Today brings a surge of cosmic vitality for ${selectedSign}. Focus on strategic moves and trust your intuition. High energy around collaborations will yield unexpected blessings.`;
 
   const energy = data?.energyLevel || 78;
 
@@ -53,7 +55,7 @@ export default function HeroPrediction({ selected, data }) {
       {/* Symbol & Titles */}
       <div className="flex justify-center items-center py-2">
         <ZodiacIcon
-          sign={signEn}
+          sign={selectedSign}
           size={84}
           style={{
             color: '#C8822A',
@@ -63,11 +65,11 @@ export default function HeroPrediction({ selected, data }) {
       </div>
 
       <div className="mt-4 font-display" style={{ fontSize: '1.6rem', color: 'var(--col-moonstone)' }}>
-        {signEn} <span style={{ color: 'var(--col-moonstone-dim)', fontWeight: 400 }}>• {signRange}</span>
+        {selectedSign} <span style={{ color: 'var(--col-moonstone-dim)', fontWeight: 400 }}>• {signDates}</span>
       </div>
 
       <div className="mt-1.5 text-xs font-medium" style={{ color: 'var(--col-moonstone-dim)' }}>
-        {signHi} Rashi &nbsp;•&nbsp; {signElement} Sign &nbsp;•&nbsp; Ruled by {signRuler}
+        {signHindi} Rashi &nbsp;•&nbsp; {signElement} Sign &nbsp;•&nbsp; Ruled by {signRuled}
       </div>
 
       <div className="mt-3.5">
@@ -79,7 +81,7 @@ export default function HeroPrediction({ selected, data }) {
             color: 'var(--col-copper)',
           }}
         >
-          {signBadge}
+          {signEmoji} {signElement}
         </span>
       </div>
 
