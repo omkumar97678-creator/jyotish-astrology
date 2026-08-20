@@ -90,20 +90,49 @@ export default function Horoscope() {
 
   // Save rashi preference to Supabase
   const saveHoroscopePreference = async (rashiName) => {
-    if (!user || !isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) return;
     try {
-      await supabase
-        .from('horoscope_preferences')
-        .upsert({
-          user_id: user.id,
-          rashi: rashiName,
-          notification_enabled: false,
-        });
-      console.log('Horoscope preference saved ✅');
+      const isUUID = (str) =>
+        typeof str === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
+      const validUserId = isUUID(user?.id) ? user.id : null;
+
+      if (validUserId) {
+        // Check if user already has a preference row
+        const { data: existing } = await supabase
+          .from('horoscope_preferences')
+          .select('id')
+          .eq('user_id', validUserId)
+          .maybeSingle();
+
+        if (existing?.id) {
+          const { error } = await supabase
+            .from('horoscope_preferences')
+            .update({ rashi: rashiName, notification_enabled: false })
+            .eq('id', existing.id);
+          if (error) console.error('Preference update error:', error);
+          else console.log('Horoscope preference updated ✅');
+        } else {
+          const { error } = await supabase
+            .from('horoscope_preferences')
+            .insert({ user_id: validUserId, rashi: rashiName, notification_enabled: false });
+          if (error) console.error('Preference insert error:', error);
+          else console.log('Horoscope preference saved ✅');
+        }
+      } else {
+        // Guest session: insert preference
+        const { error } = await supabase
+          .from('horoscope_preferences')
+          .insert({ rashi: rashiName, notification_enabled: false });
+        if (error) console.error('Guest preference insert error:', error);
+        else console.log('Horoscope preference saved (guest) ✅');
+      }
     } catch (err) {
       console.error('Save failed:', err);
     }
   };
+
 
   const selectSign = (i) => {
     setSelected(i);

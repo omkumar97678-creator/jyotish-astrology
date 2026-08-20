@@ -391,7 +391,7 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
         .eq('rashi', rashiName)
         .eq('date', today)
         .eq('period', normalizedPeriod)
-        .single();
+        .maybeSingle();
 
       if (!error && cached?.content) {
         console.log('Horoscope from cache ✅');
@@ -408,15 +408,34 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
   // 3. Save to Supabase cache
   if (isSupabaseConfigured()) {
     try {
-      await supabase
+      const { error } = await supabase
         .from('horoscope_cache')
-        .upsert({
+        .upsert(
+          {
+            rashi: rashiName,
+            date: today,
+            period: normalizedPeriod,
+            content: generated,
+          },
+          { onConflict: 'rashi,date,period' }
+        );
+
+      if (error) {
+        // Fallback to plain insert if unique constraint is missing
+        const { error: insertErr } = await supabase.from('horoscope_cache').insert({
           rashi: rashiName,
           date: today,
           period: normalizedPeriod,
           content: generated,
         });
-      console.log('Horoscope generated + cached ✅');
+        if (insertErr) {
+          console.warn('Horoscope cache save notice:', insertErr);
+        } else {
+          console.log('Horoscope generated + cached (insert) ✅');
+        }
+      } else {
+        console.log('Horoscope generated + cached ✅');
+      }
     } catch (err) {
       console.warn('Horoscope cache save notice:', err);
     }
@@ -424,5 +443,6 @@ export async function getOrGenerateHoroscope(signIndex = 0, period = 'today', la
 
   return generated;
 }
+
 
 
