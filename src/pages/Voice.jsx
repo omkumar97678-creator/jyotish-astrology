@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { GeminiLiveSession } from '@/lib/geminiLive';
-import { generateVoiceResponse } from '@/lib/aiService';
+import { GeminiLiveSession, generateGeminiAstrologyAnswer } from '@/lib/geminiLive';
 import StarField from '@/components/StarField';
 
 // ── Waveform component ─────────────────
@@ -324,7 +323,7 @@ export default function Voice() {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, text, time }]);
   }, []);
 
-  // ── Start voice session (Gemini Live) ──
+  // ── Start voice session ───────────────
   const handleStartSession = async () => {
     setError(null);
     setVoiceState('requesting_mic');
@@ -332,7 +331,7 @@ export default function Voice() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      setError('Microphone access denied. Please allow microphone permission and try again.');
+      setError('Microphone access denied. Please allow mic permission and try again.');
       setVoiceState('error');
       return;
     }
@@ -346,9 +345,13 @@ export default function Voice() {
       setVoiceState(state);
     };
 
-    session.onAiResponse = (text) => {
-      if (text && text.trim()) {
-        addMessage('ai', text);
+    session.onTranscript = (userText) => {
+      addMessage('user', userText);
+    };
+
+    session.onAiResponse = (aiText) => {
+      if (aiText && aiText.trim()) {
+        addMessage('ai', aiText);
       }
     };
 
@@ -357,23 +360,22 @@ export default function Voice() {
     };
 
     session.onError = (err) => {
-      console.error('Gemini Live error:', err);
-      setError(err?.message || 'Gemini Live connection failed. Please verify API key.');
+      console.error('Gemini Live session error:', err);
+      setError(err?.message || 'Voice session connection issue.');
       setVoiceState('error');
     };
 
-    // Use official Gemini Live voice 'Aoede' (warm, natural expressive tone)
-    const success = await session.start(kundliData, 'Aoede');
+    const success = await session.start(kundliData, 'Zephyr');
 
     if (success) {
       setTimeout(() => {
         addMessage(
           'ai',
           kundliData
-            ? `Namaste ${kundliData.name || 'Seeker'}! I can see your complete Vedic chart (${kundliData.lagna || 'Ascendant'} Lagna, ${kundliData.rashi || 'Moon'} Rashi). What would you like to explore today?`
-            : 'Namaste! I am your Vedic astrology guide. What cosmic guidance are you seeking today?'
+            ? `Namaste ${kundliData.name || 'Seeker'}! I have your complete Vedic chart ready (${kundliData.lagna || 'Ascendant'} Lagna). Speak your question, I am listening.`
+            : 'Namaste! I am your Vedic astrology guide. Speak your question, I am listening.'
         );
-      }, 1200);
+      }, 1000);
     }
   };
 
@@ -392,7 +394,7 @@ export default function Voice() {
     );
   };
 
-  // ── Send text message (Normal clean text chat - NO voice) ──
+  // ── Send text message (Clean quiet text chat - NO voice) ──
   const handleSendText = async () => {
     const text = textInput.trim();
     if (!text) return;
@@ -400,25 +402,17 @@ export default function Voice() {
     addMessage('user', text);
     setTextInput('');
 
-    if (sessionRef.current?.isActive) {
-      await sessionRef.current.sendText(text);
-    } else {
-      try {
-        const response = await generateVoiceResponse(text, kundliData);
-        const aiReply =
-          typeof response === 'string'
-            ? response
-            : response?.answer || response?.response || 'Cosmic wisdom received.';
-        addMessage('ai', aiReply);
-      } catch (err) {
-        console.error('Text question processing error:', err);
-        const fallback = `Based on your chart, your planetary positions suggest clarity and positive momentum for your query.`;
-        addMessage('ai', fallback);
-      }
+    try {
+      const response = await generateGeminiAstrologyAnswer(text, kundliData);
+      addMessage('ai', response);
+    } catch (err) {
+      console.error('Text question processing error:', err);
+      const fallback = `Based on your chart, the planetary alignments encourage steady focus and auspicious progress.`;
+      addMessage('ai', fallback);
     }
   };
 
-  // ── Suggested questions (Normal clean text chat - NO voice) ──
+  // ── Suggested questions (Clean quiet text chat - NO voice) ──
   const SUGGESTIONS = [
     'What does my Lagna reveal about me?',
     'Tell me about my current Mahadasha',
@@ -430,21 +424,13 @@ export default function Voice() {
 
   const handleSuggestion = async (question) => {
     addMessage('user', question);
-    if (sessionRef.current?.isActive) {
-      await sessionRef.current.sendText(question);
-    } else {
-      try {
-        const response = await generateVoiceResponse(question, kundliData);
-        const aiReply =
-          typeof response === 'string'
-            ? response
-            : response?.answer || response?.response || 'Cosmic wisdom received.';
-        addMessage('ai', aiReply);
-      } catch (err) {
-        console.error('Suggestion processing error:', err);
-        const fallback = `According to your Vedic planetary alignments, this is an auspicious phase for growth and mindful decisions.`;
-        addMessage('ai', fallback);
-      }
+    try {
+      const response = await generateGeminiAstrologyAnswer(question, kundliData);
+      addMessage('ai', response);
+    } catch (err) {
+      console.error('Suggestion processing error:', err);
+      const fallback = `According to your Vedic planetary alignments, this is an auspicious time for thoughtful decisions and growth.`;
+      addMessage('ai', fallback);
     }
   };
 
@@ -452,17 +438,17 @@ export default function Voice() {
   const getStatusText = () => {
     switch (voiceState) {
       case 'idle':
-        return 'Tap the mic to begin your cosmic conversation';
+        return 'Tap the mic to start live voice consultation';
       case 'requesting_mic':
         return 'Requesting microphone access...';
       case 'connecting':
-        return 'Connecting to ज्योतिष AI (Gemini Live)...';
+        return 'Connecting with Zephyr Voice...';
       case 'listening':
         return 'Listening... speak your question';
       case 'thinking':
         return '✦ Reading the stars...';
       case 'speaking':
-        return 'ज्योतिष AI is speaking';
+        return 'ज्योतिष AI is speaking (Zephyr Voice)';
       case 'disconnected':
         return 'Session ended';
       case 'error':
@@ -537,7 +523,7 @@ export default function Voice() {
             color: '#2AABA8',
           }}
         >
-          Powered by Gemini Live · Aoede
+          Powered by Gemini 3.1 · Zephyr Voice
         </div>
       </nav>
 
@@ -568,7 +554,7 @@ export default function Voice() {
             Voice Astrology
           </h1>
           <p style={{ color: 'rgba(232,228,220,0.5)', fontSize: '0.9rem' }}>
-            Ask anything about your kundli and destiny
+            Speak naturally and receive spoken guidance in Zephyr voice
           </p>
         </div>
 
