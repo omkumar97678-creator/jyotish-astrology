@@ -11,6 +11,29 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { generateGunMilanAnalysis } from '@/lib/aiService';
 import { calculateAshtakoot } from '@/lib/vedicAstrology';
 
+const isUUID = (str) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
+const formatDob = (dob) => {
+  if (!dob) return null;
+  const y = parseInt(dob.year, 10);
+  const m = parseInt(dob.month, 10);
+  const d = parseInt(dob.day, 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+};
+
+const formatTime = (time, unknown) => {
+  if (unknown || !time) return null;
+  let h = parseInt(time.hour, 10);
+  const m = parseInt(time.minute || '0', 10);
+  if (isNaN(h)) return null;
+  if (time.period === 'PM' && h < 12) h += 12;
+  if (time.period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${String(isNaN(m) ? 0 : m).padStart(2, '0')}:00`;
+};
+
 const empty = {
   name: '',
   dob: { day: '', month: '', year: '' },
@@ -32,38 +55,43 @@ export default function GunMilan() {
   const formRef = React.useRef(null);
 
   const saveGunMilanReport = async (ashtakoot, analysis) => {
-    if (!user || !isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured; skipping cloud save');
+      return;
+    }
     
     try {
-      const p1Dob = p1.dob?.year ? `${p1.dob.year}-${String(p1.dob.month || 1).padStart(2, '0')}-${String(p1.dob.day || 1).padStart(2, '0')}` : '1995-05-15';
-      const p2Dob = p2.dob?.year ? `${p2.dob.year}-${String(p2.dob.month || 1).padStart(2, '0')}-${String(p2.dob.day || 1).padStart(2, '0')}` : '1996-08-20';
+      const insertPayload = {
+        user_id: isUUID(user?.id) ? user.id : null,
+        person1_name: p1.name || 'Person 1',
+        person1_dob: formatDob(p1.dob) || '2004-09-08',
+        person1_time: formatTime(p1.time, p1.unknownTime),
+        person1_place: p1.birthPlace || '',
+        person1_rashi: ashtakoot?.person1?.rashi || 'Scorpio',
+        person1_nakshatra: ashtakoot?.person1?.nakshatra || 'Jyeshtha',
+        person1_is_manglik: Boolean(p1.isManglik),
+        person2_name: p2.name || 'Person 2',
+        person2_dob: formatDob(p2.dob) || '2000-09-15',
+        person2_time: formatTime(p2.time, p2.unknownTime),
+        person2_place: p2.birthPlace || '',
+        person2_rashi: ashtakoot?.person2?.rashi || 'Virgo',
+        person2_nakshatra: ashtakoot?.person2?.nakshatra || 'Hasta',
+        person2_is_manglik: Boolean(p2.isManglik),
+        total_score: ashtakoot?.totalScore || 28,
+        guna_scores: ashtakoot?.gunas || {},
+        ai_analysis: typeof analysis === 'string' ? analysis : (analysis?.verdict || 'Vedic compatibility computed'),
+      };
 
-      const p1Time = p1.unknownTime ? null : (p1.time?.hour ? `${String(p1.time.hour).padStart(2, '0')}:${String(p1.time.minute || '00').padStart(2, '0')}:00` : null);
-      const p2Time = p2.unknownTime ? null : (p2.time?.hour ? `${String(p2.time.hour).padStart(2, '0')}:${String(p2.time.minute || '00').padStart(2, '0')}:00` : null);
-
-      await supabase
+      const { data, error } = await supabase
         .from('gun_milan_reports')
-        .insert({
-          user_id: user.id,
-          person1_name: p1.name || 'Person 1',
-          person1_dob: p1Dob,
-          person1_time: p1Time,
-          person1_place: p1.birthPlace || '',
-          person1_rashi: ashtakoot?.person1?.rashi || 'Scorpio',
-          person1_nakshatra: ashtakoot?.person1?.nakshatra || 'Jyeshtha',
-          person1_is_manglik: Boolean(p1.isManglik),
-          person2_name: p2.name || 'Person 2',
-          person2_dob: p2Dob,
-          person2_time: p2Time,
-          person2_place: p2.birthPlace || '',
-          person2_rashi: ashtakoot?.person2?.rashi || 'Virgo',
-          person2_nakshatra: ashtakoot?.person2?.nakshatra || 'Hasta',
-          person2_is_manglik: Boolean(p2.isManglik),
-          total_score: ashtakoot?.totalScore || 28,
-          guna_scores: ashtakoot?.gunas || {},
-          ai_analysis: analysis?.verdict || ''
-        });
-      console.log('Gun Milan report saved ✅');
+        .insert(insertPayload)
+        .select();
+
+      if (error) {
+        console.error('Supabase gun_milan_reports save error:', error);
+      } else {
+        console.log('Gun Milan report saved ✅', data);
+      }
     } catch (err) {
       console.error('Save failed:', err);
     }
