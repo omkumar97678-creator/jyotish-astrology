@@ -10,7 +10,7 @@ import AiAnalysisSection from './AiAnalysisSection';
 import WeddingElements from './WeddingElements';
 import GmActions from './GmActions';
 
-export default function GmResults({ tryAgain, p1, p2, ashtakoot, analysisResult }) {
+export default function GmResults({ tryAgain, p1, p2, calculatedData, aiAnalysis }) {
   return (
     <AnimatePresence>
       <motion.div
@@ -21,31 +21,31 @@ export default function GmResults({ tryAgain, p1, p2, ashtakoot, analysisResult 
         className="mt-12 space-y-8"
       >
         {/* Section 1: Couple Header */}
-        <CoupleHeader p1={p1} p2={p2} ashtakoot={ashtakoot} />
+        <CoupleHeader p1={p1} p2={p2} calculatedData={calculatedData} />
 
         {/* Section 2: Expandable 8 Guna Breakdown */}
-        <GunaTable gunaScores={ashtakoot?.gunas} />
+        <GunaTable gunaScores={calculatedData?.gunas} />
 
         {/* Section 3: Nakshatra Compatibility */}
-        <NakshatraAnalysis p1={p1} p2={p2} ashtakoot={ashtakoot} />
+        <NakshatraAnalysis p1={p1} p2={p2} calculatedData={calculatedData} />
 
         {/* Section 4: Compatibility by Life Area */}
-        <LifeAreaCompatibility ashtakoot={ashtakoot} />
+        <LifeAreaCompatibility calculatedData={calculatedData} />
 
         {/* Section 5: Manglik Analysis & Remedies */}
-        <ManglikAnalysis p1={p1} p2={p2} ashtakoot={ashtakoot} />
+        <ManglikAnalysis p1={p1} p2={p2} calculatedData={calculatedData} />
 
         {/* Section 6: Vedha & Rajju Checks */}
-        <VedhaRajjuSection ashtakoot={ashtakoot} />
+        <VedhaRajjuSection calculatedData={calculatedData} />
 
         {/* Section 7: Detailed Astrological Analysis */}
-        <AiAnalysisSection analysis={analysisResult} ashtakoot={ashtakoot} />
+        <AiAnalysisSection aiAnalysis={aiAnalysis} calculatedData={calculatedData} />
 
         {/* Section 8: Auspicious Wedding Elements */}
-        <WeddingElements ashtakoot={ashtakoot} />
+        <WeddingElements calculatedData={calculatedData} />
 
         {/* Bottom Actions & Share Row */}
-        <GmActions tryAgain={tryAgain} p1={p1} p2={p2} ashtakoot={ashtakoot} />
+        <GmActions tryAgain={tryAgain} p1={p1} p2={p2} calculatedData={calculatedData} />
       </motion.div>
     </AnimatePresence>
   );

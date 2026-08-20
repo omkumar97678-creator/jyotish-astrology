@@ -1,7 +1,31 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { NAKSHATRA_NUM } from '@/lib/gunMilanCalc';
 
-export default function VedhaRajjuSection() {
+export default function VedhaRajjuSection({ calculatedData }) {
+  const nak1 = calculatedData?.nakshatra1 || 'Ashwini';
+  const nak2 = calculatedData?.nakshatra2 || 'Pushya';
+
+  const n1 = NAKSHATRA_NUM[nak1] || 1;
+  const n2 = NAKSHATRA_NUM[nak2] || 1;
+
+  // Rajju Grouping (Siro, Kantha, Nabhi, Kati, Pada)
+  const getRajjuType = (num) => {
+    const rem = num % 5;
+    if (rem === 1) return 'Pada (Feet)';
+    if (rem === 2) return 'Kati (Waist)';
+    if (rem === 3) return 'Nabhi (Navel)';
+    if (rem === 4) return 'Kantha (Neck)';
+    return 'Siro (Head)';
+  };
+
+  const rajju1 = getRajjuType(n1);
+  const rajju2 = getRajjuType(n2);
+  const isRajjuDosha = rajju1 === rajju2;
+
+  // Vedha check
+  const isVedha = Math.abs(n1 - n2) === 14 || Math.abs(n1 - n2) === 9;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,27 +53,36 @@ export default function VedhaRajjuSection() {
           className="glass-card flex flex-col justify-between"
           style={{
             padding: 24,
-            border: '1px solid rgba(42, 171, 168, 0.35)',
-            background: 'rgba(42, 171, 168, 0.05)',
+            border: !isRajjuDosha ? '1px solid rgba(42, 171, 168, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+            background: !isRajjuDosha ? 'rgba(42, 171, 168, 0.05)' : 'rgba(245, 158, 11, 0.05)',
           }}
         >
           <div>
             <div className="flex items-center justify-between gap-2 mb-2">
               <h4 className="font-semibold text-base" style={{ color: 'var(--col-moonstone)' }}>
-                Rajju (Longevity Check)
+                Rajju (Longevity & Health Check)
               </h4>
               <span
                 className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(42, 171, 168, 0.2)', color: 'var(--col-teal)', border: '1px solid rgba(42, 171, 168, 0.4)' }}
+                style={{
+                  background: !isRajjuDosha ? 'rgba(42, 171, 168, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  color: !isRajjuDosha ? 'var(--col-teal)' : '#F59E0B',
+                  border: `1px solid ${!isRajjuDosha ? 'rgba(42, 171, 168, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                }}
               >
-                ✓ Pass
+                {!isRajjuDosha ? '✓ Pass (शुभ)' : '⚠ Caution (मध्यम)'}
               </span>
             </div>
-            <div className="text-sm font-semibold mb-2" style={{ color: 'var(--col-teal)' }}>
-              ✓ No Rajju Dosha
+            <div
+              className="text-sm font-semibold mb-2"
+              style={{ color: !isRajjuDosha ? 'var(--col-teal)' : '#F59E0B' }}
+            >
+              {!isRajjuDosha ? '✓ No Rajju Dosha' : `⚠ Same Rajju Group (${rajju1})`}
             </div>
             <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-              Both partners' nakshatras fall in different Rajju groups, which is auspicious for longevity and long marital life.
+              {!isRajjuDosha
+                ? `Partners' birth stars fall in distinct Rajju bands (${rajju1} and ${rajju2}), which is highly auspicious for long marital happiness and mutual well-being.`
+                : `Both nakshatras align with ${rajju1} Rajju. In Vedic astrology, strong Guna and Bhakoot points provide effective protective counter-balance.`}
             </p>
           </div>
         </motion.div>
@@ -63,27 +96,36 @@ export default function VedhaRajjuSection() {
           className="glass-card flex flex-col justify-between"
           style={{
             padding: 24,
-            border: '1px solid rgba(42, 171, 168, 0.35)',
-            background: 'rgba(42, 171, 168, 0.05)',
+            border: !isVedha ? '1px solid rgba(42, 171, 168, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+            background: !isVedha ? 'rgba(42, 171, 168, 0.05)' : 'rgba(245, 158, 11, 0.05)',
           }}
         >
           <div>
             <div className="flex items-center justify-between gap-2 mb-2">
               <h4 className="font-semibold text-base" style={{ color: 'var(--col-moonstone)' }}>
-                Vedha (Affliction Check)
+                Vedha (Cosmic Affliction Check)
               </h4>
               <span
                 className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(42, 171, 168, 0.2)', color: 'var(--col-teal)', border: '1px solid rgba(42, 171, 168, 0.4)' }}
+                style={{
+                  background: !isVedha ? 'rgba(42, 171, 168, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  color: !isVedha ? 'var(--col-teal)' : '#F59E0B',
+                  border: `1px solid ${!isVedha ? 'rgba(42, 171, 168, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                }}
               >
-                ✓ Pass
+                {!isVedha ? '✓ Pass (दोष मुक्त)' : '⚠ Vedha Present'}
               </span>
             </div>
-            <div className="text-sm font-semibold mb-2" style={{ color: 'var(--col-teal)' }}>
-              ✓ No Vedha Dosha
+            <div
+              className="text-sm font-semibold mb-2"
+              style={{ color: !isVedha ? 'var(--col-teal)' : '#F59E0B' }}
+            >
+              {!isVedha ? '✓ No Vedha Dosha' : '⚠ Vedha Star Resistance'}
             </div>
             <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-              Nakshatras are not in Vedha (opposition), supporting a harmonious relationship free of deep astrological conflict.
+              {!isVedha
+                ? 'No adverse magnetic star resistance (Vedha) is present between the two nakshatras, ensuring peaceful domestic relations and smooth life decisions.'
+                : 'Mild star resistance observed. Respecting personal boundaries and transparent mutual communication dissolves any minor friction.'}
             </p>
           </div>
         </motion.div>

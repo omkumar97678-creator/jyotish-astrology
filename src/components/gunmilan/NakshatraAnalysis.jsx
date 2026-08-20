@@ -1,7 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { NAKSHATRA_DETAILS } from '@/lib/gunMilanCalc';
 
-export default function NakshatraAnalysis() {
+export default function NakshatraAnalysis({ p1, p2, calculatedData }) {
+  const boyName = p1?.name?.trim() || 'Person 1';
+  const girlName = p2?.name?.trim() || 'Person 2';
+
+  const nak1 = calculatedData?.nakshatra1 || 'Ashwini';
+  const nak2 = calculatedData?.nakshatra2 || 'Pushya';
+
+  const details1 = NAKSHATRA_DETAILS[nak1] || { ruler: 'Mercury', quality: 'Sharp', symbol: 'Star' };
+  const details2 = NAKSHATRA_DETAILS[nak2] || { ruler: 'Moon', quality: 'Soft', symbol: 'Hand' };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -24,27 +34,27 @@ export default function NakshatraAnalysis() {
           {/* Left: Boy's Nakshatra */}
           <div className="space-y-2">
             <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: 'var(--col-copper)' }}>
-              Boy's Nakshatra
+              {boyName}'s Nakshatra
             </span>
             <div className="font-display text-2xl" style={{ color: 'var(--col-copper)' }}>
-              Jyeshtha
+              {nak1}
             </div>
             <div className="space-y-1.5 text-xs pt-1" style={{ color: 'var(--col-moonstone-dim)' }}>
               <div className="flex justify-between max-w-xs">
-                <span>Ruler:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Mercury (Budh)</span>
+                <span>Ruler Planet:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{details1.ruler}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Pada:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>3rd Pada</span>
+                <span>Gana Temperament:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{calculatedData?.gana1 || 'Deva'}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Quality:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Fierce (Tikshna)</span>
+                <span>Nadi Energy:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{calculatedData?.nadi1 || 'Vata'}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Symbol:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Umbrella / Earring</span>
+                <span>Quality & Symbol:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{details1.quality} • {details1.symbol}</span>
               </div>
             </div>
           </div>
@@ -52,56 +62,45 @@ export default function NakshatraAnalysis() {
           {/* Right: Girl's Nakshatra */}
           <div className="space-y-2">
             <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: 'var(--col-teal)' }}>
-              Girl's Nakshatra
+              {girlName}'s Nakshatra
             </span>
             <div className="font-display text-2xl" style={{ color: 'var(--col-copper)' }}>
-              Hasta
+              {nak2}
             </div>
             <div className="space-y-1.5 text-xs pt-1" style={{ color: 'var(--col-moonstone-dim)' }}>
               <div className="flex justify-between max-w-xs">
-                <span>Ruler:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Moon (Chandra)</span>
+                <span>Ruler Planet:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{details2.ruler}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Pada:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>2nd Pada</span>
+                <span>Gana Temperament:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{calculatedData?.gana2 || 'Deva'}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Quality:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Light (Laghu)</span>
+                <span>Nadi Energy:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{calculatedData?.nadi2 || 'Vata'}</span>
               </div>
               <div className="flex justify-between max-w-xs">
-                <span>Symbol:</span>
-                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>Hand / Fist</span>
+                <span>Quality & Symbol:</span>
+                <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{details2.quality} • {details2.symbol}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Compatibility Verdict Card */}
-        <div
-          className="mt-5 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-          style={{
-            background: 'rgba(42, 171, 168, 0.08)',
-            border: '1px solid rgba(42, 171, 168, 0.35)',
-          }}
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm" style={{ color: 'var(--col-moonstone)' }}>
-                Jyeshtha + Hasta = Friendly Stars ✦
-              </span>
-              <span
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                style={{ background: 'rgba(42, 171, 168, 0.2)', color: 'var(--col-teal)', border: '1px solid rgba(42, 171, 168, 0.4)' }}
-              >
-                Compatible
-              </span>
-            </div>
-            <p className="mt-1.5 text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-              These nakshatras share a friendly relationship, supporting emotional harmony and mutual understanding.
-            </p>
+        {/* Compatibility verdict description */}
+        <div className="pt-5">
+          <div className="flex items-center gap-2 mb-2">
+            <span style={{ color: 'var(--col-copper)', fontSize: 16 }}>✦</span>
+            <h4 className="font-semibold text-sm" style={{ color: 'var(--col-moonstone)' }}>
+              Nakshatra Interplay: {nak1} & {nak2}
+            </h4>
           </div>
+          <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.65 }}>
+            {calculatedData?.nadi1 === calculatedData?.nadi2
+              ? `Both birth stars belong to the ${calculatedData?.nadi1} Nadi family. Chanting spiritual mantras or practicing mutual wellness mindfulness helps maintain vital balance.`
+              : `Different Nadi energies (${calculatedData?.nadi1} and ${calculatedData?.nadi2}) indicate excellent physiological and genetic compatibility, bringing strong health vitality and harmony to the relationship.`}
+          </p>
         </div>
       </div>
     </motion.div>

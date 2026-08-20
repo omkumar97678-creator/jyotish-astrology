@@ -9,7 +9,14 @@ import { useAuth } from '@/context/AuthContext';
 import { t } from '@/translations';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { generateGunMilanAnalysis } from '@/lib/aiService';
-import { calculateAshtakoot } from '@/lib/vedicAstrology';
+import {
+  getNakshatraFromDOB,
+  getRashiFromDOB,
+  isManglik as checkManglik,
+  calculateGunas,
+  getCompatibilityLabel,
+  calculateLifeAreaScores,
+} from '@/lib/gunMilanCalc';
 
 const isUUID = (str) =>
   typeof str === 'string' &&
@@ -50,35 +57,38 @@ export default function GunMilan() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [ashtakootResult, setAshtakootResult] = useState(null);
+  const [calculatedData, setCalculatedData] = useState(null);
 
   const formRef = React.useRef(null);
 
-  const saveGunMilanReport = async (ashtakoot, analysis) => {
+  const saveGunMilanReport = async (calc, analysis) => {
     if (!isSupabaseConfigured()) {
-      console.warn('Supabase is not configured; skipping cloud save');
       return;
     }
-    
+
     try {
+      const dob1 = formatDob(p1.dob) || '2004-09-08';
+      const dob2 = formatDob(p2.dob) || '2000-09-15';
+
       const insertPayload = {
         user_id: isUUID(user?.id) ? user.id : null,
         person1_name: p1.name || 'Person 1',
-        person1_dob: formatDob(p1.dob) || '2004-09-08',
+        person1_dob: dob1,
         person1_time: formatTime(p1.time, p1.unknownTime),
         person1_place: p1.birthPlace || '',
-        person1_rashi: ashtakoot?.person1?.rashi || 'Scorpio',
-        person1_nakshatra: ashtakoot?.person1?.nakshatra || 'Jyeshtha',
-        person1_is_manglik: Boolean(p1.isManglik),
+        person1_rashi: calc?.rashi1 || 'Scorpio (Vrishchik)',
+        person1_nakshatra: calc?.nakshatra1 || 'Jyeshtha',
+        person1_is_manglik: Boolean(calc?.manglik1),
         person2_name: p2.name || 'Person 2',
-        person2_dob: formatDob(p2.dob) || '2000-09-15',
+        person2_dob: dob2,
         person2_time: formatTime(p2.time, p2.unknownTime),
         person2_place: p2.birthPlace || '',
-        person2_rashi: ashtakoot?.person2?.rashi || 'Virgo',
-        person2_nakshatra: ashtakoot?.person2?.nakshatra || 'Hasta',
-        person2_is_manglik: Boolean(p2.isManglik),
-        total_score: ashtakoot?.totalScore || 28,
-        guna_scores: ashtakoot?.gunas || {},
+        person2_rashi: calc?.rashi2 || 'Virgo (Kanya)',
+        person2_nakshatra: calc?.nakshatra2 || 'Hasta',
+        person2_is_manglik: Boolean(calc?.manglik2),
+        total_score: calc?.totalScore || 28,
+        guna_scores: calc?.gunas || {},
+        compatibility_areas: calc?.lifeAreas || {},
         ai_analysis: typeof analysis === 'string' ? analysis : (analysis?.verdict || 'Vedic compatibility computed'),
       };
 
@@ -101,24 +111,62 @@ export default function GunMilan() {
     setLoading(true);
 
     try {
-      // 1. Calculate Real Vedic Ashtakoot Guna Milan (36 Gunas)
-      const ashtakoot = calculateAshtakoot(p1, p2);
-      setAshtakootResult(ashtakoot);
+      // 1. Calculate Real Values From Input DOBs
+      const dob1 = formatDob(p1.dob) || '2004-09-08';
+      const dob2 = formatDob(p2.dob) || '2000-09-15';
 
-      const score = ashtakoot.totalScore;
-      const gunaScores = ashtakoot.gunas;
+      const nakshatra1 = getNakshatraFromDOB(dob1);
+      const nakshatra2 = getNakshatraFromDOB(dob2);
+      const rashi1 = getRashiFromDOB(dob1);
+      const rashi2 = getRashiFromDOB(dob2);
+      const manglik1 = checkManglik(dob1);
+      const manglik2 = checkManglik(dob2);
 
-      // 2. Generate compatibility analysis via AI
+      // 2. Calculate Ashtakoot Gunas (36 Gunas)
+      const gunaResult = calculateGunas(nakshatra1, nakshatra2);
+      const lifeAreaScores = calculateLifeAreaScores(gunaResult.gunas);
+      const label = getCompatibilityLabel(gunaResult.totalScore);
+
+      const computed = {
+        nakshatra1,
+        nakshatra2,
+        rashi1,
+        rashi2,
+        manglik1,
+        manglik2,
+        gunas: gunaResult.gunas,
+        totalScore: gunaResult.totalScore,
+        nadi1: gunaResult.nadi1,
+        nadi2: gunaResult.nadi2,
+        gana1: gunaResult.gana1,
+        gana2: gunaResult.gana2,
+        label,
+        lifeAreas: lifeAreaScores,
+      };
+
+      setCalculatedData(computed);
+
+      // 3. Generate AI analysis with REAL data
       const analysis = await generateGunMilanAnalysis(
-        { ...p1, rashi: ashtakoot.person1.rashi, nakshatra: ashtakoot.person1.nakshatra },
-        { ...p2, rashi: ashtakoot.person2.rashi, nakshatra: ashtakoot.person2.nakshatra },
-        score,
-        gunaScores
+        {
+          name: p1.name || 'Person 1',
+          rashi: rashi1,
+          nakshatra: nakshatra1,
+          isManglik: manglik1,
+        },
+        {
+          name: p2.name || 'Person 2',
+          rashi: rashi2,
+          nakshatra: nakshatra2,
+          isManglik: manglik2,
+        },
+        gunaResult.totalScore,
+        gunaResult.gunas
       );
       setAnalysisResult(analysis);
 
-      // 3. Save report to Supabase
-      await saveGunMilanReport(ashtakoot, analysis);
+      // 4. Save report to Supabase
+      await saveGunMilanReport(computed, analysis);
     } catch (e) {
       console.warn('Gun Milan calculation or DB save error:', e);
     } finally {
@@ -196,8 +244,8 @@ export default function GunMilan() {
             tryAgain={tryAgain}
             p1={p1}
             p2={p2}
-            ashtakoot={ashtakootResult}
-            analysisResult={analysisResult}
+            calculatedData={calculatedData}
+            aiAnalysis={analysisResult}
           />
         )}
       </main>

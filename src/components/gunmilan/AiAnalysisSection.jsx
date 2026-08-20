@@ -2,28 +2,48 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useLang } from '@/context/LanguageContext';
 
-export default function AiAnalysisSection() {
+export default function AiAnalysisSection({ aiAnalysis, calculatedData }) {
   const { lang } = useLang();
+
+  const totalScore = calculatedData?.totalScore ?? 28;
+  const label = calculatedData?.label || 'Good Match';
+
+  const verdictText =
+    aiAnalysis?.verdict ||
+    `With ${totalScore} out of 36 gunas matched (${label}), this union possesses solid foundational compatibility. The planetary temperaments and birth stars support harmonious domestic stability, mutual respect, and fruitful shared aspirations.`;
+
+  const strengthsText =
+    aiAnalysis?.strengths ||
+    `High mutual attraction and intellectual synchronization. The ${calculatedData?.rashi1 || 'First'} and ${calculatedData?.rashi2 || 'Second'} sign combination encourages emotional empathy, family harmony, and collective prosperity.`;
+
+  const challengesText =
+    aiAnalysis?.challenges ||
+    aiAnalysis?.areasToNurture ||
+    `Nurture open communication during periods of stress. Honoring each other's individual independence and decision-making styles will fortify long-term emotional trust.`;
+
+  const timingText =
+    aiAnalysis?.auspiciousTiming ||
+    `Planetary transits of Jupiter (Guru) over the coming 12–18 months create highly auspicious and blessed windows for marital commitment and new auspicious beginnings.`;
 
   const sections = [
     {
       title: '✦ Overall Verdict',
-      body: 'With 28 out of 36 gunas matched, this is a good and harmonious pairing. Bhakoot and Gana align strongly, indicating emotional and temperamental balance. Since Person 2 is Manglik, a Mars remedy is advisable before marriage to neutralize any intensity. Overall, this match supports a stable, affectionate, and long-lasting relationship.',
+      body: verdictText,
       accent: 'var(--col-copper)',
     },
     {
       title: '♡ Relationship Strengths',
-      body: 'Strong intellectual bond. Emotional balance between partners. Bhakoot alignment suggests long-term stability and constructive family growth.',
+      body: strengthsText,
       accent: 'var(--col-teal)',
     },
     {
       title: '⚠ Areas to Nurture',
-      body: 'Nadi score (4/8) suggests attention to health matters. Plan regular health check-ups together and maintain open dialogue during stressful times.',
+      body: challengesText,
       accent: '#F59E0B',
     },
     {
       title: '✦ Auspicious Time to Marry',
-      body: '2025-2026 is a favorable period. Jupiter transiting 7th house brings blessings for marriage and auspicious partnership milestones.',
+      body: timingText,
       accent: 'var(--col-copper-light)',
     },
   ];

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import AnimatedNumber from '@/components/numerology/AnimatedNumber';
 
-export default function CoupleHeader({ p1, p2, ashtakoot }) {
-  const score = ashtakoot?.totalScore ?? 28;
-  const total = ashtakoot?.maxScore ?? 36;
+export default function CoupleHeader({ p1, p2, calculatedData }) {
+  const score = calculatedData?.totalScore ?? 28;
+  const total = 36;
 
   const [progress, setProgress] = useState(0);
 
@@ -23,10 +23,10 @@ export default function CoupleHeader({ p1, p2, ashtakoot }) {
   const girlDob = p2?.dob?.day ? `${p2.dob.day}/${p2.dob.month}/${p2.dob.year}` : 'Date of Birth';
   const girlPlace = p2?.birthPlace || 'Location';
 
-  const p1Rashi = ashtakoot?.person1?.rashi || 'Mesh (Aries)';
-  const p1Nak = ashtakoot?.person1?.nakshatra || 'Ashwini';
-  const p2Rashi = ashtakoot?.person2?.rashi || 'Karka (Cancer)';
-  const p2Nak = ashtakoot?.person2?.nakshatra || 'Pushya';
+  const p1Rashi = calculatedData?.rashi1 || 'Mesh (Aries)';
+  const p1Nak = calculatedData?.nakshatra1 || 'Ashwini';
+  const p2Rashi = calculatedData?.rashi2 || 'Kark (Cancer)';
+  const p2Nak = calculatedData?.nakshatra2 || 'Pushya';
 
   const getVerdict = (s) => {
     if (s >= 28) return { text: 'Excellent Match (उत्कृष्ट मिलान)', color: 'var(--col-teal)' };
@@ -50,7 +50,7 @@ export default function CoupleHeader({ p1, p2, ashtakoot }) {
         {/* Left Side: Boy */}
         <div className="flex flex-col items-center md:items-start order-2 md:order-1">
           <div className="text-xs uppercase font-medium tracking-widest" style={{ color: 'var(--col-copper)' }}>
-            Person 1
+            Person 1 (Var)
           </div>
           <h2 className="font-display mt-1" style={{ fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', color: 'var(--col-copper)' }}>
             {boyName}
@@ -59,7 +59,7 @@ export default function CoupleHeader({ p1, p2, ashtakoot }) {
             {boyDob} • {boyPlace}
           </p>
 
-          <div className="mt-4 space-y-1.5 text-sm w-full max-w-[220px] text-center md:text-left">
+          <div className="mt-4 space-y-1.5 text-sm w-full max-w-[240px] text-center md:text-left">
             <div className="flex justify-between md:justify-start md:gap-3">
               <span style={{ color: 'var(--col-moonstone-dim)' }}>Rashi:</span>
               <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{p1Rashi}</span>
@@ -103,36 +103,33 @@ export default function CoupleHeader({ p1, p2, ashtakoot }) {
               </defs>
             </svg>
 
+            {/* Inner Score Badge */}
             <div className="absolute flex flex-col items-center justify-center">
-              <AnimatedNumber
-                value={score}
-                className="font-mono-num font-bold text-copper-gradient leading-none"
-                style={{ fontSize: '3rem' }}
-              />
-              <span className="text-xs uppercase font-medium mt-1" style={{ color: 'var(--col-moonstone-dim)', letterSpacing: '0.1em' }}>
-                out of {total}
+              <div className="font-display" style={{ fontSize: '2.8rem', lineHeight: 1, color: 'var(--col-moonstone)' }}>
+                <AnimatedNumber value={score} />
+              </div>
+              <span className="text-[11px] font-mono-num font-semibold" style={{ color: 'var(--col-copper)', letterSpacing: '0.05em' }}>
+                / {total} Gunas
               </span>
             </div>
           </div>
 
-          <div className="mt-3 text-center">
-            <span
-              className="text-xs px-3 py-1 rounded-full font-medium"
-              style={{
-                background: 'rgba(200,130,42,0.1)',
-                border: '1px solid rgba(200,130,42,0.3)',
-                color: verdict.color,
-              }}
-            >
-              {verdict.text}
-            </span>
+          <div
+            className="mt-3 text-xs font-semibold px-3 py-1 rounded-full text-center"
+            style={{
+              background: 'rgba(200, 130, 42, 0.12)',
+              color: verdict.color,
+              border: `1px solid ${verdict.color}`,
+            }}
+          >
+            {calculatedData?.label || verdict.text}
           </div>
         </div>
 
         {/* Right Side: Girl */}
         <div className="flex flex-col items-center md:items-end order-3">
           <div className="text-xs uppercase font-medium tracking-widest" style={{ color: 'var(--col-teal)' }}>
-            Person 2
+            Person 2 (Kanya)
           </div>
           <h2 className="font-display mt-1" style={{ fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', color: 'var(--col-teal)' }}>
             {girlName}
@@ -141,7 +138,7 @@ export default function CoupleHeader({ p1, p2, ashtakoot }) {
             {girlDob} • {girlPlace}
           </p>
 
-          <div className="mt-4 space-y-1.5 text-sm w-full max-w-[220px] text-center md:text-right">
+          <div className="mt-4 space-y-1.5 text-sm w-full max-w-[240px] text-center md:text-right">
             <div className="flex justify-between md:justify-end md:gap-3">
               <span style={{ color: 'var(--col-moonstone-dim)' }}>Rashi:</span>
               <span className="font-medium" style={{ color: 'var(--col-moonstone)' }}>{p2Rashi}</span>
