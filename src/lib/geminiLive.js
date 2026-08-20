@@ -1,8 +1,14 @@
 import { GoogleGenAI, Modality } from '@google/genai';
+import OpenAI from 'openai';
 import { getCompleteNumerology } from './kundliService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true,
+});
 
 // ── Convert Linear PCM16 to Standard WAV Blob ────────
 export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
@@ -125,11 +131,13 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
   }
 }
 
-// ── Multi-Tier Ultra-HD Voice Audio Generator ─────────
+// ── Ultra-HD Studio Natural Voice Generator ───────────
+// 1. Google Gemini 3.1 Flash TTS (Zephyr Voice)
+// 2. OpenAI Neural Studio Voice (Nova / Alloy - 100% human natural tone)
 export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
   const cleanText = text.replace(/[*_#`~]/g, '').trim();
 
-  // Tier 1: Try Gemini TTS
+  // Tier 1: Try Gemini TTS (Zephyr Voice)
   if (GEMINI_API_KEY) {
     try {
       const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -153,32 +161,23 @@ export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
         return pcm16ToWavBlob(audioData, 24000, 1);
       }
     } catch (err) {
-      console.warn('Gemini TTS limit or error, using OpenAI HD Voice:', err?.message || err);
+      console.warn('Gemini TTS limit, using OpenAI HD Studio Voice:', err?.message || err);
     }
   }
 
-  // Tier 2: Try OpenAI TTS (HD Studio Voice)
+  // Tier 2: OpenAI HD Studio Voice (Nova / Alloy)
   if (OPENAI_API_KEY) {
     try {
-      const response = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'tts-1',
-          voice: 'nova', // Warm natural conversational voice
-          input: cleanText,
-        }),
+      const mp3 = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: 'nova', // Expressive, natural, warm human tone
+        input: cleanText,
       });
 
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        return new Blob([arrayBuffer], { type: 'audio/mp3' });
-      }
+      const arrayBuffer = await mp3.arrayBuffer();
+      return new Blob([arrayBuffer], { type: 'audio/mp3' });
     } catch (err) {
-      console.warn('OpenAI TTS error:', err?.message || err);
+      console.warn('OpenAI SDK TTS error:', err?.message || err);
     }
   }
 
@@ -334,7 +333,7 @@ export class LiveVoiceCallSession {
     try {
       this.recognition.start();
     } catch (e) {
-      // If already started or pending, ignore
+      // If already running, ignore
     }
   }
 
@@ -410,20 +409,6 @@ export class LiveVoiceCallSession {
             resolve();
           });
         });
-      } else if (this.isActive && 'speechSynthesis' in window) {
-        // Fallback to browser synthesis if network unavailable
-        await new Promise((resolve) => {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(text);
-          const voices = window.speechSynthesis.getVoices();
-          const indVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('India'));
-          if (indVoice) utterance.voice = indVoice;
-
-          utterance.onend = () => resolve();
-          utterance.onerror = () => resolve();
-          this.onStateChange?.('speaking');
-          window.speechSynthesis.speak(utterance);
-        });
       }
     } catch (err) {
       console.error('speakResponse error:', err);
@@ -451,13 +436,6 @@ export class LiveVoiceCallSession {
         /* ignore */
       }
       this.activeAudio = null;
-    }
-    if (window.speechSynthesis) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) {
-        /* ignore */
-      }
     }
     this.isSpeaking = false;
   }
