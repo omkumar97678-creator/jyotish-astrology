@@ -235,22 +235,27 @@ export default function Voice() {
 
   // ── Load Kundli on Mount ──────────────
   useEffect(() => {
-    const stored = localStorage.getItem('kundli_data');
-    if (stored) {
-      try {
-        setKundliData(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse kundli', e);
+    let profile = {};
+
+    try {
+      const stored = localStorage.getItem('kundli_data');
+      if (stored) {
+        profile = { ...profile, ...JSON.parse(stored) };
       }
-    } else {
       const onboard = localStorage.getItem('jyotish_onboarding');
       if (onboard) {
-        try {
-          setKundliData(JSON.parse(onboard));
-        } catch (e) {
-          /* ignore */
-        }
+        profile = { ...profile, ...JSON.parse(onboard) };
       }
+      const user = localStorage.getItem('jyotish_user');
+      if (user) {
+        profile = { ...profile, ...JSON.parse(user) };
+      }
+    } catch (e) {
+      console.error('Failed to load profile data', e);
+    }
+
+    if (Object.keys(profile).length > 0) {
+      setKundliData(profile);
     }
   }, []);
 

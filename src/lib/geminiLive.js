@@ -1,4 +1,5 @@
 import { GoogleGenAI, Modality } from '@google/genai';
+import { getCompleteNumerology } from './kundliService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -53,30 +54,55 @@ export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
 // ── Build Conversational Astrologer System Prompt ─────
 export function buildAstroContext(kundliData) {
   const name = kundliData?.name || 'Seeker';
-  const lagna = kundliData?.lagna || 'Aries (Mesh)';
-  const rashi = kundliData?.rashi || 'Mesh';
-  const nakshatra = kundliData?.nakshatra || 'Ashwini';
+  const dob = kundliData?.date_of_birth || kundliData?.dob || '2004-09-08';
+  const birthPlace = kundliData?.birth_place || kundliData?.place || 'Delhi, India';
+  const birthTime = kundliData?.time_of_birth || kundliData?.time || 'Sunrise Chart';
+  const lagna = kundliData?.lagna || 'Scorpio (Vrishchik)';
+  const rashi = kundliData?.rashi || 'Gemini (Mithun)';
+  const nakshatra = kundliData?.nakshatra || 'Ardra';
+
+  // Calculate complete numerology
+  const numerology = getCompleteNumerology(name, dob);
+  const mulank = kundliData?.mulank || numerology?.mulank || 8;
+  const lifePath = kundliData?.life_path_number || numerology?.lifePathNumber || 5;
+  const destiny = kundliData?.destiny_number || numerology?.destinyNumber || 3;
+  const soulUrge = kundliData?.soul_urge_number || numerology?.soulUrgeNumber || 9;
+  const luckyNumbers = numerology?.luckyNumbers?.join(', ') || '5, 3, 6';
+  const luckyColors = numerology?.luckyColors?.join(', ') || 'Golden Yellow, Emerald Green';
+  const dasha = kundliData?.current_dasha?.lord || kundliData?.mahadasha?.activeDasha?.planet || 'Active Mahadasha';
 
   return `
-You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 LIVE voice phone consultation with ${name}.
+You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 consultation with ${name}.
 
-SEEKER'S CHART CONTEXT:
-- Name: ${name}
-- Lagna (Ascendant): ${lagna}
+SEEKER'S COMPLETE BIRTH CHART & NUMEROLOGY PROFILE:
+- Seeker Name: ${name}
+- Date of Birth (DOB): ${typeof dob === 'object' ? `${dob.year}-${dob.month}-${dob.day}` : dob}
+- Birth Place: ${birthPlace}
+- Birth Time: ${typeof birthTime === 'object' ? `${birthTime.hour}:${birthTime.minute} ${birthTime.period || ''}` : birthTime}
+- Ascendant / Lagna: ${lagna}
 - Moon Sign (Chandra Rashi): ${rashi}
-- Nakshatra: ${nakshatra}
+- Janma Nakshatra: ${nakshatra}
+- Current Mahadasha: ${dasha}
+- Mulank (Birth Day Number): ${mulank}
+- Bhagyank / Life Path Number: ${lifePath}
+- Namank / Destiny Number: ${destiny}
+- Soul Urge Number: ${soulUrge}
+- Lucky Numbers: ${luckyNumbers}
+- Lucky Colors: ${luckyColors}
 
-CONVERSATION RULES (STRICT):
-1. **Natural Human Conversation**:
-   - If the user says casual greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho", "kya haal hai"):
-     Reply warmly and naturally in 1 short sentence: "Namaste ${name} ji! Ji main aapko sun raha hoon. Aaj aap apne baare me ya apni kundli ke vishay me kya janna chahte hain?"
-   - Do NOT dump full planetary details or chart summaries unless the user specifically asks an astrological question.
-2. **When user asks a specific question** (e.g. career, marriage, health, yogas, dasha, future):
-   - Give a warm, empowering, personalized answer in 2 to 3 spoken sentences.
-   - Mention their Lagna (${lagna}) or Moon sign (${rashi}) naturally when relevant to their question.
-3. **Audio-Only Output**:
-   - NEVER use markdown characters (*, **, #, bullets, numbered lists). Speak clean conversational Hindi-English / English.
-   - Keep answers short and sweet so the user can easily talk back and forth.
+CRITICAL RULES (READ CAREFULLY):
+1. **NEVER ASK FOR BIRTH DETAILS**:
+   - You ALREADY have the seeker's complete profile above (Name, DOB, Time, Place, Lagna, Rashi, Nakshatra, Mulank, Life Path Number, Destiny Number).
+   - NEVER ask "Mujhe apna name ya date of birth batao" or "Please share your birth details".
+   - If the seeker asks "Mera Life Path Number kya hai?" or "Mera Mulank kya hai?", answer IMMEDIATELY with their exact numbers (Life Path: ${lifePath}, Mulank: ${mulank}, Destiny: ${destiny}) and explain its astrological meaning!
+2. **Natural Human Conversation**:
+   - For greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho"):
+     Reply warmly: "Namaste ${name} ji! Ji main aapko sun raha hoon. Aaj aap apne jeevan ya kundli ke kis vishay me baat karna chahte hain?"
+   - For specific questions (career, marriage, health, yogas, numbers, dasha):
+     Provide an authentic, uplifting, personalized answer in 2 to 3 sentences using their chart details above.
+3. **Format**:
+   - Speak in clear conversational Hindi-English / English.
+   - Do NOT use markdown asterisks (* or **) or bullet points in your output.
 `;
 }
 
@@ -88,7 +114,7 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
   try {
     const response = await client.models.generateContent({
       model: 'gemini-3.6-flash',
-      contents: `${systemPrompt}\n\nUser said: "${question}"\nAstrologer spoken response:`,
+      contents: `${systemPrompt}\n\nSeeker Question: "${question}"\nAstrologer Response:`,
     });
 
     const text = response.text?.trim();
@@ -100,9 +126,6 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
 }
 
 // ── Multi-Tier Ultra-HD Voice Audio Generator ─────────
-// Tier 1: Gemini 3.1 Flash TTS (Zephyr Voice)
-// Tier 2: OpenAI TTS-1 (Nova / Alloy Studio Voice)
-// Tier 3: Browser Web SpeechSynthesis
 export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
   const cleanText = text.replace(/[*_#`~]/g, '').trim();
 
@@ -130,7 +153,7 @@ export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
         return pcm16ToWavBlob(audioData, 24000, 1);
       }
     } catch (err) {
-      console.warn('Gemini TTS limit or error, falling back to OpenAI HD Voice:', err?.message || err);
+      console.warn('Gemini TTS limit or error, using OpenAI HD Voice:', err?.message || err);
     }
   }
 
