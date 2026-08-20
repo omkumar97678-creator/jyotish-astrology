@@ -87,7 +87,7 @@ export class GeminiLiveSession {
   }
 
   // ── Initialize session ────────────────
-  async start(kundliData, voiceName = 'Zephyr') {
+  async start(kundliData, voiceName = 'Aoede') {
     try {
       this.client = new GoogleGenAI({ 
         apiKey: GEMINI_API_KEY 
@@ -102,7 +102,7 @@ export class GeminiLiveSession {
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: {
-                voiceName: voiceName || 'Zephyr'
+                voiceName: voiceName || 'Aoede'
               }
             }
           },
@@ -149,15 +149,33 @@ export class GeminiLiveSession {
 
   // ── Handle incoming messages ──────────
   _handleMessage(message) {
-    // Audio response from Gemini
+    // Audio and text parts from Gemini Live model turn
+    if (message.serverContent?.modelTurn?.parts) {
+      for (const part of message.serverContent.modelTurn.parts) {
+        if (part.inlineData?.data) {
+          this._playAudioChunk(part.inlineData.data);
+          this.onStateChange?.('speaking');
+        }
+        if (part.text) {
+          this.onAiResponse?.(part.text);
+        }
+      }
+    }
+
+    // Top-level data fallback
     if (message.data) {
       this._playAudioChunk(message.data);
       this.onStateChange?.('speaking');
     }
 
-    // Text transcript (if available)
+    // Text transcript (if top-level)
     if (message.text) {
       this.onAiResponse?.(message.text);
+    }
+
+    // Output transcription if present
+    if (message.serverContent?.outputTranscription?.text) {
+      this.onAiResponse?.(message.serverContent.outputTranscription.text);
     }
 
     // Turn complete
