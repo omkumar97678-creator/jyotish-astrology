@@ -10,7 +10,9 @@ const chips = [
   'What is my Moon sign personality?',
 ];
 
-export default function Suggestions({ show, onAsk }) {
+export default function Suggestions({ show = true, onAsk, onSelect }) {
+  const handleSelect = onAsk || onSelect || (() => {});
+
   return (
     <AnimatePresence>
       {show && (
@@ -32,8 +34,8 @@ export default function Suggestions({ show, onAsk }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.06 }}
                 whileHover={{ scale: 1.04 }}
-                onClick={() => onAsk(c)}
-                className="px-4 py-2 text-sm rounded-full transition-colors"
+                onClick={() => handleSelect(c)}
+                className="px-4 py-2 text-sm rounded-full transition-colors cursor-pointer"
                 style={{
                   background: 'var(--col-glass)',
                   border: '1px solid rgba(200,130,42,0.4)',
