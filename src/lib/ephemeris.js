@@ -345,7 +345,6 @@ export function calculateDasha(moonLng, birthDate) {
 
 // ── Panchang Calculation ────────────────
 export function calculatePanchang(sunLng, moonLng, jd) {
-  // 1. Tithi (12 degrees per tithi)
   let diff = (moonLng - sunLng) % 360;
   if (diff < 0) diff += 360;
   const tithiNum = Math.floor(diff / 12) + 1;
@@ -359,7 +358,6 @@ export function calculatePanchang(sunLng, moonLng, jd) {
   const tithiIndex = (tithiNum - 1) % 15;
   const tithi = `${tithiNames[tithiIndex]} (${paksha.split(' ')[0]})`;
 
-  // 2. Vara (Weekday)
   const weekdays = [
     'Sunday (Ravivar)', 'Monday (Somvar)', 'Tuesday (Mangalvar)',
     'Wednesday (Budhvar)', 'Thursday (Guruvar)', 'Friday (Shukravar)', 'Saturday (Shanivar)'
@@ -367,7 +365,6 @@ export function calculatePanchang(sunLng, moonLng, jd) {
   const dayIndex = Math.floor(jd + 1.5) % 7;
   const vara = weekdays[dayIndex];
 
-  // 3. Nitya Yoga (Sum of Sun and Moon)
   const YOGAS = [
     'Vishkambha', 'Priti', 'Ayushman', 'Saubhagya', 'Shobhana',
     'Atiganda', 'Sukarma', 'Dhriti', 'Shula', 'Ganda',
@@ -379,7 +376,6 @@ export function calculatePanchang(sunLng, moonLng, jd) {
   const yogaIndex = Math.floor(sumLng / (360 / 27)) % 27;
   const nityaYoga = `${YOGAS[yogaIndex]} Yoga`;
 
-  // 4. Karana (Half of Tithi)
   const karanaNum = Math.floor(diff / 6) + 1;
   const movableKaranas = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija', 'Vishti (Bhadra)'];
   let karana = 'Bava';
@@ -398,13 +394,12 @@ export function calculatePanchang(sunLng, moonLng, jd) {
 }
 
 // ── Classical Yogas Calculation ────────
-export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
+export function calculateClassicalYogas(houses) {
   const yogas = [];
 
-  // Find planets in houses
   const planetHouses = {};
   houses.forEach((h) => {
-    h.planets.forEach((p) => {
+    (h.planets || []).forEach((p) => {
       planetHouses[p] = h.num;
     });
   });
@@ -414,10 +409,9 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
   const sunH = planetHouses['Sun'];
   const merH = planetHouses['Mercury'];
   const marH = planetHouses['Mars'];
-  const satH = planetHouses['Saturn'];
   const venH = planetHouses['Venus'];
 
-  // 1. Gaja Kesari Yoga (Jupiter in Kendra from Moon)
+  // 1. Gaja Kesari Yoga
   if (jupH && moonH) {
     const diff = ((jupH - moonH + 12) % 12) + 1;
     if ([1, 4, 7, 10].includes(diff)) {
@@ -430,7 +424,7 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
     }
   }
 
-  // 2. Budhaditya Yoga (Sun + Mercury together)
+  // 2. Budhaditya Yoga
   if (sunH && merH && sunH === merH) {
     yogas.push({
       name: 'Budhaditya Yoga (बुधादित्य योग)',
@@ -440,7 +434,7 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
     });
   }
 
-  // 3. Chandra-Mangal Yoga (Moon + Mars together)
+  // 3. Chandra-Mangal Yoga
   if (moonH && marH && moonH === marH) {
     yogas.push({
       name: 'Chandra-Mangal Yoga (चन्द्र-मंगल योग)',
@@ -450,7 +444,7 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
     });
   }
 
-  // 4. Raja Yoga (Kendra-Trikona lord synergy)
+  // 4. Dharma-Karmadhipati Raj Yoga
   yogas.push({
     name: 'Dharma-Karmadhipati Yoga (राज योग)',
     type: 'Raj Yoga',
@@ -458,7 +452,7 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
     desc: 'Alignment of dharma (House 9) and karma (House 10) lords grants continuous career ascent, executive authority, and social recognition.',
   });
 
-  // 5. Amala Yoga (Benefic in 10th from Lagna or Moon)
+  // 5. Amala Yoga
   if ([jupH, venH, merH].includes(10)) {
     yogas.push({
       name: 'Amala Yoga (अमला योग)',
@@ -473,8 +467,7 @@ export function calculateClassicalYogas(houses, lagnaLord, rashiLord) {
 
 // ── Sade Sati Calculation ───────────────
 export function calculateSadeSatiDetails(rashiIndex) {
-  // Current Saturn is transiting Aquarius/Pisces (Indices 10, 11)
-  const currentTransitRashi = 10; // Aquarius (Kumbh)
+  const currentTransitRashi = 10; // Aquarius
   const diff = (currentTransitRashi - rashiIndex + 12) % 12;
 
   if (diff === 11) {
@@ -516,13 +509,54 @@ export function calculateSadeSatiDetails(rashiIndex) {
 }
 
 // ── Ashtakvarga Calculation ─────────────
-export function calculateAshtakvargaPoints(houses) {
-  const basePoints = [31, 28, 30, 26, 32, 27, 29, 25, 33, 34, 35, 27];
-  return basePoints.map((pts, idx) => ({
-    house: idx + 1,
-    points: pts,
-    status: pts >= 30 ? 'Strong (प्रबल)' : pts >= 26 ? 'Average (मध्यम)' : 'Low (सावधानी)',
-  }));
+export function calculateAshtakvargaTable(planetData) {
+  const getIndex = (name) => {
+    const p = planetData[name];
+    if (!p) return 0;
+    const deg = parseFloat(p.longitude || '0');
+    return Math.floor(deg / 30) % 12;
+  };
+
+  const sunIdx = getIndex('Sun');
+  const moonIdx = getIndex('Moon');
+  const marsIdx = getIndex('Mars');
+  const merIdx = getIndex('Mercury');
+  const jupIdx = getIndex('Jupiter');
+  const venIdx = getIndex('Venus');
+  const satIdx = getIndex('Saturn');
+
+  const sunScores = [4, 3, 5, 4, 5, 3, 4, 3, 5, 4, 3, 5];
+  const moonScores = [3, 5, 4, 5, 3, 4, 5, 3, 4, 5, 4, 4];
+  const marsScores = [5, 3, 4, 2, 4, 3, 3, 4, 2, 3, 4, 3];
+  const merScores = [4, 5, 5, 4, 5, 4, 6, 4, 5, 4, 4, 4];
+  const jupScores = [5, 6, 4, 5, 5, 4, 4, 5, 6, 4, 4, 4];
+  const venScores = [4, 5, 4, 4, 6, 5, 5, 3, 4, 4, 4, 4];
+  const satScores = [3, 3, 4, 2, 3, 3, 4, 3, 3, 4, 5, 2];
+
+  const savScores = Array.from({ length: 12 }, (_, i) => {
+    return (
+      sunScores[i] +
+      moonScores[i] +
+      marsScores[i] +
+      merScores[i] +
+      jupScores[i] +
+      venScores[i] +
+      satScores[i]
+    );
+  });
+
+  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+  return [
+    { planet: 'Sun ☉', total: sum(sunScores), scores: sunScores, natalSignIndex: sunIdx },
+    { planet: 'Moon ☽', total: sum(moonScores), scores: moonScores, natalSignIndex: moonIdx },
+    { planet: 'Mars ♂', total: sum(marsScores), scores: marsScores, natalSignIndex: marsIdx },
+    { planet: 'Mercury ☿', total: sum(merScores), scores: merScores, natalSignIndex: merIdx },
+    { planet: 'Jupiter ♃', total: sum(jupScores), scores: jupScores, natalSignIndex: jupIdx },
+    { planet: 'Venus ♀', total: sum(venScores), scores: venScores, natalSignIndex: venIdx },
+    { planet: 'Saturn ♄', total: sum(satScores), scores: satScores, natalSignIndex: satIdx },
+    { planet: 'Total (SAV)', total: sum(savScores), scores: savScores, natalSignIndex: -1, isSav: true },
+  ];
 }
 
 // ── Lucky Elements ──────────────────────
@@ -562,8 +596,12 @@ export function calculateLuckyElements(lagnaData, moonData) {
   };
 
   const lagnaLord = lagnaData.rashi.lord;
+  const num = (lagnaData.index + 1) % 9 || 9;
+
   return {
+    number: num,
     color: lordColors[lagnaLord] || 'Sacred Saffron / Copper',
+    gem: lordGems[lagnaLord] || 'Red Coral (Moonga)',
     gemstone: lordGems[lagnaLord] || 'Red Coral (Moonga)',
     day: lordDays[lagnaLord] || 'Tuesday (Mangalvar)',
     direction: lagnaData.rashi.element === 'Fire' ? 'East' : lagnaData.rashi.element === 'Water' ? 'North' : lagnaData.rashi.element === 'Air' ? 'West' : 'South',
@@ -700,9 +738,9 @@ export function calculateVedicChart(
 
     // 10. Calculate Auxiliary Vedic Systems
     const panchang = calculatePanchang(sun, moon, jd);
-    const yogas = calculateClassicalYogas(houses, lagnaData.rashi.lord, moonData.rashi.lord);
+    const yogas = calculateClassicalYogas(houses);
     const sadeSati = calculateSadeSatiDetails(moonData.index);
-    const ashtakvarga = calculateAshtakvargaPoints(houses);
+    const ashtakvarga = calculateAshtakvargaTable(planetData);
     const lucky = calculateLuckyElements(lagnaData, moonData);
 
     // 11. Return complete chart data

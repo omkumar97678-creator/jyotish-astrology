@@ -89,7 +89,22 @@ export default function CompleteAiAnalysis({ report, data }) {
     },
   };
 
-  const rep = report && report.personality ? report : defaultReport;
+  let parsedReport = report;
+  if (typeof report === 'string') {
+    try {
+      parsedReport = JSON.parse(report);
+    } catch {
+      parsedReport = null;
+    }
+  }
+
+  const rep = {
+    personality: { ...defaultReport.personality, ...(parsedReport?.personality || {}) },
+    career: { ...defaultReport.career, ...(parsedReport?.career || {}) },
+    love: { ...defaultReport.love, ...(parsedReport?.love || {}) },
+    health: { ...defaultReport.health, ...(parsedReport?.health || {}) },
+    spiritual: { ...defaultReport.spiritual, ...(parsedReport?.spiritual || {}) },
+  };
 
   const tabs = [
     { id: 'Personality', label: t.tab_personality[lang] },
@@ -150,7 +165,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                       boxShadow: '0 0 16px rgba(200, 130, 42, 0.35)',
                     }
                   : {
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'rgba(255, 255, 255, 0.03)',
                       color: 'var(--col-moonstone-dim)',
                       border: '1px solid var(--col-glass-border)',
                     }
@@ -162,21 +177,20 @@ export default function CompleteAiAnalysis({ report, data }) {
         })}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Panels */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
+          exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
-          className="space-y-8"
         >
           {/* ================= TAB 1: PERSONALITY ================= */}
           {activeTab === 'Personality' && (
             <div className="space-y-7">
               <div>
-                <h4 className="font-display text-lg mb-1" style={{ color: 'var(--col-moonstone)' }}>
+                <h4 className="font-display text-lg mb-2" style={{ color: 'var(--col-moonstone)' }}>
                   Personalized Personality Profile for {name}
                 </h4>
                 <div className="text-xs uppercase font-semibold mt-4 mb-2" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
@@ -192,7 +206,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Auspicious Strengths ✦
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {(rep.personality?.strengths || []).map((s) => (
+                  {(Array.isArray(rep.personality?.strengths) ? rep.personality.strengths : defaultReport.personality.strengths).map((s) => (
                     <div
                       key={s}
                       className="p-3 rounded-xl flex items-start gap-2.5"
@@ -212,7 +226,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Areas to Cultivate & Balance
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {(Array.isArray(rep.personality?.challenges) ? rep.personality.challenges : []).map((item, idx) => {
+                  {(Array.isArray(rep.personality?.challenges) ? rep.personality.challenges : defaultReport.personality.challenges).map((item, idx) => {
                     const title = typeof item === 'string' ? item : item.title || `Area ${idx + 1}`;
                     const desc = typeof item === 'string' ? '' : item.desc || '';
                     return (
@@ -236,17 +250,11 @@ export default function CompleteAiAnalysis({ report, data }) {
               </div>
 
               {rep.personality?.lifePurpose && (
-                <div
-                  className="p-5 rounded-2xl relative"
-                  style={{
-                    background: 'rgba(200, 130, 42, 0.06)',
-                    border: '1px solid rgba(200, 130, 42, 0.4)',
-                  }}
-                >
-                  <div className="text-xs uppercase font-semibold mb-1.5" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
-                    Life Purpose Statement
+                <div className="p-4 rounded-xl" style={{ background: 'rgba(200, 130, 42, 0.08)', border: '1px solid rgba(200, 130, 42, 0.35)' }}>
+                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-copper)' }}>
+                    Core Life Purpose
                   </div>
-                  <p className="text-sm italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.75 }}>
+                  <p className="text-xs italic" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>
                     {rep.personality.lifePurpose}
                   </p>
                 </div>
@@ -269,7 +277,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Best Suited Fields & Callings
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {(rep.career?.bestFields || []).map((f) => (
+                  {(Array.isArray(rep.career?.bestFields) ? rep.career.bestFields : defaultReport.career.bestFields).map((f) => (
                     <div
                       key={f}
                       className="p-3 rounded-xl flex items-center gap-2.5"
@@ -293,7 +301,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                 </div>
               )}
 
-              {rep.career?.timeline && (
+              {rep.career?.timeline && Array.isArray(rep.career.timeline) && (
                 <div>
                   <div className="text-xs uppercase font-semibold mb-3" style={{ color: 'var(--col-copper)', letterSpacing: '0.1em' }}>
                     Career Horizon Predictions
@@ -334,7 +342,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Auspicious Compatibility Alignment
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {(rep.love?.bestMatches || []).map((m) => (
+                  {(Array.isArray(rep.love?.bestMatches) ? rep.love.bestMatches : defaultReport.love.bestMatches).map((m) => (
                     <div
                       key={m.sign}
                       className="p-3.5 rounded-xl"
@@ -362,17 +370,6 @@ export default function CompleteAiAnalysis({ report, data }) {
                   </p>
                 </div>
               )}
-
-              {rep.love?.relationshipLesson && (
-                <div className="p-4 rounded-xl" style={{ background: 'rgba(42, 171, 168, 0.06)', border: '1px solid rgba(42, 171, 168, 0.25)' }}>
-                  <div className="text-xs uppercase font-semibold mb-1" style={{ color: 'var(--col-teal)' }}>
-                    Karmic Relationship Lesson
-                  </div>
-                  <p className="text-xs" style={{ color: 'var(--col-moonstone-dim)', lineHeight: 1.6 }}>
-                    {rep.love.relationshipLesson}
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
@@ -391,7 +388,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Areas to Nurture
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {(rep.health?.watchAreas || []).map((w) => (
+                  {(Array.isArray(rep.health?.watchAreas) ? rep.health.watchAreas : defaultReport.health.watchAreas).map((w) => (
                     <div
                       key={w.area}
                       className="p-3.5 rounded-xl"
@@ -463,7 +460,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Recommended Daily Practices
                 </div>
                 <div className="grid gap-2.5 sm:grid-cols-2 mb-6">
-                  {(rep.spiritual?.practices || []).map((p) => (
+                  {(Array.isArray(rep.spiritual?.practices) ? rep.spiritual.practices : defaultReport.spiritual.practices).map((p) => (
                     <div
                       key={p}
                       className="p-3 rounded-xl flex items-center gap-2.5"
@@ -479,7 +476,7 @@ export default function CompleteAiAnalysis({ report, data }) {
                   Planetary Remedies (उपाए)
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {(rep.spiritual?.remedies || []).map((r) => (
+                  {(Array.isArray(rep.spiritual?.remedies) ? rep.spiritual.remedies : defaultReport.spiritual.remedies).map((r) => (
                     <div
                       key={r.planet}
                       className="p-3.5 rounded-xl"

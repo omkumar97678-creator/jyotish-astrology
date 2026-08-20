@@ -6,36 +6,40 @@ import { t } from '@/translations';
 export default function Lucky({ lucky }) {
   const { lang } = useLang();
 
-  const lk = lucky || {
-    color: 'Coral Red / Amber',
-    gem: 'Red Coral (Moonga)',
-    day: 'Tuesday',
-    number: 7,
-    direction: 'East',
-  };
+  const num = typeof lucky?.number === 'number' ? lucky.number : 7;
+  const num1 = num;
+  const num2 = (num + 3) % 9 || 9;
+  const num3 = (num * 2) % 9 || 8;
+
+  const color = lucky?.color || 'Sacred Saffron / Coral Red';
+  const day = lucky?.day || 'Tuesday (Mangalvar)';
+  const gem = lucky?.gem || lucky?.gemstone || 'Red Coral (Moonga)';
 
   const cards = [
     {
       title: lang === 'hinglish' ? 'Shubh Ank (Lucky Numbers)' : 'Lucky Numbers',
       type: 'numbers',
-      values: [lk.number, (lk.number + 3) % 9 || 9, (lk.number * 2) % 9 || 8],
+      values: [num1, num2, num3],
     },
     {
       title: lang === 'hinglish' ? 'Shubh Rang (Lucky Color)' : 'Lucky Color',
       type: 'color',
-      value: lk.color,
+      value: color,
     },
     {
       title: lang === 'hinglish' ? 'Shubh Din (Lucky Day)' : 'Lucky Day',
       type: 'day',
-      value: lk.day,
+      value: day,
       icon: '✦',
     },
     {
       title: lang === 'hinglish' ? 'Shubh Ratna (Gemstone)' : 'Lucky Gemstone',
       type: 'gem',
-      value: lk.gem,
-      desc: lang === 'hinglish' ? 'Lagna Swami ko balwan karne aur bhagya badhane ke liye dharan karein.' : 'Worn to strengthen your Ascendant Lord and invite auspicious fortune.',
+      value: gem,
+      desc:
+        lang === 'hinglish'
+          ? 'Lagna Swami ko balwan karne aur bhagya badhane ke liye dharan karein.'
+          : 'Worn to strengthen your Ascendant Lord and invite auspicious fortune.',
     },
   ];
 
@@ -71,7 +75,7 @@ export default function Lucky({ lucky }) {
 
             {c.type === 'numbers' && (
               <div className="mt-3 flex gap-3">
-                {c.values.map((v) => (
+                {(c.values || []).map((v) => (
                   <div
                     key={v}
                     className="font-mono-num flex items-center justify-center rounded-xl"

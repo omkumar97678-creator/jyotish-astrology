@@ -14,8 +14,13 @@ const defaultAshtakvarga = [
   { planet: 'Total (SAV)', total: 337, scores: [28, 30, 30, 26, 31, 26, 31, 25, 29, 28, 28, 26], natalSignIndex: -1, isSav: true },
 ];
 
-export default function AshtakvargaTable({ ashtakvarga = defaultAshtakvarga }) {
-  const list = ashtakvarga && ashtakvarga.length > 0 ? ashtakvarga : defaultAshtakvarga;
+export default function AshtakvargaTable({ ashtakvarga = null }) {
+  const isValid =
+    Array.isArray(ashtakvarga) &&
+    ashtakvarga.length > 0 &&
+    Array.isArray(ashtakvarga[0]?.scores);
+
+  const list = isValid ? ashtakvarga : defaultAshtakvarga;
 
   const getCellColor = (score, isSav) => {
     if (isSav) {
@@ -83,10 +88,11 @@ export default function AshtakvargaTable({ ashtakvarga = defaultAshtakvarga }) {
           </thead>
           <tbody>
             {list.map((row, rIdx) => {
-              const isSav = row.isSav;
+              const isSav = Boolean(row.isSav);
+              const scores = Array.isArray(row.scores) ? row.scores : [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
               return (
                 <tr
-                  key={row.planet}
+                  key={`${row.planet}-${rIdx}`}
                   style={{
                     borderBottom: isSav ? 'none' : '1px solid rgba(255,255,255,0.04)',
                     background: isSav ? 'rgba(200, 130, 42, 0.08)' : rIdx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
@@ -96,7 +102,7 @@ export default function AshtakvargaTable({ ashtakvarga = defaultAshtakvarga }) {
                   <td className="text-left py-2 px-2.5 font-medium whitespace-nowrap" style={{ color: isSav ? 'var(--col-copper)' : 'var(--col-moonstone)' }}>
                     {row.planet}
                   </td>
-                  {row.scores.map((score, sIdx) => {
+                  {scores.map((score, sIdx) => {
                     const isNatal = row.natalSignIndex === sIdx;
                     return (
                       <td
