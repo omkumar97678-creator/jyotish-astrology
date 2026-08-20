@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import StarField from '@/components/StarField';
 import VoiceHeader from '@/components/voice/VoiceHeader';
 import KundliContext from '@/components/voice/KundliContext';
@@ -6,78 +6,97 @@ import Waveform from '@/components/voice/Waveform';
 import StatusText from '@/components/voice/StatusText';
 import MicButton from '@/components/voice/MicButton';
 import Suggestions from '@/components/voice/Suggestions';
-import Conversation, { now, mock } from '@/components/voice/Conversation';
-import InputBar from '@/components/voice/InputBar';
+import Conversation, { mock } from '@/components/voice/Conversation';
 import SessionBar from '@/components/voice/SessionBar';
 import { generateVoiceResponse } from '@/lib/aiService';
 
 export default function Voice() {
   const [voiceState, setVoiceState] = useState('idle');
   const [messages, setMessages] = useState(mock);
-  const [sessionTime, setSessionTime] = useState(0);
-  const [voiceMode, setVoiceMode] = useState(true);
-  const [text, setText] = useState('');
-  const timers = useRef([]);
+  const [seconds, setSeconds] = useState(0);
+  const [inputMode, setInputMode] = useState('voice');
+  const [textInput, setTextInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [kundliData, setKundliData] = useState({});
 
+  // ── FIX 1: Session Timer ──────────────
   useEffect(() => {
-    const id = setInterval(() => setSessionTime((t) => t + 1), 1000);
-    return () => clearInterval(id);
+    const interval = setInterval(() => {
+      setSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const clearTimers = () => {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  };
-  useEffect(() => () => clearTimers(), []);
+  // ── FIX 3: Load Real User Kundli Data ──
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('kundli_data') || localStorage.getItem('jyotish_onboarding') || '{}';
+      setKundliData(JSON.parse(stored));
+    } catch {
+      setKundliData({});
+    }
+  }, []);
 
-  const startFlow = async (userText) => {
-    clearTimers();
-    const query = userText || 'Tell me about my Moon sign and current astrological phase.';
-    setMessages((m) => [...m, { role: 'user', text: query, time: now() }]);
-    setVoiceState('listening');
+  // ── FIX 4: Handle Send Message ────────
+  const handleSendMessage = async (text) => {
+    if (!text || !text.trim()) return;
+    const queryText = text.trim();
 
-    timers.current.push(setTimeout(() => setVoiceState('speaking'), 1200));
+    // Add user message to chat
+    const userMsg = {
+      id: Date.now(),
+      role: 'user',
+      text: queryText,
+      time: new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Show typing indicator
+    setIsTyping(true);
+    setVoiceState('speaking');
 
     try {
-      let kundliContext = null;
-      try {
-        const stored = localStorage.getItem('kundli_data') || localStorage.getItem('jyotish_onboarding');
-        if (stored) kundliContext = JSON.parse(stored);
-      } catch (e) {
-        /* ignore */
-      }
+      // Call AI with real kundli context
+      const response = await generateVoiceResponse(queryText, kundliData);
+      const answerText =
+        typeof response === 'string'
+          ? response
+          : (response?.answer || response?.insights || response?.overall || 'Based on your Vedic chart, your planetary alignment brings clarity, wisdom, and auspicious progress in your path.');
 
-      const res = await generateVoiceResponse(query, kundliContext);
-      const answer = res?.answer || 'Based on your Vedic chart, your planetary alignment brings clarity, wisdom, and auspicious progress in your personal and professional path.';
-      
-      timers.current.push(
-        setTimeout(() => {
-          setMessages((m) => [...m, { role: 'jyotish', text: answer, time: now() }]);
-          setVoiceState('idle');
-        }, 2200)
-      );
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: 'ai',
+        text: answerText,
+        time: new Date().toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+      setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
-      console.warn('Voice AI response error:', err);
-      timers.current.push(
-        setTimeout(() => {
-          setMessages((m) => [
-            ...m,
-            {
-              role: 'jyotish',
-              text: 'According to your Vedic birth chart, planetary alignments highlight strong intuitive growth and steady progress.',
-              time: now(),
-            },
-          ]);
-          setVoiceState('idle');
-        }, 2200)
-      );
+      console.warn('Voice response error:', err);
+      const errorMsg = {
+        id: Date.now() + 1,
+        role: 'ai',
+        text: 'Sorry, could not connect. Please try again.',
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+      setVoiceState('idle');
     }
   };
 
-  const onSend = () => {
-    if (!text.trim()) return;
-    startFlow(text.trim());
-    setText('');
+  const startVoiceFlow = (question) => {
+    setVoiceState('listening');
+    const query = question || 'Tell me about my Moon sign and current planetary transit phase.';
+    setTimeout(() => {
+      handleSendMessage(query);
+    }, 1000);
   };
 
   return (
@@ -85,40 +104,115 @@ export default function Voice() {
       <StarField count={120} />
       <main className="relative z-10 max-w-4xl mx-auto px-5 pt-28 pb-20">
         <VoiceHeader />
+
+        {/* Real User Kundli Context */}
         <div className="mt-8">
-          <KundliContext />
+          <KundliContext kundliData={kundliData} />
         </div>
 
+        {/* Voice Visualization & Mic */}
         <div className="mt-12 text-center flex flex-col items-center">
           <Waveform state={voiceState} />
           <div className="mt-6">
             <StatusText state={voiceState} />
           </div>
           <div className="mt-6">
-            <MicButton state={voiceState} onClick={() => startFlow()} />
+            <MicButton state={voiceState} onClick={() => startVoiceFlow()} />
           </div>
         </div>
 
+        {/* Quick Suggestion Chips */}
         <div className="mt-10">
-          <Suggestions onSelect={(q) => startFlow(q)} />
+          <Suggestions onSelect={(q) => handleSendMessage(q)} />
         </div>
 
+        {/* Conversation List with Typing Indicator */}
         <div className="mt-8">
-          <Conversation messages={messages} />
+          <Conversation messages={messages} isTyping={isTyping} />
         </div>
 
+        {/* ── FIX 2: Switch to Text / Text Input ── */}
         <div className="mt-8">
-          <InputBar
-            text={text}
-            setText={setText}
-            onSend={onSend}
-            voiceMode={voiceMode}
-            setVoiceMode={setVoiceMode}
-          />
+          {inputMode === 'text' ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '16px',
+              }}
+            >
+              <input
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="Type your question..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && textInput.trim()) {
+                    handleSendMessage(textInput);
+                    setTextInput('');
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#E8E4DC',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '0.95rem',
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  if (textInput.trim()) {
+                    handleSendMessage(textInput);
+                    setTextInput('');
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #C8822A, #E09840)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '8px 16px',
+                  color: '#0D0F2B',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                }}
+              >
+                Send →
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                onClick={() => setInputMode('text')}
+                className="btn-ghost text-sm cursor-pointer"
+                style={{ padding: '12px 24px' }}
+              >
+                ⌨ Switch to text
+              </button>
+            </div>
+          )}
+
+          {inputMode === 'text' && (
+            <div className="flex justify-center mt-3">
+              <button
+                onClick={() => setInputMode('voice')}
+                className="btn-ghost text-xs cursor-pointer"
+                style={{ padding: '8px 16px', color: 'var(--col-moonstone-dim)' }}
+              >
+                🎙 Switch to voice
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* ── FIX 1: Session Timer ── */}
         <div className="mt-6">
-          <SessionBar time={sessionTime} />
+          <SessionBar seconds={seconds} />
         </div>
       </main>
     </div>

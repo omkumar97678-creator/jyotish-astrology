@@ -5,26 +5,11 @@ const now = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minu
 
 const mock = [
   { role: 'user', text: 'What does my Life Path 7 mean?', time: '2:30 PM' },
-  { role: 'jyotish', text: 'Your Life Path 7 indicates you are a seeker of truth and wisdom. You are naturally analytical, introspective, and drawn to understanding the deeper mysteries of life.', time: '2:30 PM' },
+  { role: 'ai', text: 'Your Life Path indicates you are a seeker of truth and wisdom. You are naturally analytical, introspective, and drawn to understanding the deeper mysteries of life.', time: '2:30 PM' },
   { role: 'user', text: 'What about my career this year?', time: '2:31 PM' },
 ];
 
-function TypingDots() {
-  return (
-    <div className="flex gap-1 py-1">
-      {[0, 0.2, 0.4].map((d) => (
-        <motion.span
-          key={d}
-          animate={{ opacity: [0.2, 1, 0.2], y: [0, -3, 0] }}
-          transition={{ duration: 1, repeat: Infinity, delay: d }}
-          style={{ width: 7, height: 7, borderRadius: '9999px', background: 'var(--col-teal)' }}
-        />
-      ))}
-    </div>
-  );
-}
-
-export default function Conversation({ messages }) {
+export default function Conversation({ messages = [], isTyping = false }) {
   return (
     <div className="space-y-4 mt-6">
       <AnimatePresence initial={false}>
@@ -32,7 +17,7 @@ export default function Conversation({ messages }) {
           const isUser = m.role === 'user';
           return (
             <motion.div
-              key={i}
+              key={m.id || i}
               initial={{ opacity: 0, x: isUser ? 40 : -40, y: 10 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ duration: 0.4 }}
@@ -60,9 +45,7 @@ export default function Conversation({ messages }) {
                     </span>
                   </div>
                 )}
-                {m.typing ? <TypingDots /> : (
-                  <p className="text-sm" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>{m.text}</p>
-                )}
+                <p className="text-sm" style={{ color: 'var(--col-moonstone)', lineHeight: 1.6 }}>{m.text}</p>
                 <div className="text-[10px] mt-1.5" style={{ color: 'var(--col-moonstone-dim)', textAlign: isUser ? 'right' : 'left' }}>
                   {m.time}
                 </div>
@@ -70,6 +53,41 @@ export default function Conversation({ messages }) {
             </motion.div>
           );
         })}
+
+        {isTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex justify-start"
+          >
+            <div
+              style={{
+                display: 'flex',
+                gap: '6px',
+                padding: '12px 18px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(42,171,168,0.2)',
+                borderRadius: '16px',
+                width: 'fit-content',
+                alignItems: 'center',
+              }}
+            >
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#2AABA8',
+                    animation: `bounce 1s ease-in-out ${i * 0.15}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

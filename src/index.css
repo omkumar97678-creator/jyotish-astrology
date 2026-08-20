@@ -179,6 +179,11 @@ body.lang-switching {
 }
 @keyframes shimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
 
 .animate-rotate { animation: rotate 80s linear infinite; }
 .animate-rotate-cw { animation: rotate-cw 80s linear infinite; }
