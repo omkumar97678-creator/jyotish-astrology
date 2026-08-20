@@ -1,6 +1,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 // VEDIC ASHTAKOOT GUN MILAN CALCULATION ENGINE
+// Using Real Ephemeris Astronomical Planetary Positions & Moon Nakshatras
 // ══════════════════════════════════════════════════════════════════════════
+
+import { calculateVedicChart } from './ephemeris';
+import { getCityCoordinates } from './geocoding';
 
 export const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika',
@@ -53,36 +57,87 @@ export const NAKSHATRA_DETAILS = {
   'Revati': { ruler: 'Mercury (Budh)', deity: 'Pushan', quality: 'Soft (Mridu)', symbol: 'Pair of Fish / Drum' }
 };
 
-export function getNakshatraFromDOB(dob) {
-  if (!dob) return 'Ashwini';
-  const parts = String(dob).split('-');
-  const year = parseInt(parts[0], 10) || 2000;
-  const month = parseInt(parts[1], 10) || 1;
-  const day = parseInt(parts[2], 10) || 1;
+// ── Real Ephemeris Vedic Details Fetcher (Janma Moon Rashi & Nakshatra) ────
+export async function getVedicDetailsFromDOB(
+  dob = '2000-01-01',
+  birthPlace = 'New Delhi, India',
+  timeHour = 12,
+  timeMinute = 0
+) {
+  try {
+    const coords = await getCityCoordinates(birthPlace || 'New Delhi, India');
+    const parts = String(dob).split('-');
+    const year = parseInt(parts[0], 10) || 2000;
+    const month = parseInt(parts[1], 10) || 1;
+    const day = parseInt(parts[2], 10) || 1;
 
-  const sum = day + month + (year % 100) + Math.floor(year / 100);
-  const index = Math.abs(sum) % 27;
-  return NAKSHATRAS[index] || 'Ashwini';
+    const chart = calculateVedicChart(
+      year,
+      month,
+      day,
+      timeHour,
+      timeMinute,
+      coords.lat,
+      coords.lng,
+      dob
+    );
+
+    if (!chart || !chart.success) {
+      throw new Error('Chart calculation failed');
+    }
+
+    return {
+      rashi: chart.rashi,
+      nakshatra: chart.nakshatra,
+      nakshatraName: String(chart.nakshatra || '').split(' ')[0].replace(/[^a-zA-Z]/g, ''),
+      lagna: chart.lagna,
+      isManglik: Boolean(chart.isManglik),
+      gana: chart.gana || 'Deva',
+    };
+  } catch (err) {
+    console.error('Vedic details calculation error:', err);
+    return {
+      rashi: getFallbackRashi(dob),
+      nakshatra: getFallbackNakshatra(dob),
+      nakshatraName: getFallbackNakshatra(dob),
+      lagna: 'Unknown',
+      isManglik: false,
+      gana: 'Deva',
+    };
+  }
+}
+
+// ── Fallback Approximations (If offline/unreachable) ──
+function getFallbackRashi(dob) {
+  const date = new Date(dob);
+  const dayOfYear = Math.floor(
+    (date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+  );
+  const rashis = [
+    'Capricorn (Makar)', 'Aquarius (Kumbh)',
+    'Pisces (Meen)', 'Aries (Mesh)',
+    'Taurus (Vrishabh)', 'Gemini (Mithun)',
+    'Cancer (Kark)', 'Leo (Simha)',
+    'Virgo (Kanya)', 'Libra (Tula)',
+    'Scorpio (Vrishchik)', 'Sagittarius (Dhanu)'
+  ];
+  return rashis[Math.floor((Math.abs(dayOfYear) % 27) / 2.25)] || 'Gemini (Mithun)';
+}
+
+function getFallbackNakshatra(dob) {
+  const date = new Date(dob);
+  const dayOfYear = Math.floor(
+    (date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+  );
+  return NAKSHATRAS[Math.abs(dayOfYear) % 27] || 'Ardra';
+}
+
+export function getNakshatraFromDOB(dob) {
+  return getFallbackNakshatra(dob);
 }
 
 export function getRashiFromDOB(dob) {
-  if (!dob) return 'Aries (Mesh)';
-  const parts = String(dob).split('-');
-  const month = parseInt(parts[1], 10) || 1;
-  const day = parseInt(parts[2], 10) || 1;
-
-  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'Aries (Mesh)';
-  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'Taurus (Vrishabh)';
-  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return 'Gemini (Mithun)';
-  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return 'Cancer (Kark)';
-  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return 'Leo (Simha)';
-  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return 'Virgo (Kanya)';
-  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return 'Libra (Tula)';
-  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return 'Scorpio (Vrishchik)';
-  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'Sagittarius (Dhanu)';
-  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'Capricorn (Makar)';
-  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'Aquarius (Kumbh)';
-  return 'Pisces (Meen)';
+  return getFallbackRashi(dob);
 }
 
 export function isManglik(dob) {
@@ -105,84 +160,106 @@ export const NAKSHATRA_NUM = {
   'Purva Bhadrapada': 25, 'Uttara Bhadrapada': 26, 'Revati': 27
 };
 
-// Gana (temperament) of each nakshatra
-export const NAKSHATRA_GANA = {
-  'Ashwini': 'Deva', 'Mrigashira': 'Deva', 'Punarvasu': 'Deva', 'Pushya': 'Deva',
-  'Hasta': 'Deva', 'Swati': 'Deva', 'Anuradha': 'Deva', 'Shravana': 'Deva', 'Revati': 'Deva',
-  'Bharani': 'Manushya', 'Rohini': 'Manushya', 'Ardra': 'Manushya', 'Purva Phalguni': 'Manushya',
-  'Uttara Phalguni': 'Manushya', 'Purva Ashadha': 'Manushya', 'Uttara Ashadha': 'Manushya',
-  'Purva Bhadrapada': 'Manushya', 'Uttara Bhadrapada': 'Manushya',
-  'Krittika': 'Rakshasa', 'Ashlesha': 'Rakshasa', 'Magha': 'Rakshasa', 'Chitra': 'Rakshasa',
-  'Vishakha': 'Rakshasa', 'Jyeshtha': 'Rakshasa', 'Moola': 'Rakshasa', 'Dhanishta': 'Rakshasa',
-  'Shatabhisha': 'Rakshasa'
-};
+// ── Ashtakoot Guna Milan Core Logic (36 Points) ────────
+export function calculateGunas(nak1Raw = 'Ashwini', nak2Raw = 'Pushya') {
+  const cleanName = (str) => {
+    if (!str) return 'Ashwini';
+    const firstWord = String(str).split(' ')[0].replace(/[^a-zA-Z]/g, '');
+    return NAKSHATRAS.includes(firstWord) ? firstWord : (NAKSHATRAS.find(n => str.includes(n)) || 'Ashwini');
+  };
 
-// Nadi of each nakshatra
-export const NAKSHATRA_NADI = {
-  'Ashwini': 'Vata', 'Ardra': 'Vata', 'Punarvasu': 'Vata', 'Uttara Phalguni': 'Vata',
-  'Hasta': 'Vata', 'Jyeshtha': 'Vata', 'Moola': 'Vata', 'Shatabhisha': 'Vata', 'Purva Bhadrapada': 'Vata',
-  'Bharani': 'Pitta', 'Mrigashira': 'Pitta', 'Pushya': 'Pitta', 'Purva Phalguni': 'Pitta',
-  'Chitra': 'Pitta', 'Anuradha': 'Pitta', 'Purva Ashadha': 'Pitta', 'Dhanishta': 'Pitta', 'Uttara Bhadrapada': 'Pitta',
-  'Krittika': 'Kapha', 'Rohini': 'Kapha', 'Ashlesha': 'Kapha', 'Magha': 'Kapha',
-  'Swati': 'Kapha', 'Vishakha': 'Kapha', 'Uttara Ashadha': 'Kapha', 'Shravana': 'Kapha', 'Revati': 'Kapha'
-};
+  const nak1 = cleanName(nak1Raw);
+  const nak2 = cleanName(nak2Raw);
 
-export function calculateGunas(nakshatra1, nakshatra2) {
-  const n1 = NAKSHATRA_NUM[nakshatra1] || 1;
-  const n2 = NAKSHATRA_NUM[nakshatra2] || 1;
-  const gana1 = NAKSHATRA_GANA[nakshatra1] || 'Deva';
-  const gana2 = NAKSHATRA_GANA[nakshatra2] || 'Deva';
-  const nadi1 = NAKSHATRA_NADI[nakshatra1] || 'Vata';
-  const nadi2 = NAKSHATRA_NADI[nakshatra2] || 'Vata';
+  const n1 = NAKSHATRA_NUM[nak1] || 1;
+  const n2 = NAKSHATRA_NUM[nak2] || 8;
 
-  // 1. Varna (1 point)
-  const varnaScore = (n1 % 4 === n2 % 4) ? 1 : (Math.abs((n1 % 4) - (n2 % 4)) <= 1 ? 1 : 0);
+  // 1. Varna (1 Point)
+  const getVarna = (n) => {
+    const rem = n % 4;
+    if (rem === 1) return 4; // Brahmin
+    if (rem === 2) return 3; // Kshatriya
+    if (rem === 3) return 2; // Vaishya
+    return 1; // Shudra
+  };
+  const varna1 = getVarna(n1);
+  const varna2 = getVarna(n2);
+  const varnaPts = varna1 >= varna2 ? 1 : 0;
 
-  // 2. Vashya (2 points)
-  const vashyaScore = Math.abs(n1 - n2) <= 3 ? 2 : Math.abs(n1 - n2) <= 6 ? 1 : 0;
+  // 2. Vashya (2 Points)
+  const vashyaPts = (n1 % 5 === n2 % 5) ? 2 : (Math.abs(n1 - n2) % 2 === 0 ? 1 : 0.5);
 
-  // 3. Tara (3 points)
-  const taraDiff = Math.abs(n1 - n2) % 9;
-  const taraScore = taraDiff <= 2 ? 3 : taraDiff <= 5 ? 2 : 1;
+  // 3. Tara (3 Points)
+  const taraDist1 = ((n2 - n1 + 27) % 9) + 1;
+  const taraDist2 = ((n1 - n2 + 27) % 9) + 1;
+  const auspiciousTara = [1, 2, 4, 6, 8, 9];
+  const isT1Good = auspiciousTara.includes(taraDist1);
+  const isT2Good = auspiciousTara.includes(taraDist2);
+  const taraPts = (isT1Good && isT2Good) ? 3 : (isT1Good || isT2Good ? 1.5 : 0);
 
-  // 4. Yoni (4 points)
-  const yoniScore = Math.abs(n1 - n2) <= 4 ? 4 : Math.abs(n1 - n2) <= 8 ? 3 : Math.abs(n1 - n2) <= 13 ? 2 : 1;
+  // 4. Yoni (4 Points)
+  const yoniDiff = Math.abs(n1 - n2) % 14;
+  let yoniPts = 4;
+  if (yoniDiff === 0) yoniPts = 4;
+  else if (yoniDiff <= 2) yoniPts = 3;
+  else if (yoniDiff <= 5) yoniPts = 2;
+  else if (yoniDiff <= 9) yoniPts = 1;
+  else yoniPts = 0;
 
-  // 5. Graha Maitri (5 points)
-  const graha1 = Math.ceil(n1 / 9);
-  const graha2 = Math.ceil(n2 / 9);
-  const grahaScore = graha1 === graha2 ? 5 : Math.abs(graha1 - graha2) === 1 ? 4 : Math.abs(graha1 - graha2) === 2 ? 3 : 1;
+  // 5. Graha Maitri (5 Points)
+  const lordDist = Math.abs((n1 % 9) - (n2 % 9));
+  let maitriPts = 5;
+  if (lordDist === 0) maitriPts = 5;
+  else if ([1, 4, 5].includes(lordDist)) maitriPts = 4;
+  else if ([2, 3].includes(lordDist)) maitriPts = 3;
+  else if ([6, 7].includes(lordDist)) maitriPts = 1;
+  else maitriPts = 0.5;
 
-  // 6. Gana (6 points)
-  let ganaScore = 6;
-  if (gana1 !== gana2) {
-    if ((gana1 === 'Deva' && gana2 === 'Rakshasa') || (gana1 === 'Rakshasa' && gana2 === 'Deva')) {
-      ganaScore = 0;
-    } else {
-      ganaScore = 3;
-    }
-  }
+  // 6. Gana (6 Points)
+  const getGana = (n) => {
+    const rem = n % 3;
+    if (rem === 1) return 'Deva';
+    if (rem === 2) return 'Manushya';
+    return 'Rakshasa';
+  };
+  const gana1 = getGana(n1);
+  const gana2 = getGana(n2);
+  let ganaPts = 6;
+  if (gana1 === gana2) ganaPts = 6;
+  else if ((gana1 === 'Deva' && gana2 === 'Manushya') || (gana1 === 'Manushya' && gana2 === 'Deva')) ganaPts = 5;
+  else if ((gana1 === 'Manushya' && gana2 === 'Rakshasa') || (gana1 === 'Rakshasa' && gana2 === 'Manushya')) ganaPts = 1;
+  else ganaPts = 0;
 
-  // 7. Bhakoot (7 points)
-  const rashiDiff = Math.abs(n1 - n2) % 12;
-  const bhakootScore = [0, 3, 4, 5, 7, 10].includes(rashiDiff) ? 7 : 0;
+  // 7. Bhakoot (7 Points)
+  const rashiDist = ((Math.floor((n2 - 1) / 2.25) - Math.floor((n1 - 1) / 2.25) + 12) % 12) + 1;
+  const isDoshaBhakoot = [2, 12, 6, 8, 9, 5].includes(rashiDist);
+  const bhakootPts = isDoshaBhakoot ? 0 : 7;
 
-  // 8. Nadi (8 points)
-  const nadiScore = nadi1 !== nadi2 ? 8 : 0;
+  // 8. Nadi (8 Points)
+  const getNadi = (n) => {
+    const rem = n % 3;
+    if (rem === 1) return 'Adi (Vata)';
+    if (rem === 2) return 'Madhya (Pitta)';
+    return 'Antya (Kapha)';
+  };
+  const nadi1 = getNadi(n1);
+  const nadi2 = getNadi(n2);
+  const isNadiDosha = nadi1 === nadi2;
+  const nadiPts = isNadiDosha ? 0 : 8;
 
-  const totalScore = varnaScore + vashyaScore + taraScore + yoniScore + grahaScore + ganaScore + bhakootScore + nadiScore;
+  const totalScore = Math.round(varnaPts + vashyaPts + taraPts + yoniPts + maitriPts + ganaPts + bhakootPts + nadiPts);
 
   return {
-    gunas: [
-      { name: 'Varna (वर्ण)', max: 1, score: varnaScore, desc: 'Spiritual inclination & mental ego compatibility' },
-      { name: 'Vashya (वश्य)', max: 2, score: vashyaScore, desc: 'Mutual attraction & emotional dominance balance' },
-      { name: 'Tara (तारा)', max: 3, score: taraScore, desc: 'Birth star destiny harmony & auspicious luck' },
-      { name: 'Yoni (योनि)', max: 4, score: yoniScore, desc: 'Physical compatibility, biological attraction & nature' },
-      { name: 'Graha Maitri (ग्रह मैत्री)', max: 5, score: grahaScore, desc: 'Intellectual friendship, perspective & communication' },
-      { name: 'Gana (गण)', max: 6, score: ganaScore, desc: 'Temperamental harmony & core emotional behavior' },
-      { name: 'Bhakoot (भकूट)', max: 7, score: bhakootScore, desc: 'Family welfare, health, prosperity & generational growth' },
-      { name: 'Nadi (नाड़ी)', max: 8, score: nadiScore, desc: 'Genetic, physiological & physiological vitality balance' },
-    ],
+    gunas: {
+      varna: { name: 'Varna (वर्ण)', max: 1, obtained: varnaPts, desc: 'Spiritual inclination & ego compatibility' },
+      vashya: { name: 'Vashya (वश्य)', max: 2, obtained: vashyaPts, desc: 'Mutual attraction & emotional control' },
+      tara: { name: 'Tara (तारा)', max: 3, obtained: taraPts, desc: 'Destiny, longevity & birth star harmony' },
+      yoni: { name: 'Yoni (योनि)', max: 4, obtained: yoniPts, desc: 'Physical, sexual & biological affinity' },
+      maitri: { name: 'Graha Maitri (ग्रह मैत्री)', max: 5, obtained: maitriPts, desc: 'Psychological friendship & worldview' },
+      gana: { name: 'Gana (गण)', max: 6, obtained: ganaPts, desc: 'Temperament, nature & social harmony' },
+      bhakoot: { name: 'Bhakoot (भकूट)', max: 7, obtained: bhakootPts, desc: 'Family welfare, health & abundance' },
+      nadi: { name: 'Nadi (नाड़ी)', max: 8, obtained: nadiPts, desc: 'Physiological, genetic & life-force energy' },
+    },
     totalScore,
     nadi1,
     nadi2,
@@ -191,41 +268,29 @@ export function calculateGunas(nakshatra1, nakshatra2) {
   };
 }
 
-export function getCompatibilityLabel(score) {
-  if (score >= 30) return 'Excellent Match ✦';
-  if (score >= 24) return 'Good Match (उत्कृष्ट)';
-  if (score >= 18) return 'Average Match (स्वीकार्य)';
-  return 'Needs Attention (सावधानी)';
-}
-
-export function calculateLifeAreaScores(gunas = []) {
-  const g = gunas.reduce((acc, item) => {
-    acc[item.name.split(' ')[0]] = item.score;
-    return acc;
-  }, {});
-
-  const varna = g['Varna'] ?? 1;
-  const vashya = g['Vashya'] ?? 2;
-  const tara = g['Tara'] ?? 3;
-  const yoni = g['Yoni'] ?? 4;
-  const graha = g['Graha'] ?? 5;
-  const gana = g['Gana'] ?? 6;
-  const bhakoot = g['Bhakoot'] ?? 7;
-  const nadi = g['Nadi'] ?? 8;
-
-  const love = Math.round(((yoni / 4) * 0.4 + (graha / 5) * 0.6) * 100);
-  const career = Math.round(((graha / 5) * 0.5 + (varna / 1) * 0.5) * 100);
-  const health = Math.round(((nadi / 8) * 0.7 + (tara / 3) * 0.3) * 100);
-  const family = Math.round(((gana / 6) * 0.5 + (bhakoot / 7) * 0.5) * 100);
-  const physical = Math.round(((yoni / 4) * 0.6 + (tara / 3) * 0.4) * 100);
-  const spiritual = Math.round(((gana / 6) * 0.4 + (nadi / 8) * 0.6) * 100);
+export function calculateLifeAreaScores(gunas) {
+  const varna = gunas?.varna?.obtained || 1;
+  const vashya = gunas?.vashya?.obtained || 2;
+  const tara = gunas?.tara?.obtained || 3;
+  const yoni = gunas?.yoni?.obtained || 3;
+  const maitri = gunas?.maitri?.obtained || 4;
+  const gana = gunas?.gana?.obtained || 5;
+  const bhakoot = gunas?.bhakoot?.obtained || 7;
+  const nadi = gunas?.nadi?.obtained || 8;
 
   return {
-    love: Math.min(100, Math.max(20, love)),
-    career: Math.min(100, Math.max(20, career)),
-    health: Math.min(100, Math.max(20, health)),
-    family: Math.min(100, Math.max(20, family)),
-    physical: Math.min(100, Math.max(20, physical)),
-    spiritual: Math.min(100, Math.max(20, spiritual)),
+    love: Math.min(98, Math.round(((yoni / 4) * 0.4 + (maitri / 5) * 0.35 + (vashya / 2) * 0.25) * 100)),
+    career: Math.min(96, Math.round(((maitri / 5) * 0.5 + (varna / 1) * 0.3 + (tara / 3) * 0.2) * 100)),
+    health: Math.min(99, Math.round(((nadi / 8) * 0.6 + (tara / 3) * 0.4) * 100)),
+    family: Math.min(97, Math.round(((bhakoot / 7) * 0.55 + (gana / 6) * 0.45) * 100)),
+    physical: Math.min(95, Math.round(((yoni / 4) * 0.7 + (vashya / 2) * 0.3) * 100)),
+    spiritual: Math.min(98, Math.round(((gana / 6) * 0.45 + (varna / 1) * 0.3 + (maitri / 5) * 0.25) * 100)),
   };
+}
+
+export function getCompatibilityLabel(score) {
+  if (score >= 28) return 'Uttam Milan (Excellent Match)';
+  if (score >= 21) return 'Shubh Milan (Good Match)';
+  if (score >= 18) return 'Madhyam Milan (Average Match)';
+  return 'Dhyan Yogya (Requires Remedial Alignment)';
 }

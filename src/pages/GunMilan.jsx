@@ -10,9 +10,7 @@ import { t } from '@/translations';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { generateGunMilanAnalysis } from '@/lib/aiService';
 import {
-  getNakshatraFromDOB,
-  getRashiFromDOB,
-  isManglik as checkManglik,
+  getVedicDetailsFromDOB,
   calculateGunas,
   getCompatibilityLabel,
   calculateLifeAreaScores,
@@ -76,15 +74,15 @@ export default function GunMilan() {
         person1_dob: dob1,
         person1_time: formatTime(p1.time, p1.unknownTime),
         person1_place: p1.birthPlace || '',
-        person1_rashi: calc?.rashi1 || 'Scorpio (Vrishchik)',
-        person1_nakshatra: calc?.nakshatra1 || 'Jyeshtha',
+        person1_rashi: calc?.rashi1 || 'Gemini (Mithun)',
+        person1_nakshatra: calc?.nakshatra1 || 'Ardra',
         person1_is_manglik: Boolean(calc?.manglik1),
         person2_name: p2.name || 'Person 2',
         person2_dob: dob2,
         person2_time: formatTime(p2.time, p2.unknownTime),
         person2_place: p2.birthPlace || '',
-        person2_rashi: calc?.rashi2 || 'Virgo (Kanya)',
-        person2_nakshatra: calc?.nakshatra2 || 'Hasta',
+        person2_rashi: calc?.rashi2 || 'Pisces (Meen)',
+        person2_nakshatra: calc?.nakshatra2 || 'Uttara Bhadrapada',
         person2_is_manglik: Boolean(calc?.manglik2),
         total_score: calc?.totalScore || 28,
         guna_scores: calc?.gunas || {},
@@ -111,19 +109,46 @@ export default function GunMilan() {
     setLoading(true);
 
     try {
-      // 1. Calculate Real Values From Input DOBs
       const dob1 = formatDob(p1.dob) || '2004-09-08';
       const dob2 = formatDob(p2.dob) || '2000-09-15';
 
-      const nakshatra1 = getNakshatraFromDOB(dob1);
-      const nakshatra2 = getNakshatraFromDOB(dob2);
-      const rashi1 = getRashiFromDOB(dob1);
-      const rashi2 = getRashiFromDOB(dob2);
-      const manglik1 = checkManglik(dob1);
-      const manglik2 = checkManglik(dob2);
+      let h1 = parseInt(p1.time?.hour, 10);
+      let m1 = parseInt(p1.time?.minute, 10) || 0;
+      if (p1.unknownTime || isNaN(h1)) {
+        h1 = 6;
+        m1 = 0;
+      } else {
+        if (p1.time?.period === 'PM' && h1 < 12) h1 += 12;
+        if (p1.time?.period === 'AM' && h1 === 12) h1 = 0;
+      }
 
-      // 2. Calculate Ashtakoot Gunas (36 Gunas)
-      const gunaResult = calculateGunas(nakshatra1, nakshatra2);
+      let h2 = parseInt(p2.time?.hour, 10);
+      let m2 = parseInt(p2.time?.minute, 10) || 0;
+      if (p2.unknownTime || isNaN(h2)) {
+        h2 = 6;
+        m2 = 0;
+      } else {
+        if (p2.time?.period === 'PM' && h2 < 12) h2 += 12;
+        if (p2.time?.period === 'AM' && h2 === 12) h2 = 0;
+      }
+
+      // 1. Get REAL Vedic Moon Details (Rashi, Nakshatra, Manglik, Gana)
+      const [details1, details2] = await Promise.all([
+        getVedicDetailsFromDOB(dob1, p1.birthPlace || 'Sasaram, Bihar, India', h1, m1),
+        getVedicDetailsFromDOB(dob2, p2.birthPlace || 'Jammu, India', h2, m2),
+      ]);
+
+      const nakshatra1 = details1.nakshatra;
+      const nakshatra2 = details2.nakshatra;
+      const nakName1 = details1.nakshatraName || details1.nakshatra.split(' ')[0];
+      const nakName2 = details2.nakshatraName || details2.nakshatra.split(' ')[0];
+      const rashi1 = details1.rashi;
+      const rashi2 = details2.rashi;
+      const manglik1 = details1.isManglik;
+      const manglik2 = details2.isManglik;
+
+      // 2. Calculate Ashtakoot Gunas (36 Gunas) based on real Moon Nakshatras
+      const gunaResult = calculateGunas(nakName1, nakName2);
       const lifeAreaScores = calculateLifeAreaScores(gunaResult.gunas);
       const label = getCompatibilityLabel(gunaResult.totalScore);
 
@@ -138,15 +163,15 @@ export default function GunMilan() {
         totalScore: gunaResult.totalScore,
         nadi1: gunaResult.nadi1,
         nadi2: gunaResult.nadi2,
-        gana1: gunaResult.gana1,
-        gana2: gunaResult.gana2,
+        gana1: details1.gana || gunaResult.gana1,
+        gana2: details2.gana || gunaResult.gana2,
         label,
         lifeAreas: lifeAreaScores,
       };
 
       setCalculatedData(computed);
 
-      // 3. Generate AI analysis with REAL data
+      // 3. Generate AI analysis with REAL Vedic details
       const analysis = await generateGunMilanAnalysis(
         {
           name: p1.name || 'Person 1',
@@ -198,55 +223,52 @@ export default function GunMilan() {
               <motion.span
                 animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                className="flex items-center justify-center rounded-full"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm shadow-xl"
                 style={{
-                  width: 52,
-                  height: 52,
-                  background: 'rgba(10,12,18,0.92)',
-                  border: '1px solid var(--col-copper)',
-                  boxShadow: '0 0 24px rgba(200,130,42,0.4)',
+                  background: 'var(--col-midnight-card)',
+                  border: '1px solid rgba(200, 130, 42, 0.5)',
                   color: 'var(--col-copper)',
-                  fontSize: 22,
                 }}
               >
-                ♥
+                ✦
               </motion.span>
             </div>
           </div>
 
-          <div className="mt-10 text-center flex justify-center">
+          <div className="mt-8 text-center">
             <motion.button
+              whileHover={{ scale: 1.03, boxShadow: '0 0 35px rgba(200, 130, 42, 0.45)' }}
+              whileTap={{ scale: 0.98 }}
               onClick={onMatch}
               disabled={loading}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-copper text-base font-bold tracking-wide cursor-pointer"
-              style={{
-                opacity: loading ? 0.75 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
+              className="btn-primary inline-flex items-center justify-center gap-2 cursor-pointer"
+              style={{ padding: '16px 38px', fontSize: '1rem', fontWeight: 600 }}
             >
               {loading ? (
-                <span className="flex items-center gap-2.5">
-                  <span className="animate-spin text-lg">✦</span> {t.calculating[lang]}...
-                </span>
+                <>
+                  <span className="animate-spin text-lg">☸</span>
+                  <span>{lang === 'hinglish' ? 'Vedic Gun Milan Ho Raha Hai...' : 'Matching Kundlis with Vedic Ephemeris...'}</span>
+                </>
               ) : (
-                <span className="flex items-center gap-2.5">
-                  <span className="text-lg">✦</span> {t.check_compatibility[lang]}
-                </span>
+                <>
+                  <span style={{ color: '#F8FAFC' }}>✦</span>
+                  <span>{t.check_compatibility[lang]}</span>
+                </>
               )}
             </motion.button>
           </div>
         </div>
 
-        {showResults && (
-          <GmResults
-            tryAgain={tryAgain}
-            p1={p1}
-            p2={p2}
-            calculatedData={calculatedData}
-            aiAnalysis={analysisResult}
-          />
+        {showResults && calculatedData && (
+          <div className="mt-12">
+            <GmResults
+              p1={p1}
+              p2={p2}
+              calculatedData={calculatedData}
+              aiAnalysis={analysisResult}
+              onTryAgain={tryAgain}
+            />
+          </div>
         )}
       </main>
     </div>
