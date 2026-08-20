@@ -2,7 +2,14 @@ import { GoogleGenAI, Modality, ThinkingLevel } from '@google/genai';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-const MODEL = 'gemini-2.0-flash-exp';
+const MODELS = [
+  'gemini-3.1-flash-live-preview',
+  'gemini-2.5-flash-preview',
+  'gemini-2.0-flash-exp',
+  'gemini-2.0-flash'
+];
+
+const VOICES = ['Zephyr', 'Aoede', 'Kore', 'Charon', 'Puck'];
 
 // ── Build System Prompt from Kundli Data ──
 export function buildAstroContext(kundliData) {
@@ -86,8 +93,8 @@ export class GeminiLiveSession {
     this.onError = null; // Error handler
   }
 
-  // ── Initialize session ────────────────
-  async start(kundliData, voiceName = 'Aoede') {
+  // ── Initialize session with fallback ──
+  async start(kundliData, preferredVoice = 'Zephyr') {
     try {
       this.client = new GoogleGenAI({ 
         apiKey: GEMINI_API_KEY 
@@ -95,45 +102,69 @@ export class GeminiLiveSession {
 
       const systemPrompt = buildAstroContext(kundliData);
 
-      this.session = await this.client.live.connect({
-        model: MODEL,
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: voiceName || 'Aoede'
+      // Try preferred model & voice first, then fallbacks
+      const voiceList = [preferredVoice, ...VOICES.filter(v => v !== preferredVoice)];
+      let connected = false;
+      let lastError = null;
+
+      for (const model of MODELS) {
+        for (const voice of voiceList) {
+          try {
+            console.log(`✦ Connecting to Gemini Live: model=${model}, voice=${voice}`);
+
+            this.session = await this.client.live.connect({
+              model: model,
+              config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: {
+                      voiceName: voice
+                    }
+                  }
+                },
+                systemInstruction: {
+                  parts: [{ text: systemPrompt }]
+                },
+                thinkingConfig: {
+                  thinkingLevel: ThinkingLevel.MINIMAL
+                }
+              },
+              callbacks: {
+                onopen: () => {
+                  console.log(`✅ Gemini Live connected (${model} / ${voice})`);
+                  this.isActive = true;
+                  this.onStateChange?.('connected');
+                },
+                onmessage: (message) => {
+                  this._handleMessage(message);
+                },
+                onerror: (error) => {
+                  console.error('Gemini Live error:', error);
+                  this.onError?.(error);
+                  this.onStateChange?.('error');
+                },
+                onclose: (event) => {
+                  console.log('Gemini Live closed:', event);
+                  this.isActive = false;
+                  this.onStateChange?.('disconnected');
+                }
               }
-            }
-          },
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.MINIMAL
-          }
-        },
-        callbacks: {
-          onopen: () => {
-            console.log('✅ Gemini Live connected');
-            this.isActive = true;
-            this.onStateChange?.('connected');
-          },
-          onmessage: (message) => {
-            this._handleMessage(message);
-          },
-          onerror: (error) => {
-            console.error('Gemini Live error:', error);
-            this.onError?.(error);
-            this.onStateChange?.('error');
-          },
-          onclose: (event) => {
-            console.log('Gemini Live closed:', event);
-            this.isActive = false;
-            this.onStateChange?.('disconnected');
+            });
+
+            connected = true;
+            break;
+          } catch (err) {
+            console.warn(`Connection failed for ${model}/${voice}:`, err?.message || err);
+            lastError = err;
           }
         }
-      });
+        if (connected) break;
+      }
+
+      if (!connected) {
+        throw lastError || new Error('Failed to connect to Gemini Live models.');
+      }
 
       // Start microphone
       await this._startMicrophone();
@@ -224,12 +255,16 @@ export class GeminiLiveSession {
       const pcm16 = this._float32ToPCM16(inputData);
 
       // Send to Gemini
-      this.session.sendRealtimeInput({
-        audio: {
-          data: pcm16,
-          mimeType: 'audio/pcm;rate=16000'
-        }
-      });
+      try {
+        this.session.sendRealtimeInput({
+          media: {
+            data: pcm16,
+            mimeType: 'audio/pcm;rate=16000'
+          }
+        });
+      } catch (err) {
+        console.warn('Realtime input error:', err);
+      }
     };
 
     source.connect(this.processor);
