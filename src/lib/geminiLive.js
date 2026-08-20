@@ -49,56 +49,33 @@ export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
-// ── Build System Prompt from Kundli Data ──────────────
+// ── Build Conversational Astrologer System Prompt ─────
 export function buildAstroContext(kundliData) {
-  if (!kundliData) {
-    return `
-You are an expert, compassionate Vedic Astrologer (Jyotishi).
-Answer with warm, conversational clarity.
-Keep answers concise — 2 to 3 spoken sentences.
-Weave in natural Sanskrit terms (Lagna, Rashi, Dasha, Karma, Dharma).
-Never use markdown asterisks (*, **), bullet points, or numbered lists because your response will be spoken aloud to the user.
-`;
-  }
+  const name = kundliData?.name || 'Seeker';
+  const lagna = kundliData?.lagna || 'Aries (Mesh)';
+  const rashi = kundliData?.rashi || 'Mesh';
+  const nakshatra = kundliData?.nakshatra || 'Ashwini';
 
   return `
-You are an expert, compassionate Vedic Astrologer (Jyotishi) with deep knowledge of the seeker's birth chart.
+You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 LIVE voice consultation with ${name}.
 
-SEEKER'S VEDIC CHART:
-Name: ${kundliData.name || 'Seeker'}
-Date of Birth: ${kundliData.date_of_birth || 'Not specified'}
-Birth Place: ${kundliData.birth_place || 'Not specified'}
-Birth Time: ${kundliData.time_of_birth || 'Sunrise Chart'}
+SEEKER'S CHART CONTEXT:
+- Name: ${name}
+- Lagna (Ascendant): ${lagna}
+- Moon Sign (Chandra Rashi): ${rashi}
+- Nakshatra: ${nakshatra}
 
-CORE CHART DETAILS:
-Lagna (Ascendant): ${kundliData.lagna || 'Aries'}
-Rashi (Moon Sign): ${kundliData.rashi || 'Mesh'}
-Nakshatra: ${kundliData.nakshatra || 'Ashwini'}
-Gana: ${kundliData.gana || 'Deva'}
-Manglik: ${kundliData.is_manglik ? 'Yes' : 'No'}
-
-PLANETARY POSITIONS:
-${kundliData.planets ? 
-  Object.entries(kundliData.planets)
-    .map(([p, d]) => `${p}: ${d.sign || d.rashi || ''}, House ${d.house || ''}`)
-    .join('\n') 
-  : 'Planets favorably placed in chart'}
-
-CURRENT DASHA:
-${kundliData.current_dasha ? 
-  `${kundliData.current_dasha.lord || ''} Mahadasha (${kundliData.current_dasha.start || ''} - ${kundliData.current_dasha.end || ''})`
-  : 'Current auspicious Dasha operating'}
-
-NUMEROLOGY:
-Life Path Number: ${kundliData.life_path_number || kundliData.numerology?.lifePathNumber || '7'}
-Destiny Number: ${kundliData.destiny_number || kundliData.numerology?.destinyNumber || '9'}
-
-RULES FOR SPOKEN VOICE:
-1. Speak warmly and naturally like an authentic Indian Astrologer on a live phone consultation.
-2. Answer the question directly in 2 to 3 sentences (under 30 seconds spoken).
-3. Call the seeker "${kundliData.name || 'Seeker'}" naturally.
-4. Reference their actual Lagna, Moon sign, Nakshatra, or planetary yogas when relevant.
-5. Strictly NO markdown characters (*, **, #, bullets) because this is audio output.
+CONVERSATION STYLE (STRICT RULES):
+1. **Natural Human Conversation**:
+   - If the user says casual greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho"):
+     Reply naturally and politely in 1 short sentence: "Namaste ${name} ji! Ji main sun raha hoon. Aaj aap apne jeevan ya kundli ke kis vishay me baat karna chahte hain?"
+   - Do NOT dump full planetary details or chart summaries unless the user specifically asks an astrological question.
+2. **When user asks a specific question** (e.g. career, marriage, health, yogas, dasha, future):
+   - Give a warm, empowering, personalized answer in 2 to 3 spoken sentences.
+   - Mention their Lagna (${lagna}) or Moon sign (${rashi}) naturally when relevant to their question.
+3. **Audio-Only Output**:
+   - NEVER use markdown characters (*, **, #, bullets, numbered lists). Speak clean conversational Hindi-English / English.
+   - Keep answers short and sweet so the user can easily talk back and forth.
 `;
 }
 
@@ -110,14 +87,14 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
   try {
     const response = await client.models.generateContent({
       model: 'gemini-3.6-flash',
-      contents: `${systemPrompt}\n\nSeeker Question: "${question}"\nSpoken Astrological Answer:`,
+      contents: `${systemPrompt}\n\nUser said: "${question}"\nAstrologer spoken response:`,
     });
 
     const text = response.text?.trim();
-    return text || `Based on your ${kundliData?.lagna || 'chart'}, the planetary energies show auspicious clarity and progress for your path.`;
+    return text || `Namaste ${kundliData?.name || 'ji'}! May the divine stars illuminate your path. How can I guide you today?`;
   } catch (err) {
     console.warn('Gemini 3.6 Flash generation error:', err);
-    return `According to your ${kundliData?.lagna || 'Lagna'} and ${kundliData?.rashi || 'Moon'} sign, current planetary alignments bring strength and auspicious guidance for your journey.`;
+    return `Namaste ${kundliData?.name || 'ji'}! Ji main sun raha hoon. Kripya apna prashna poochein.`;
   }
 }
 
@@ -166,6 +143,7 @@ export async function generateZephyrAudio(text, voiceName = 'Zephyr') {
 export class LiveVoiceCallSession {
   constructor() {
     this.isActive = false;
+    this.isSpeaking = false;
 
     // Web Audio
     this.audioContext = null;
@@ -191,6 +169,7 @@ export class LiveVoiceCallSession {
     this.kundliData = kundliData;
     this.voiceName = voiceName || 'Zephyr';
     this.isActive = true;
+    this.isSpeaking = false;
 
     try {
       // 1. Initialize microphone & audio visualizer
@@ -225,36 +204,32 @@ export class LiveVoiceCallSession {
         this.recognition.lang = 'en-IN';
 
         this.recognition.onresult = async (event) => {
-          if (!this.isActive) return;
+          if (!this.isActive || this.isSpeaking || this.activeAudio) return;
+
           const transcript = event.results?.[0]?.[0]?.transcript;
           if (transcript && transcript.trim()) {
+            console.log('User spoke:', transcript);
             await this.processTurn(transcript);
           }
         };
 
         this.recognition.onerror = (e) => {
-          if (e.error === 'no-speech' && this.isActive) {
+          if (e.error === 'no-speech' && this.isActive && !this.isSpeaking && !this.activeAudio) {
             this._restartRecognition();
           }
         };
 
         this.recognition.onend = () => {
-          if (this.isActive && !this.activeAudio) {
+          if (this.isActive && !this.isSpeaking && !this.activeAudio) {
             this._restartRecognition();
           }
         };
-
-        try {
-          this.recognition.start();
-        } catch (e) {
-          /* ignore */
-        }
       }
 
       // Initial spoken greeting
       const greeting = kundliData?.name
-        ? `Namaste ${kundliData.name}! I have your ${kundliData.lagna || 'Ascendant'} chart in front of me. What question is on your mind?`
-        : 'Namaste! I am your Vedic astrology guide. What guidance do you seek today?';
+        ? `Namaste ${kundliData.name}! Main aapka Jyotish saathi hoon. Kahiye, aaj aap kis baare me baat karna chahte hain?`
+        : 'Namaste! Main aapka Jyotish saathi hoon. Kahiye, aaj aap kya janna chahte hain?';
 
       await this.speakResponse(greeting);
 
@@ -292,6 +267,8 @@ export class LiveVoiceCallSession {
   async processTurn(userSpeech) {
     if (!this.isActive) return;
 
+    // Mute microphone while thinking and generating
+    this._stopRecognition();
     this.onStateChange?.('thinking');
 
     try {
@@ -303,6 +280,7 @@ export class LiveVoiceCallSession {
     } catch (err) {
       console.error('Turn processing error:', err);
       if (this.isActive) {
+        this.isSpeaking = false;
         this.onStateChange?.('listening');
         this._restartRecognition();
       }
@@ -313,6 +291,9 @@ export class LiveVoiceCallSession {
   async speakResponse(text) {
     if (!this.isActive) return;
 
+    // Strictly ensure microphone is stopped before playing speaker audio
+    this._stopRecognition();
+    this.isSpeaking = true;
     this.onStateChange?.('thinking');
 
     try {
@@ -346,23 +327,36 @@ export class LiveVoiceCallSession {
           });
         });
       }
-
-      if (this.isActive) {
-        this.onStateChange?.('listening');
-        this._restartRecognition();
-      }
     } catch (err) {
       console.error('speakResponse error:', err);
-      if (this.isActive) {
-        this.onStateChange?.('listening');
-        this._restartRecognition();
+    }
+
+    // Audio playback completed — wait 400ms for room echo buffer before listening again
+    if (this.isActive) {
+      this.isSpeaking = false;
+      this.onStateChange?.('listening');
+      setTimeout(() => {
+        if (this.isActive && !this.isSpeaking && !this.activeAudio) {
+          this._restartRecognition();
+        }
+      }, 400);
+    }
+  }
+
+  // ── Stop Speech Recognition safely ─────
+  _stopRecognition() {
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch (e) {
+        /* ignore */
       }
     }
   }
 
-  // ── Restart Speech Recognition ────────
+  // ── Restart Speech Recognition safely ──
   _restartRecognition() {
-    if (this.recognition && this.isActive && !this.activeAudio) {
+    if (this.recognition && this.isActive && !this.isSpeaking && !this.activeAudio) {
       try {
         this.recognition.start();
       } catch (e) {
@@ -382,11 +376,13 @@ export class LiveVoiceCallSession {
       }
       this.activeAudio = null;
     }
+    this.isSpeaking = false;
   }
 
   // ── End Call ──────────────────────────
   async endCall() {
     this.isActive = false;
+    this.isSpeaking = false;
 
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
@@ -394,15 +390,8 @@ export class LiveVoiceCallSession {
     }
 
     this.stopAudio();
-
-    if (this.recognition) {
-      try {
-        this.recognition.abort();
-      } catch (e) {
-        /* ignore */
-      }
-      this.recognition = null;
-    }
+    this._stopRecognition();
+    this.recognition = null;
 
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((t) => t.stop());
