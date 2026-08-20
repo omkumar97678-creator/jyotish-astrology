@@ -164,8 +164,10 @@ export default function GunMilan() {
         totalScore: gunaResult.totalScore,
         nadi1: gunaResult.nadi1,
         nadi2: gunaResult.nadi2,
-        gana1: details1.gana || gunaResult.gana1,
-        gana2: details2.gana || gunaResult.gana2,
+        gana1: gunaResult.gana1 || details1.gana,
+        gana2: gunaResult.gana2 || details2.gana,
+        varna1: gunaResult.varna1 || details1.varna,
+        varna2: gunaResult.varna2 || details2.varna,
         label,
         lifeAreas: lifeAreaScores,
       };

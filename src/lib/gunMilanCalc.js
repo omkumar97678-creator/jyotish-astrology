@@ -57,6 +57,108 @@ export const NAKSHATRA_DETAILS = {
   'Revati': { ruler: 'Mercury (Budh)', deity: 'Pushan', quality: 'Soft (Mridu)', symbol: 'Pair of Fish / Drum' }
 };
 
+// ── Nakshatra Varna Mapping (Brahmin, Kshatriya, Vaishya, Shudra) ────
+export const NAKSHATRA_VARNA = {
+  // Brahmin (Jupiter/Moon ruled)
+  'Punarvasu': 'Brahmin',
+  'Vishakha': 'Brahmin',
+  'Purva Bhadrapada': 'Brahmin',
+  'Rohini': 'Brahmin',
+  'Hasta': 'Brahmin',
+  'Shravana': 'Brahmin',
+  'Revati': 'Brahmin',
+  // Kshatriya (Sun/Mars ruled)
+  'Krittika': 'Kshatriya',
+  'Uttara Phalguni': 'Kshatriya',
+  'Uttara Ashadha': 'Kshatriya',
+  'Mrigashira': 'Kshatriya',
+  'Chitra': 'Kshatriya',
+  'Dhanishta': 'Kshatriya',
+  // Vaishya (Mercury/Venus ruled)
+  'Ashlesha': 'Vaishya',
+  'Jyeshtha': 'Vaishya',
+  'Bharani': 'Vaishya',
+  'Purva Phalguni': 'Vaishya',
+  'Purva Ashadha': 'Vaishya',
+  // Shudra (Saturn/Rahu/Ketu ruled)
+  'Pushya': 'Shudra',
+  'Anuradha': 'Shudra',
+  'Uttara Bhadrapada': 'Shudra',
+  'Ardra': 'Shudra',
+  'Swati': 'Shudra',
+  'Shatabhisha': 'Shudra',
+  'Ashwini': 'Shudra',
+  'Magha': 'Shudra',
+  'Moola': 'Shudra',
+};
+
+// Varna scoring table (Boy + Girl)
+export const VARNA_SCORE = {
+  'Brahmin+Brahmin':   1,
+  'Brahmin+Kshatriya': 1,
+  'Brahmin+Vaishya':   1,
+  'Brahmin+Shudra':    1,
+  'Kshatriya+Brahmin': 0,
+  'Kshatriya+Kshatriya': 1,
+  'Kshatriya+Vaishya': 1,
+  'Kshatriya+Shudra':  1,
+  'Vaishya+Brahmin':   0,
+  'Vaishya+Kshatriya': 0,
+  'Vaishya+Vaishya':   1,
+  'Vaishya+Shudra':    1,
+  'Shudra+Brahmin':    0,
+  'Shudra+Kshatriya':  0,
+  'Shudra+Vaishya':    0,
+  'Shudra+Shudra':     1,
+};
+
+// ── Nakshatra Gana Mapping (Deva, Manushya, Rakshasa) ────
+export const NAKSHATRA_GANA = {
+  // Deva Gana
+  'Ashwini': 'Deva',
+  'Mrigashira': 'Deva',
+  'Punarvasu': 'Deva',
+  'Pushya': 'Deva',
+  'Hasta': 'Deva',
+  'Swati': 'Deva',
+  'Anuradha': 'Deva',
+  'Shravana': 'Deva',
+  'Revati': 'Deva',
+  // Manushya Gana
+  'Bharani': 'Manushya',
+  'Rohini': 'Manushya',
+  'Ardra': 'Manushya',
+  'Purva Phalguni': 'Manushya',
+  'Uttara Phalguni': 'Manushya',
+  'Purva Ashadha': 'Manushya',
+  'Uttara Ashadha': 'Manushya',
+  'Purva Bhadrapada': 'Manushya',
+  'Uttara Bhadrapada': 'Manushya',
+  // Rakshasa Gana
+  'Krittika': 'Rakshasa',
+  'Ashlesha': 'Rakshasa',
+  'Magha': 'Rakshasa',
+  'Chitra': 'Rakshasa',
+  'Vishakha': 'Rakshasa',
+  'Jyeshtha': 'Rakshasa',
+  'Moola': 'Rakshasa',
+  'Dhanishta': 'Rakshasa',
+  'Shatabhisha': 'Rakshasa',
+};
+
+// Gana scoring matrix (Boy + Girl)
+export const GANA_SCORE = {
+  'Deva+Deva':         6,
+  'Deva+Manushya':     5,
+  'Deva+Rakshasa':     1,
+  'Manushya+Deva':     6,
+  'Manushya+Manushya': 6,
+  'Manushya+Rakshasa': 0,
+  'Rakshasa+Deva':     0,
+  'Rakshasa+Manushya': 0,
+  'Rakshasa+Rakshasa': 6,
+};
+
 // ── Real Ephemeris Vedic Details Fetcher (Janma Moon Rashi & Nakshatra) ────
 export async function getVedicDetailsFromDOB(
   dob = '2000-01-01',
@@ -86,23 +188,28 @@ export async function getVedicDetailsFromDOB(
       throw new Error('Chart calculation failed');
     }
 
+    const cleanNakName = String(chart.nakshatra || '').split(' ')[0].replace(/[^a-zA-Z]/g, '');
+
     return {
       rashi: chart.rashi,
       nakshatra: chart.nakshatra,
-      nakshatraName: String(chart.nakshatra || '').split(' ')[0].replace(/[^a-zA-Z]/g, ''),
+      nakshatraName: cleanNakName,
       lagna: chart.lagna,
       isManglik: Boolean(chart.isManglik),
-      gana: chart.gana || 'Deva',
+      gana: NAKSHATRA_GANA[cleanNakName] || chart.gana || 'Deva',
+      varna: NAKSHATRA_VARNA[cleanNakName] || 'Shudra',
     };
   } catch (err) {
     console.error('Vedic details calculation error:', err);
+    const fallbackNak = getFallbackNakshatra(dob);
     return {
       rashi: getFallbackRashi(dob),
-      nakshatra: getFallbackNakshatra(dob),
-      nakshatraName: getFallbackNakshatra(dob),
+      nakshatra: fallbackNak,
+      nakshatraName: fallbackNak,
       lagna: 'Unknown',
       isManglik: false,
-      gana: 'Deva',
+      gana: NAKSHATRA_GANA[fallbackNak] || 'Manushya',
+      varna: NAKSHATRA_VARNA[fallbackNak] || 'Shudra',
     };
   }
 }
@@ -174,17 +281,10 @@ export function calculateGunas(nak1Raw = 'Ashwini', nak2Raw = 'Pushya') {
   const n1 = NAKSHATRA_NUM[nak1] || 1;
   const n2 = NAKSHATRA_NUM[nak2] || 8;
 
-  // 1. Varna (1 Point)
-  const getVarna = (n) => {
-    const rem = n % 4;
-    if (rem === 1) return 4; // Brahmin
-    if (rem === 2) return 3; // Kshatriya
-    if (rem === 3) return 2; // Vaishya
-    return 1; // Shudra
-  };
-  const varna1 = getVarna(n1);
-  const varna2 = getVarna(n2);
-  const varnaPts = varna1 >= varna2 ? 1 : 0;
+  // 1. Varna (1 Point) - Using Shastriya Nakshatra Varna Table
+  const varna1 = NAKSHATRA_VARNA[nak1] || 'Shudra';
+  const varna2 = NAKSHATRA_VARNA[nak2] || 'Shudra';
+  const varnaPts = VARNA_SCORE[`${varna1}+${varna2}`] ?? 0;
 
   // 2. Vashya (2 Points)
   const vashyaPts = (n1 % 5 === n2 % 5) ? 2 : (Math.abs(n1 - n2) % 2 === 0 ? 1 : 0.5);
@@ -215,20 +315,10 @@ export function calculateGunas(nak1Raw = 'Ashwini', nak2Raw = 'Pushya') {
   else if ([6, 7].includes(lordDist)) maitriPts = 1;
   else maitriPts = 0.5;
 
-  // 6. Gana (6 Points)
-  const getGana = (n) => {
-    const rem = n % 3;
-    if (rem === 1) return 'Deva';
-    if (rem === 2) return 'Manushya';
-    return 'Rakshasa';
-  };
-  const gana1 = getGana(n1);
-  const gana2 = getGana(n2);
-  let ganaPts = 6;
-  if (gana1 === gana2) ganaPts = 6;
-  else if ((gana1 === 'Deva' && gana2 === 'Manushya') || (gana1 === 'Manushya' && gana2 === 'Deva')) ganaPts = 5;
-  else if ((gana1 === 'Manushya' && gana2 === 'Rakshasa') || (gana1 === 'Rakshasa' && gana2 === 'Manushya')) ganaPts = 1;
-  else ganaPts = 0;
+  // 6. Gana (6 Points) - Using Shastriya Nakshatra Gana Matrix
+  const gana1 = NAKSHATRA_GANA[nak1] || 'Manushya';
+  const gana2 = NAKSHATRA_GANA[nak2] || 'Manushya';
+  const ganaPts = GANA_SCORE[`${gana1}+${gana2}`] ?? 0;
 
   // 7. Bhakoot (7 Points)
   const rashiDist = ((Math.floor((n2 - 1) / 2.25) - Math.floor((n1 - 1) / 2.25) + 12) % 12) + 1;
@@ -265,18 +355,20 @@ export function calculateGunas(nak1Raw = 'Ashwini', nak2Raw = 'Pushya') {
     nadi2,
     gana1,
     gana2,
+    varna1,
+    varna2,
   };
 }
 
 export function calculateLifeAreaScores(gunas) {
-  const varna = gunas?.varna?.obtained || 1;
-  const vashya = gunas?.vashya?.obtained || 2;
-  const tara = gunas?.tara?.obtained || 3;
-  const yoni = gunas?.yoni?.obtained || 3;
-  const maitri = gunas?.maitri?.obtained || 4;
-  const gana = gunas?.gana?.obtained || 5;
-  const bhakoot = gunas?.bhakoot?.obtained || 7;
-  const nadi = gunas?.nadi?.obtained || 8;
+  const varna = gunas?.varna?.obtained ?? gunas?.varna?.score ?? 1;
+  const vashya = gunas?.vashya?.obtained ?? gunas?.vashya?.score ?? 2;
+  const tara = gunas?.tara?.obtained ?? gunas?.tara?.score ?? 3;
+  const yoni = gunas?.yoni?.obtained ?? gunas?.yoni?.score ?? 3;
+  const maitri = gunas?.maitri?.obtained ?? gunas?.maitri?.score ?? 4;
+  const gana = gunas?.gana?.obtained ?? gunas?.gana?.score ?? 5;
+  const bhakoot = gunas?.bhakoot?.obtained ?? gunas?.bhakoot?.score ?? 7;
+  const nadi = gunas?.nadi?.obtained ?? gunas?.nadi?.score ?? 8;
 
   return {
     love: Math.min(98, Math.round(((yoni / 4) * 0.4 + (maitri / 5) * 0.35 + (vashya / 2) * 0.25) * 100)),
