@@ -1,6 +1,7 @@
 import { GoogleGenAI, Modality } from '@google/genai';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 // ── Convert Linear PCM16 to Standard WAV Blob ────────
 export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
@@ -57,7 +58,7 @@ export function buildAstroContext(kundliData) {
   const nakshatra = kundliData?.nakshatra || 'Ashwini';
 
   return `
-You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 LIVE voice consultation with ${name}.
+You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 LIVE voice phone consultation with ${name}.
 
 SEEKER'S CHART CONTEXT:
 - Name: ${name}
@@ -65,10 +66,10 @@ SEEKER'S CHART CONTEXT:
 - Moon Sign (Chandra Rashi): ${rashi}
 - Nakshatra: ${nakshatra}
 
-CONVERSATION STYLE (STRICT RULES):
+CONVERSATION RULES (STRICT):
 1. **Natural Human Conversation**:
-   - If the user says casual greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho"):
-     Reply naturally and politely in 1 short sentence: "Namaste ${name} ji! Ji main sun raha hoon. Aaj aap apne jeevan ya kundli ke kis vishay me baat karna chahte hain?"
+   - If the user says casual greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho", "kya haal hai"):
+     Reply warmly and naturally in 1 short sentence: "Namaste ${name} ji! Ji main aapko sun raha hoon. Aaj aap apne baare me ya apni kundli ke vishay me kya janna chahte hain?"
    - Do NOT dump full planetary details or chart summaries unless the user specifically asks an astrological question.
 2. **When user asks a specific question** (e.g. career, marriage, health, yogas, dasha, future):
    - Give a warm, empowering, personalized answer in 2 to 3 spoken sentences.
@@ -98,22 +99,19 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
   }
 }
 
-// ── Generate Ultra-HD Zephyr Audio via Gemini TTS ──────
-export async function generateZephyrAudio(text, voiceName = 'Zephyr') {
-  const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
-  // Clean text of markdown before sending to TTS
+// ── Multi-Tier Ultra-HD Voice Audio Generator ─────────
+// Tier 1: Gemini 3.1 Flash TTS (Zephyr Voice)
+// Tier 2: OpenAI TTS-1 (Nova / Alloy Studio Voice)
+// Tier 3: Browser Web SpeechSynthesis
+export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
   const cleanText = text.replace(/[*_#`~]/g, '').trim();
 
-  const models = [
-    'gemini-3.1-flash-tts-preview',
-    'gemini-2.5-flash-preview-tts'
-  ];
-
-  for (const model of models) {
+  // Tier 1: Try Gemini TTS
+  if (GEMINI_API_KEY) {
     try {
+      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       const response = await client.models.generateContent({
-        model: model,
+        model: 'gemini-3.1-flash-tts-preview',
         contents: cleanText,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -129,10 +127,35 @@ export async function generateZephyrAudio(text, voiceName = 'Zephyr') {
 
       const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (audioData) {
-        return audioData; // Base64 audio PCM
+        return pcm16ToWavBlob(audioData, 24000, 1);
       }
     } catch (err) {
-      console.warn(`TTS generation failed for ${model}:`, err);
+      console.warn('Gemini TTS limit or error, falling back to OpenAI HD Voice:', err?.message || err);
+    }
+  }
+
+  // Tier 2: Try OpenAI TTS (HD Studio Voice)
+  if (OPENAI_API_KEY) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'tts-1',
+          voice: 'nova', // Warm natural conversational voice
+          input: cleanText,
+        }),
+      });
+
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        return new Blob([arrayBuffer], { type: 'audio/mp3' });
+      }
+    } catch (err) {
+      console.warn('OpenAI TTS error:', err?.message || err);
     }
   }
 
@@ -144,6 +167,7 @@ export class LiveVoiceCallSession {
   constructor() {
     this.isActive = false;
     this.isSpeaking = false;
+    this.isRecognizing = false;
 
     // Web Audio
     this.audioContext = null;
@@ -192,39 +216,7 @@ export class LiveVoiceCallSession {
       source.connect(this.analyser);
 
       this._startWaveformTracking();
-
-      // 2. Initialize Speech Recognition
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
-        this.recognition.interimResults = false;
-        this.recognition.lang = 'en-IN';
-
-        this.recognition.onresult = async (event) => {
-          if (!this.isActive || this.isSpeaking || this.activeAudio) return;
-
-          const transcript = event.results?.[0]?.[0]?.transcript;
-          if (transcript && transcript.trim()) {
-            console.log('User spoke:', transcript);
-            await this.processTurn(transcript);
-          }
-        };
-
-        this.recognition.onerror = (e) => {
-          if (e.error === 'no-speech' && this.isActive && !this.isSpeaking && !this.activeAudio) {
-            this._restartRecognition();
-          }
-        };
-
-        this.recognition.onend = () => {
-          if (this.isActive && !this.isSpeaking && !this.activeAudio) {
-            this._restartRecognition();
-          }
-        };
-      }
+      this._initSpeechRecognition();
 
       // Initial spoken greeting
       const greeting = kundliData?.name
@@ -263,45 +255,114 @@ export class LiveVoiceCallSession {
     this.animFrameId = requestAnimationFrame(update);
   }
 
+  // ── Initialize Speech Recognition Engine ──
+  _initSpeechRecognition() {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn('SpeechRecognition not supported in browser');
+      return;
+    }
+
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'en-IN';
+
+      this.recognition.onstart = () => {
+        this.isRecognizing = true;
+      };
+
+      this.recognition.onresult = async (event) => {
+        if (!this.isActive || this.isSpeaking || this.activeAudio) return;
+
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript && transcript.trim()) {
+          console.log('User speech recognized:', transcript);
+          await this.processTurn(transcript);
+        }
+      };
+
+      this.recognition.onerror = (e) => {
+        this.isRecognizing = false;
+        if (e.error === 'no-speech' && this.isActive && !this.isSpeaking && !this.activeAudio) {
+          setTimeout(() => this._startRecognitionSafe(), 300);
+        }
+      };
+
+      this.recognition.onend = () => {
+        this.isRecognizing = false;
+        if (this.isActive && !this.isSpeaking && !this.activeAudio) {
+          setTimeout(() => this._startRecognitionSafe(), 300);
+        }
+      };
+    } catch (err) {
+      console.warn('SpeechRecognition init error:', err);
+    }
+  }
+
+  // ── Safely start recognition ──────────
+  _startRecognitionSafe() {
+    if (!this.isActive || this.isSpeaking || this.activeAudio || !this.recognition) return;
+    if (this.isRecognizing) return;
+
+    try {
+      this.recognition.start();
+    } catch (e) {
+      // If already started or pending, ignore
+    }
+  }
+
+  // ── Safely stop recognition ───────────
+  _stopRecognitionSafe() {
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch (e) {
+        /* ignore */
+      }
+      this.isRecognizing = false;
+    }
+  }
+
   // ── Process Conversation Turn ──────────
   async processTurn(userSpeech) {
     if (!this.isActive) return;
 
-    // Mute microphone while thinking and generating
-    this._stopRecognition();
+    this._stopRecognitionSafe();
     this.onStateChange?.('thinking');
 
     try {
       // 1. Compute personalized Vedic astrology reading
       const answer = await generateGeminiAstrologyAnswer(userSpeech, this.kundliData);
 
-      // 2. Speak answer in Ultra-HD Zephyr Voice
+      // 2. Speak answer in Ultra-HD Studio Voice
       await this.speakResponse(answer);
     } catch (err) {
       console.error('Turn processing error:', err);
       if (this.isActive) {
         this.isSpeaking = false;
         this.onStateChange?.('listening');
-        this._restartRecognition();
+        this._startRecognitionSafe();
       }
     }
   }
 
-  // ── Speak Response via Zephyr Audio ────
+  // ── Speak Response via HD Audio ────────
   async speakResponse(text) {
     if (!this.isActive) return;
 
-    // Strictly ensure microphone is stopped before playing speaker audio
-    this._stopRecognition();
+    this._stopRecognitionSafe();
     this.isSpeaking = true;
     this.onStateChange?.('thinking');
 
     try {
-      const audioBase64 = await generateZephyrAudio(text, this.voiceName);
+      const audioBlob = await generateSpeechAudioBlob(text, this.voiceName);
 
-      if (audioBase64 && this.isActive) {
-        const wavBlob = pcm16ToWavBlob(audioBase64, 24000, 1);
-        const audioUrl = URL.createObjectURL(wavBlob);
+      if (audioBlob && this.isActive) {
+        const audioUrl = URL.createObjectURL(audioBlob);
 
         this.onStateChange?.('speaking');
 
@@ -322,46 +383,38 @@ export class LiveVoiceCallSession {
           };
 
           audio.play().catch((err) => {
-            console.warn('Audio play interrupted:', err);
+            console.warn('Audio play error:', err);
             resolve();
           });
+        });
+      } else if (this.isActive && 'speechSynthesis' in window) {
+        // Fallback to browser synthesis if network unavailable
+        await new Promise((resolve) => {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          const voices = window.speechSynthesis.getVoices();
+          const indVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('India'));
+          if (indVoice) utterance.voice = indVoice;
+
+          utterance.onend = () => resolve();
+          utterance.onerror = () => resolve();
+          this.onStateChange?.('speaking');
+          window.speechSynthesis.speak(utterance);
         });
       }
     } catch (err) {
       console.error('speakResponse error:', err);
     }
 
-    // Audio playback completed — wait 400ms for room echo buffer before listening again
+    // Audio completed — wait 400ms before opening mic again
     if (this.isActive) {
       this.isSpeaking = false;
       this.onStateChange?.('listening');
       setTimeout(() => {
         if (this.isActive && !this.isSpeaking && !this.activeAudio) {
-          this._restartRecognition();
+          this._startRecognitionSafe();
         }
       }, 400);
-    }
-  }
-
-  // ── Stop Speech Recognition safely ─────
-  _stopRecognition() {
-    if (this.recognition) {
-      try {
-        this.recognition.abort();
-      } catch (e) {
-        /* ignore */
-      }
-    }
-  }
-
-  // ── Restart Speech Recognition safely ──
-  _restartRecognition() {
-    if (this.recognition && this.isActive && !this.isSpeaking && !this.activeAudio) {
-      try {
-        this.recognition.start();
-      } catch (e) {
-        /* already running */
-      }
     }
   }
 
@@ -376,6 +429,13 @@ export class LiveVoiceCallSession {
       }
       this.activeAudio = null;
     }
+    if (window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        /* ignore */
+      }
+    }
     this.isSpeaking = false;
   }
 
@@ -383,6 +443,7 @@ export class LiveVoiceCallSession {
   async endCall() {
     this.isActive = false;
     this.isSpeaking = false;
+    this.isRecognizing = false;
 
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
@@ -390,7 +451,7 @@ export class LiveVoiceCallSession {
     }
 
     this.stopAudio();
-    this._stopRecognition();
+    this._stopRecognitionSafe();
     this.recognition = null;
 
     if (this.mediaStream) {
