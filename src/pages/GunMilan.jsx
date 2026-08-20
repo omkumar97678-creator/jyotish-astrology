@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Heart } from 'lucide-react';
 import StarField from '@/components/StarField';
 import GmHeader from '@/components/gunmilan/GmHeader';
 import PersonCard from '@/components/gunmilan/PersonCard';
@@ -221,16 +222,16 @@ export default function GunMilan() {
               style={{ pointerEvents: 'none' }}
             >
               <motion.span
-                animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm shadow-xl"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.75, 1, 0.75] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center shadow-xl"
                 style={{
                   background: 'var(--col-midnight-card)',
                   border: '1px solid rgba(200, 130, 42, 0.5)',
                   color: 'var(--col-copper)',
                 }}
               >
-                ✦
+                <Heart size={16} fill="currentColor" />
               </motion.span>
             </div>
           </div>
