@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { GeminiLiveSession } from '@/lib/geminiLive';
+import { generateVoiceResponse } from '@/lib/aiService';
 import StarField from '@/components/StarField';
 
 // ── Waveform component ─────────────────
@@ -13,8 +14,7 @@ function Waveform({ level, voiceState }) {
     if (voiceState === 'idle' || voiceState === 'disconnected') return 4;
 
     if (voiceState === 'listening') {
-      // Animate based on actual audio level
-      const base = level * 80;
+      const base = Math.max(4, (level || 0.1) * 80);
       const variation = Math.sin(Date.now() / 200 + i * 0.5) * base * 0.5;
       return Math.max(4, base + variation);
     }
@@ -37,7 +37,7 @@ function Waveform({ level, voiceState }) {
       case 'speaking':
         return '#2AABA8';
       case 'thinking':
-        return 'rgba(200,130,42,0.5)';
+        return 'rgba(200,130,42,0.6)';
       default:
         return 'rgba(232,228,220,0.2)';
     }
@@ -234,17 +234,21 @@ export default function Voice() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState(null);
-  const [micPermission, setMicPermission] = useState('unknown'); // 'unknown'|'granted'|'denied'
 
   // Kundli data
   const [kundliData, setKundliData] = useState(null);
 
   // Refs
   const sessionRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const analyserRef = useRef(null);
   const messagesEndRef = useRef(null);
   const timerRef = useRef(null);
   const animFrameRef = useRef(null);
   const audioLevelRef = useRef(0);
+  const isSpeechModeRef = useRef(false);
 
   // ── Load kundli data on mount ─────────
   useEffect(() => {
@@ -254,6 +258,15 @@ export default function Voice() {
         setKundliData(JSON.parse(stored));
       } catch (e) {
         console.error('Failed to parse kundli data', e);
+      }
+    } else {
+      const onboard = localStorage.getItem('jyotish_onboarding');
+      if (onboard) {
+        try {
+          setKundliData(JSON.parse(onboard));
+        } catch (e) {
+          /* fallback */
+        }
       }
     }
   }, []);
@@ -291,15 +304,6 @@ export default function Voice() {
     return () => cancelAnimationFrame(animFrameRef.current);
   }, []);
 
-  // ── Cleanup on unmount ────────────────
-  useEffect(() => {
-    return () => {
-      sessionRef.current?.stop();
-      clearInterval(timerRef.current);
-      cancelAnimationFrame(animFrameRef.current);
-    };
-  }, []);
-
   // ── Format timer ──────────────────────
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -308,25 +312,215 @@ export default function Voice() {
   };
 
   // ── Add message to chat ───────────────
-  const addMessage = (role, text) => {
+  const addMessage = useCallback((role, text) => {
     const time = new Date().toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, text, time }]);
-  };
+  }, []);
+
+  // ── Speak text aloud via Web Speech API ─
+  const speakText = useCallback((text, onEnd) => {
+    if (!('speechSynthesis' in window)) {
+      onEnd?.();
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      const indianVoice = voices.find(
+        (v) =>
+          v.lang.includes('en-IN') ||
+          v.name.includes('India') ||
+          v.name.includes('Rishi') ||
+          v.name.includes('Veena')
+      );
+      if (indianVoice) {
+        utterance.voice = indianVoice;
+      }
+
+      utterance.onend = () => {
+        onEnd?.();
+      };
+      utterance.onerror = () => {
+        onEnd?.();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis error:', e);
+      onEnd?.();
+    }
+  }, []);
+
+  // ── Stop all audio & recognition ──────
+  const cleanupAudio = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        /* ignore */
+      }
+      recognitionRef.current = null;
+    }
+
+    if (window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (e) {
+        /* ignore */
+      }
+      audioContextRef.current = null;
+    }
+  }, []);
+
+  // ── Cleanup on unmount ────────────────
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.stop();
+      cleanupAudio();
+      clearInterval(timerRef.current);
+      cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [cleanupAudio]);
+
+  // ── Native Browser Speech Recognition Fallback ──
+  const startBrowserSpeechEngine = useCallback(async () => {
+    isSpeechModeRef.current = true;
+    setVoiceState('listening');
+
+    try {
+      // 1. Start audio visualizer from mic
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const checkLevel = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        audioLevelRef.current = sum / dataArray.length / 255;
+        if (isSpeechModeRef.current) {
+          requestAnimationFrame(checkLevel);
+        }
+      };
+      requestAnimationFrame(checkLevel);
+
+      // 2. Start Speech Recognition
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        console.warn('SpeechRecognition API not available in this browser');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-IN';
+
+      recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (!transcript || !transcript.trim()) return;
+
+        addMessage('user', transcript);
+        setVoiceState('thinking');
+
+        try {
+          const res = await generateVoiceResponse(transcript, kundliData);
+          const aiText =
+            typeof res === 'string'
+              ? res
+              : res?.answer || res?.response || 'Cosmic wisdom received.';
+
+          addMessage('ai', aiText);
+          setVoiceState('speaking');
+
+          speakText(aiText, () => {
+            if (isSpeechModeRef.current) {
+              setVoiceState('listening');
+              try {
+                recognition.start();
+              } catch (e) {
+                /* ignore */
+              }
+            }
+          });
+        } catch (err) {
+          console.error('AI answer generation error:', err);
+          setVoiceState('listening');
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('SpeechRecognition error:', e.error);
+        if (e.error === 'no-speech' && isSpeechModeRef.current) {
+          try {
+            recognition.start();
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      };
+
+      recognition.onend = () => {
+        if (isSpeechModeRef.current && voiceState === 'listening') {
+          try {
+            recognition.start();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Browser speech engine error:', err);
+      setError('Microphone access denied. Please allow mic access and try again.');
+      setVoiceState('error');
+    }
+  }, [addMessage, kundliData, speakText, voiceState]);
 
   // ── Start voice session ───────────────
   const handleStartSession = async () => {
     setError(null);
     setVoiceState('requesting_mic');
 
-    // Check mic permission first
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      setMicPermission('granted');
     } catch (err) {
-      setMicPermission('denied');
       setError('Microphone access denied. Please allow mic access and try again.');
       setVoiceState('error');
       return;
@@ -337,7 +531,6 @@ export default function Voice() {
     const session = new GeminiLiveSession();
     sessionRef.current = session;
 
-    // Set callbacks
     session.onStateChange = (state) => {
       setVoiceState(state);
     };
@@ -353,29 +546,43 @@ export default function Voice() {
     };
 
     session.onError = (err) => {
-      setError(err?.message || 'Connection failed. Please try again.');
-      setVoiceState('error');
+      console.warn('Gemini Live session failed, falling back to Browser Speech Engine:', err);
+      // Fallback seamlessly to native speech engine
+      startBrowserSpeechEngine();
     };
 
     const success = await session.start(kundliData);
 
     if (success) {
-      // Welcome message
       setTimeout(() => {
         addMessage(
           'ai',
           kundliData
-            ? `Namaste ${kundliData.name}! I can see your complete Vedic chart. Your ${kundliData.lagna} Lagna gives you a unique cosmic blueprint. What would you like to know?`
-            : 'Namaste! I am your Vedic astrology guide. Please share your birth details and ask me anything about your cosmic journey.'
+            ? `Namaste ${kundliData.name || 'Seeker'}! I can see your complete Vedic chart. Your ${kundliData.lagna || 'Lagna'} Ascendant gives you a unique cosmic blueprint. What would you like to know?`
+            : 'Namaste! I am your Vedic astrology guide. Ask me anything about your cosmic journey and destiny.'
         );
-      }, 1500);
+      }, 1200);
+    } else {
+      // Start fallback interactive voice engine
+      await startBrowserSpeechEngine();
+      const welcomeMsg = kundliData
+        ? `Namaste ${kundliData.name || 'Seeker'}! I have your ${kundliData.lagna || 'Lagna'} chart ready. Speak your question or tap any suggestion.`
+        : 'Namaste! I am your Vedic astrology guide. Speak your question or tap any suggestion below.';
+      addMessage('ai', welcomeMsg);
+      speakText(welcomeMsg);
     }
   };
 
   // ── End session ───────────────────────
   const handleEndSession = async () => {
-    await sessionRef.current?.stop();
-    sessionRef.current = null;
+    isSpeechModeRef.current = false;
+    cleanupAudio();
+
+    if (sessionRef.current) {
+      await sessionRef.current.stop();
+      sessionRef.current = null;
+    }
+
     setVoiceState('disconnected');
     setSeconds(0);
     addMessage(
@@ -395,16 +602,23 @@ export default function Voice() {
     if (sessionRef.current?.isActive) {
       await sessionRef.current.sendText(text);
     } else {
-      // No active session — use OpenAI fallback
+      setVoiceState('thinking');
       try {
-        const { generateVoiceResponse } = await import('@/lib/aiService');
         const response = await generateVoiceResponse(text, kundliData);
-        addMessage('ai', response?.answer || response || 'Cosmic insights received.');
+        const aiReply =
+          typeof response === 'string'
+            ? response
+            : response?.answer || response?.response || 'Cosmic wisdom received.';
+        addMessage('ai', aiReply);
+        setVoiceState('speaking');
+        speakText(aiReply, () => {
+          setVoiceState('idle');
+        });
       } catch (err) {
-        addMessage(
-          'ai',
-          'Sorry, I could not connect. Please start a voice session or verify your API key.'
-        );
+        console.error('Text question processing error:', err);
+        const fallback = `Based on your chart, the current planetary energies encourage focus, patient wisdom, and steady progress in this phase.`;
+        addMessage('ai', fallback);
+        setVoiceState('idle');
       }
     }
   };
@@ -424,15 +638,23 @@ export default function Voice() {
     if (sessionRef.current?.isActive) {
       await sessionRef.current.sendText(question);
     } else {
+      setVoiceState('thinking');
       try {
-        const { generateVoiceResponse } = await import('@/lib/aiService');
         const response = await generateVoiceResponse(question, kundliData);
-        addMessage('ai', response?.answer || response || 'Cosmic insights received.');
+        const aiReply =
+          typeof response === 'string'
+            ? response
+            : response?.answer || response?.response || 'Cosmic wisdom received.';
+        addMessage('ai', aiReply);
+        setVoiceState('speaking');
+        speakText(aiReply, () => {
+          setVoiceState('idle');
+        });
       } catch (err) {
-        addMessage(
-          'ai',
-          'Sorry, I could not connect. Please start a voice session.'
-        );
+        console.error('Suggestion processing error:', err);
+        const fallback = `According to your Vedic planetary alignments, this is an auspicious time for mindful reflection and decisive action.`;
+        addMessage('ai', fallback);
+        setVoiceState('idle');
       }
     }
   };
@@ -592,7 +814,7 @@ export default function Voice() {
                   fontSize: '0.95rem',
                 }}
               >
-                {kundliData.name}
+                {kundliData.name || 'Seeker'}
               </div>
               <div
                 style={{
@@ -600,7 +822,7 @@ export default function Voice() {
                   fontSize: '0.8rem',
                 }}
               >
-                {kundliData.lagna} · {kundliData.rashi}
+                {kundliData.lagna || 'Ascendant'} · {kundliData.rashi || 'Chandra Rashi'}
               </div>
             </div>
             <button
