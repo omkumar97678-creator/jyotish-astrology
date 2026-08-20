@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RASHIS } from '@/lib/ephemeris';
 
 // Authentic Vedic North Indian Kundli Geometry (viewBox: 0 0 400 400)
 const houseGeometries = [
@@ -17,19 +18,74 @@ const houseGeometries = [
   { num: 12, domain: 'Losses, Liberation, Foreign Lands & Sleep', polygon: '10,10 200,10 105,105', labelPos: { x: 115, y: 28 }, rashiPos: { x: 90, y: 45 }, planetPos: { x: 105, y: 65 } },
 ];
 
+const PLANET_SYMBOLS = {
+  Sun: '☉ Su',
+  Moon: '☽ Mo',
+  Mars: '♂ Ma',
+  Mercury: '☿ Me',
+  Jupiter: '♃ Ju',
+  Venus: '♀ Ve',
+  Saturn: '♄ Sa',
+  Rahu: '☊ Ra',
+  Ketu: '☋ Ke',
+};
+
+const isBenefic = (name) => {
+  const n = String(name).toLowerCase();
+  return (
+    n.includes('jupiter') ||
+    n.includes('guru') ||
+    n.includes('venus') ||
+    n.includes('shukra') ||
+    n.includes('moon') ||
+    n.includes('chandra') ||
+    n.includes('mercury') ||
+    n.includes('budh')
+  );
+};
+
 export default function NorthIndianChart({ houses = [] }) {
   const [hovered, setHovered] = useState(null);
 
   // Merge geometric layouts with dynamically calculated house data
   const chartHouses = houseGeometries.map((geo, idx) => {
     const dynamic = houses && houses[idx] ? houses[idx] : null;
+    const rashiObj = dynamic?.rashi || {};
+    const signName = dynamic?.sign || rashiObj?.name || 'Aries';
+    const rashiHi = dynamic?.rashiHi || rashiObj?.hindi || 'Mesh';
+
+    let rashiNum = idx + 1;
+    if (dynamic?.rashiNumber) {
+      rashiNum = dynamic.rashiNumber;
+    } else if (rashiObj?.name) {
+      const foundIdx = RASHIS.findIndex((r) => r.name === rashiObj.name);
+      if (foundIdx >= 0) rashiNum = foundIdx + 1;
+    }
+
+    const rawPlanets = dynamic?.planets || [];
+    const normalizedPlanets = rawPlanets.map((p) => {
+      if (typeof p === 'string') {
+        const short = PLANET_SYMBOLS[p] || p;
+        return {
+          name: p,
+          label: short,
+          color: isBenefic(p) ? '#2AABA8' : '#C8822A',
+        };
+      }
+      return {
+        name: p.name || 'Planet',
+        label: p.label || p.name,
+        color: p.color || (isBenefic(p.name) ? '#2AABA8' : '#C8822A'),
+      };
+    });
+
     return {
       ...geo,
-      sign: dynamic?.sign || 'Aries',
-      rashiHi: dynamic?.rashiHi || 'Mesh',
-      rashiNumber: dynamic?.rashiNumber || idx + 1,
-      rashiAbbr: dynamic?.rashiAbbr || `${dynamic?.sign?.slice(0, 3) || 'Ari'} (${dynamic?.rashiNumber || idx + 1})`,
-      planets: dynamic?.planets || [],
+      sign: signName,
+      rashiHi,
+      rashiNumber: rashiNum,
+      rashiAbbr: `${signName.slice(0, 3)} (${rashiNum})`,
+      planets: normalizedPlanets,
     };
   });
 
@@ -114,13 +170,13 @@ export default function NorthIndianChart({ houses = [] }) {
                   x={h.planetPos.x}
                   y={h.planetPos.y}
                   textAnchor="middle"
-                  fontSize="11"
+                  fontSize="10"
                   fontWeight="600"
-                  fontFamily="DM Sans, sans-serif"
+                  fontFamily="system-ui, -apple-system, sans-serif"
                 >
                   {h.planets.map((p, pIdx) => (
-                    <tspan key={p.name} fill={p.color} dx={pIdx > 0 ? 5 : 0}>
-                      {p.name}
+                    <tspan key={`${p.name}-${pIdx}`} fill={p.color} dx={pIdx > 0 ? 5 : 0}>
+                      {p.label}
                     </tspan>
                   ))}
                 </text>

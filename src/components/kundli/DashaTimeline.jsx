@@ -1,110 +1,128 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-function Pill({ d, i }) {
-  const current = d.state === 'current';
-  const past = d.state === 'past';
+const SYMBOLS = {
+  Sun: '☉',
+  Moon: '☽',
+  Mars: '♂',
+  Mercury: '☿',
+  Jupiter: '♃',
+  Venus: '♀',
+  Saturn: '♄',
+  Rahu: '☊',
+  Ketu: '☋',
+};
 
-  const base = {
-    padding: '14px 18px',
-    borderRadius: 'var(--r-md)',
-    border: '1px solid var(--col-glass-border)',
-    minWidth: 160,
-    flex: '0 0 auto',
-    opacity: past ? 0.45 : 1,
-  };
-
-  if (current) {
-    base.background = 'linear-gradient(135deg, var(--col-copper), var(--col-copper-light))';
-    base.borderColor = 'transparent';
-  } else {
-    base.background = 'rgba(255,255,255,0.03)';
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      whileInView={{ opacity: past ? 0.45 : 1, x: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: i * 0.06 }}
-      style={base}
-    >
-      <div className="flex items-center gap-2">
-        <span style={{ fontSize: 18, color: current ? 'var(--col-midnight)' : 'var(--col-copper)' }}>{d.sym}</span>
-        <span
-          className="font-medium"
-          style={{ color: current ? 'var(--col-midnight)' : 'var(--col-moonstone)', fontSize: '0.95rem' }}
-        >
-          {d.planet}
-        </span>
-        {current && (
-          <span
-            className="text-xs px-2 py-0.5 ml-auto"
-            style={{
-              color: 'var(--col-midnight)',
-              background: 'rgba(13,15,43,0.18)',
-              borderRadius: 'var(--r-full)',
-              fontWeight: 600,
-            }}
-          >
-            Current
-          </span>
-        )}
-      </div>
-      <div
-        className="mt-2 font-mono-num"
-        style={{ color: current ? 'var(--col-midnight)' : 'var(--col-moonstone-dim)', fontSize: '0.85rem' }}
-      >
-        {d.range}
-      </div>
-      <div
-        className="font-mono-num"
-        style={{ color: current ? 'var(--col-midnight)' : 'var(--col-moonstone-dim)', fontSize: '0.75rem', opacity: 0.85 }}
-      >
-        {d.dur}
-      </div>
-    </motion.div>
-  );
-}
-
-export default function DashaTimeline({ mahadasha }) {
-  const list = mahadasha?.timeline && mahadasha.timeline.length > 0
-    ? mahadasha.timeline
-    : [
-        { planet: 'Rahu', sym: '☊', range: '2004–2022', dur: '18 yrs', state: 'past' },
-        { planet: 'Jupiter', sym: '♃', range: '2022–2038', dur: '16 yrs', state: 'current' },
-        { planet: 'Saturn', sym: '♄', range: '2038–2057', dur: '19 yrs', state: 'future' },
-        { planet: 'Mercury', sym: '☿', range: '2057–2074', dur: '17 yrs', state: 'future' },
-        { planet: 'Ketu', sym: '☋', range: '2074–2081', dur: '7 yrs', state: 'future' },
-        { planet: 'Venus', sym: '♀', range: '2081–2101', dur: '20 yrs', state: 'future' },
-        { planet: 'Sun', sym: '☉', range: '2101–2107', dur: '6 yrs', state: 'future' },
-        { planet: 'Moon', sym: '☽', range: '2107–2117', dur: '10 yrs', state: 'future' },
-        { planet: 'Mars', sym: '♂', range: '2117–2124', dur: '7 yrs', state: 'future' },
-      ];
+export default function DashaTimeline({ dashas = null, mahadasha = null }) {
+  // If real dashas array is passed
+  const list =
+    dashas && Array.isArray(dashas) && dashas.length > 0
+      ? dashas.map((d) => ({
+          planet: d.lord,
+          sym: SYMBOLS[d.lord] || '✦',
+          range: `${d.start}–${d.end}`,
+          dur: `${d.years} yrs`,
+          isCurrent: Boolean(d.isCurrent),
+        }))
+      : mahadasha?.timeline && mahadasha.timeline.length > 0
+      ? mahadasha.timeline.map((m) => ({
+          planet: m.planet,
+          sym: m.sym || '✦',
+          range: m.range,
+          dur: m.dur,
+          isCurrent: m.state === 'current',
+        }))
+      : [
+          { planet: 'Rahu', sym: '☊', range: '2004–2018', dur: '14 yrs', isCurrent: false },
+          { planet: 'Jupiter', sym: '♃', range: '2018–2034', dur: '16 yrs', isCurrent: true },
+          { planet: 'Saturn', sym: '♄', range: '2034–2053', dur: '19 yrs', isCurrent: false },
+          { planet: 'Mercury', sym: '☿', range: '2053–2070', dur: '17 yrs', isCurrent: false },
+          { planet: 'Ketu', sym: '☋', range: '2070–2077', dur: '7 yrs', isCurrent: false },
+          { planet: 'Venus', sym: '♀', range: '2077–2097', dur: '20 yrs', isCurrent: false },
+        ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
+      className="glass-card"
+      style={{ padding: 24 }}
     >
-      <div className="text-xs uppercase mb-1" style={{ color: 'var(--col-copper)', letterSpacing: '0.14em' }}>
-        Complete Dasha Timeline
-      </div>
-      <div className="font-display mb-5" style={{ color: 'var(--col-moonstone)', fontSize: '1.5rem' }}>
-        विंशोत्तरी दशा चक्र
-        <span className="font-body block mt-1" style={{ fontSize: '0.85rem', color: 'var(--col-moonstone-dim)', lineHeight: 1.5 }}>
-          Continuous 120-Year Vimshottari planetary periods from birth
-        </span>
+      <div>
+        <div className="text-xs uppercase" style={{ color: 'var(--col-copper)', letterSpacing: '0.14em' }}>
+          Vimshottari Dasha Timeline
+        </div>
+        <div className="font-display mt-1 mb-4" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.95rem' }}>
+          विंशोत्तरी महादशा कालचक्र
+        </div>
       </div>
 
-      <div className="overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin' }}>
-        <div className="flex gap-3 min-w-max">
-          {list.map((d, i) => (
-            <Pill key={`${d.planet}-${d.range}`} d={d} i={i} />
-          ))}
-        </div>
+      <div className="flex gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none">
+        {list.map((d, i) => {
+          const current = d.isCurrent;
+          return (
+            <motion.div
+              key={`${d.planet}-${d.range}-${i}`}
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+              style={{
+                background: current ? 'rgba(200,130,42,0.15)' : 'rgba(255,255,255,0.03)',
+                border: current ? '1px solid rgba(200,130,42,0.45)' : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                minWidth: '120px',
+                flex: '0 0 auto',
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span style={{ color: 'var(--col-copper)', fontSize: 16 }}>{d.sym}</span>
+                <span style={{ color: 'var(--col-copper)', fontSize: '0.8rem', fontWeight: 600 }}>
+                  {d.planet}
+                </span>
+              </div>
+              <div
+                style={{
+                  color: '#E8E4DC',
+                  fontSize: '0.85rem',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  marginTop: 4,
+                }}
+              >
+                {d.range}
+              </div>
+              <div
+                style={{
+                  color: 'var(--col-moonstone-dim)',
+                  fontSize: '0.75rem',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  marginTop: 2,
+                }}
+              >
+                {d.dur}
+              </div>
+              {current && (
+                <div
+                  style={{
+                    background: '#C8822A',
+                    color: '#0D0F2B',
+                    borderRadius: '4px',
+                    padding: '1px 6px',
+                    fontSize: '0.65rem',
+                    fontWeight: '700',
+                    marginTop: '6px',
+                    display: 'inline-block',
+                  }}
+                >
+                  Current
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
     </motion.div>
   );

@@ -2,19 +2,30 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const defaultPlanets = [
-  { sym: '☉', name: 'Sun (सूर्य)', sign: 'Leo', house: '1', deg: '14°22′' },
-  { sym: '☽', name: 'Moon (चंद्र)', sign: 'Cancer', house: '12', deg: '02°08′' },
-  { sym: '♂', name: 'Mars (मंगल)', sign: 'Gemini', house: '11', deg: '19°47′' },
-  { sym: '☿', name: 'Mercury (बुध)', sign: 'Virgo', house: '2', deg: '08°33′' },
-  { sym: '♃', name: 'Jupiter (गुरु)', sign: 'Taurus', house: '10', deg: '27°51′' },
-  { sym: '♀', name: 'Venus (शुक्र)', sign: 'Leo', house: '1', deg: '04°16′' },
-  { sym: '♄', name: 'Saturn (शनि)', sign: 'Aquarius', house: '7', deg: '21°09′' },
-  { sym: '☊', name: 'Rahu (राहु)', sign: 'Aries', house: '9', deg: '16°40′' },
-  { sym: '☋', name: 'Ketu (केतु)', sign: 'Libra', house: '3', deg: '16°40′' },
+  { sym: '☉', name: 'Sun (सूर्य)', sign: 'Leo (Simha)', house: '10', deg: '142.05°' },
+  { sym: '☽', name: 'Moon (चंद्र)', sign: 'Gemini (Mithun)', house: '7', deg: '69.64°' },
+  { sym: '♂', name: 'Mars (मंगल)', sign: 'Leo (Simha)', house: '10', deg: '148.58°' },
+  { sym: '☿', name: 'Mercury (बुध)', sign: 'Taurus (Vrishabh)', house: '6', deg: '33.44°' },
+  { sym: '♃', name: 'Jupiter (गुरु)', sign: 'Virgo (Kanya)', house: '10', deg: '152.75°' },
+  { sym: '♀', name: 'Venus (शुक्र)', sign: 'Aries (Mesh)', house: '6', deg: '20.55°' },
+  { sym: '♄', name: 'Saturn (शनि)', sign: 'Gemini (Mithun)', house: '8', deg: '83.35°' },
+  { sym: '☊', name: 'Rahu (राहु)', sign: 'Aries (Mesh)', house: '5', deg: '10.52°' },
+  { sym: '☋', name: 'Ketu (केतु)', sign: 'Libra (Tula)', house: '11', deg: '190.52°' },
 ];
 
-export default function PlanetsTable({ planets = defaultPlanets }) {
-  const list = planets && planets.length > 0 ? planets : defaultPlanets;
+export default function PlanetsTable({ planets = null }) {
+  const list =
+    planets && typeof planets === 'object' && !Array.isArray(planets)
+      ? Object.entries(planets).map(([name, data]) => ({
+          name,
+          sym: data.symbol || '☉',
+          sign: data.sign || 'Aries',
+          house: data.house || 1,
+          deg: data.degree || '0.00°',
+        }))
+      : Array.isArray(planets) && planets.length > 0
+      ? planets
+      : defaultPlanets;
 
   return (
     <motion.div
@@ -30,7 +41,7 @@ export default function PlanetsTable({ planets = defaultPlanets }) {
           Planetary Positions
         </div>
         <div className="font-display mt-1 mb-4" style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.95rem' }}>
-          ग्रह स्थिति (Sidereal Longitude)
+          ग्रह स्थिति (Astronomical Sidereal Longitude)
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -47,7 +58,7 @@ export default function PlanetsTable({ planets = defaultPlanets }) {
             {list.map((p) => (
               <tr key={p.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <td className="py-2.5 flex items-center gap-2">
-                  <span style={{ color: p.color || 'var(--col-copper)' }}>{p.sym}</span>
+                  <span style={{ color: 'var(--col-copper)' }}>{p.sym}</span>
                   <span>{p.name}</span>
                 </td>
                 <td className="py-2.5">{p.sign}</td>

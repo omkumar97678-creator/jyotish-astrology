@@ -28,7 +28,7 @@ CREATE POLICY "Public can all profiles"
 -- 2. Kundlis Table
 CREATE TABLE IF NOT EXISTS kundlis (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID,
   name TEXT NOT NULL,
   date_of_birth DATE NOT NULL,
   time_of_birth TIME,
@@ -41,8 +41,12 @@ CREATE TABLE IF NOT EXISTS kundlis (
   rashi TEXT,
   nakshatra TEXT,
   gana TEXT,
-  planets JSONB DEFAULT '[]',
+  ayanamsha DECIMAL(10,4),
+  planets JSONB DEFAULT '{}',
   houses JSONB DEFAULT '[]',
+  dashas JSONB DEFAULT '[]',
+  current_dasha JSONB DEFAULT '{}',
+  is_manglik BOOLEAN DEFAULT FALSE,
   panchang JSONB DEFAULT '{}',
   life_path_number INTEGER,
   destiny_number INTEGER,
@@ -51,6 +55,14 @@ CREATE TABLE IF NOT EXISTS kundlis (
   is_default BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Schema Migrations if table already exists
+ALTER TABLE kundlis 
+  ADD COLUMN IF NOT EXISTS ayanamsha DECIMAL(10,4),
+  ADD COLUMN IF NOT EXISTS houses JSONB,
+  ADD COLUMN IF NOT EXISTS dashas JSONB,
+  ADD COLUMN IF NOT EXISTS current_dasha JSONB,
+  ADD COLUMN IF NOT EXISTS is_manglik BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE kundlis ENABLE ROW LEVEL SECURITY;
 
@@ -104,7 +116,7 @@ CREATE TABLE IF NOT EXISTS gun_milan_reports (
   person2_rashi TEXT,
   person2_nakshatra TEXT,
   person2_is_manglik BOOLEAN DEFAULT FALSE,
-  total_score NUMERIC(5, 2),
+  total_score INTEGER DEFAULT 0,
   guna_scores JSONB DEFAULT '{}',
   compatibility_areas JSONB DEFAULT '{}',
   ai_analysis TEXT,
@@ -114,7 +126,7 @@ CREATE TABLE IF NOT EXISTS gun_milan_reports (
 ALTER TABLE gun_milan_reports ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can all gun_milan_reports" ON gun_milan_reports;
-DROP POLICY IF EXISTS "Users can CRUD own gun milan reports" ON gun_milan_reports;
+DROP POLICY IF EXISTS "Users can CRUD own gun_milan_reports" ON gun_milan_reports;
 
 CREATE POLICY "Public can all gun_milan_reports"
   ON gun_milan_reports FOR ALL
@@ -127,8 +139,8 @@ CREATE POLICY "Public can all gun_milan_reports"
 CREATE TABLE IF NOT EXISTS horoscope_preferences (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID,
-  rashi TEXT NOT NULL,
-  notification_enabled BOOLEAN DEFAULT FALSE,
+  saved_rashi TEXT,
+  preferred_language TEXT DEFAULT 'en',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -136,7 +148,7 @@ CREATE TABLE IF NOT EXISTS horoscope_preferences (
 ALTER TABLE horoscope_preferences ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can all horoscope_preferences" ON horoscope_preferences;
-DROP POLICY IF EXISTS "Users can CRUD own horoscope preferences" ON horoscope_preferences;
+DROP POLICY IF EXISTS "Users can CRUD own horoscope_preferences" ON horoscope_preferences;
 
 CREATE POLICY "Public can all horoscope_preferences"
   ON horoscope_preferences FOR ALL
@@ -149,23 +161,17 @@ CREATE POLICY "Public can all horoscope_preferences"
 CREATE TABLE IF NOT EXISTS horoscope_cache (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rashi TEXT NOT NULL,
-  date DATE NOT NULL,
-  period TEXT DEFAULT 'today',
-  content JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  period TEXT NOT NULL,
+  date TEXT NOT NULL,
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_rashi_date_period UNIQUE (rashi, date, period)
 );
-
-DO $$ BEGIN
-  ALTER TABLE horoscope_cache ADD CONSTRAINT unique_rashi_date_period UNIQUE (rashi, date, period);
-EXCEPTION WHEN duplicate_table OR duplicate_object THEN NULL;
-END $$;
 
 ALTER TABLE horoscope_cache ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can all horoscope_cache" ON horoscope_cache;
-DROP POLICY IF EXISTS "Anyone can read horoscope cache" ON horoscope_cache;
-DROP POLICY IF EXISTS "Authenticated users can insert horoscope cache" ON horoscope_cache;
-DROP POLICY IF EXISTS "Authenticated users can update horoscope cache" ON horoscope_cache;
+DROP POLICY IF EXISTS "Users can read/write horoscope_cache" ON horoscope_cache;
 
 CREATE POLICY "Public can all horoscope_cache"
   ON horoscope_cache FOR ALL

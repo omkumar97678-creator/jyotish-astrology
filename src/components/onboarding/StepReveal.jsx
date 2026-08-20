@@ -9,7 +9,7 @@ import { t } from '@/translations';
 import { saveKundli, calculateNumerology } from '@/lib/kundliService';
 import { generateKundliReport } from '@/lib/aiService';
 import { getCityCoordinates } from '@/lib/geocoding';
-import { calculateVedicChart } from '@/lib/vedicAstrology';
+import { calculateVedicChart } from '@/lib/ephemeris';
 
 export default function StepReveal({ formData, goBack }) {
   const { lang } = useLang();
@@ -21,7 +21,7 @@ export default function StepReveal({ formData, goBack }) {
 
   const messages = [
     lang === 'hinglish' ? 'Grah sthiti calculate kar rahe hain...' : 'Calculating planetary positions...',
-    lang === 'hinglish' ? 'Aapka Nakshatra dekh rahe hain...' : 'Reading your Nakshatra...',
+    lang === 'hinglish' ? 'Aapka Nakshatra dekh rahe hain...' : 'Reading star positions...',
     lang === 'hinglish' ? 'Numerology analyze kar rahe hain...' : 'Analyzing numerology...',
     lang === 'hinglish' ? 'Kundli bas taiyaar hone wali hai...' : 'Your kundli is almost ready...',
   ];
@@ -32,67 +32,90 @@ export default function StepReveal({ formData, goBack }) {
 
     const runCalculations = async () => {
       try {
-        const dobStr = `${formData.dob.year}-${String(formData.dob.month).padStart(2, '0')}-${String(formData.dob.day).padStart(2, '0')}`;
-        
-        // 1. Geocoding
+        // 1. Coordinates from city name
         const coords = await getCityCoordinates(formData.birthPlace);
-        
-        // 2. Numerology
-        const numbers = calculateNumerology(formData.name, dobStr);
 
-        // 3. Astronomical Vedic Chart Calculations
-        const vedic = calculateVedicChart({
-          dob: formData.dob,
-          time: formData.time,
-          birthPlace: formData.birthPlace,
-          lat: coords.lat,
-          lng: coords.lng,
-        });
+        // 2. Parse date and time
+        const year = parseInt(formData.dob.year, 10) || 2000;
+        const month = parseInt(formData.dob.month, 10) || 1;
+        const day = parseInt(formData.dob.day, 10) || 1;
 
-        // 4. Build comprehensive kundli data object
+        let hour = 6;
+        let minute = 0;
+        if (!formData.unknownTime && formData.time) {
+          hour = parseInt(formData.time.hour, 10) || 6;
+          minute = parseInt(formData.time.minute, 10) || 0;
+          if (formData.time.period === 'PM' && hour !== 12) hour += 12;
+          if (formData.time.period === 'AM' && hour === 12) hour = 0;
+        }
+
+        const birthDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // 3. Astronomical Vedic Chart Calculations (Jean Meeus & Lahiri Ayanamsha)
+        const chart = calculateVedicChart(
+          year,
+          month,
+          day,
+          hour,
+          minute,
+          coords.lat,
+          coords.lng,
+          birthDateStr
+        );
+
+        if (!chart.success) {
+          throw new Error(chart.error || 'Chart calculation failed');
+        }
+
+        // 4. Calculate Numerology
+        const numerology = calculateNumerology(formData.name, birthDateStr);
+
+        // 5. Build complete kundli data
         const kundliData = {
           name: formData.name || 'Seeker',
           dob: formData.dob,
           time: formData.time,
-          unknownTime: Boolean(formData.unknownTime),
-          birthPlace: formData.birthPlace || 'New Delhi, India',
-          date_of_birth: dobStr,
+          date_of_birth: birthDateStr,
           time_of_birth: formData.unknownTime
             ? null
-            : `${String(formData.time.hour).padStart(2, '0')}:${String(formData.time.minute).padStart(2, '0')}`,
+            : `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
           time_unknown: Boolean(formData.unknownTime),
-          birth_place: formData.birthPlace || 'New Delhi, India',
+          birth_place: formData.birthPlace || coords.displayName || 'New Delhi, India',
+          birthPlace: formData.birthPlace || coords.displayName || 'New Delhi, India',
           latitude: coords.lat,
           longitude: coords.lng,
-          life_path_number: numbers.lifePathNumber,
-          destiny_number: numbers.destinyNumber,
-          soul_urge_number: numbers.soulUrgeNumber,
-          lagna: vedic.lagna,
-          lagnaSign: vedic.lagnaSign,
-          lagnaDegree: vedic.lagnaDegree,
-          rashi: vedic.rashi,
-          rashiSign: vedic.rashiSign,
-          rashiDegree: vedic.rashiDegree,
-          sunSign: vedic.sunSign,
-          nakshatra: vedic.nakshatra,
-          nakshatraLord: vedic.nakshatraLord,
-          nakshatraPada: vedic.nakshatraPada,
-          gana: vedic.gana,
-          planets: vedic.planets,
-          houses: vedic.houses,
-          panchang: vedic.panchang,
-          mahadasha: vedic.mahadasha,
-          yogas: vedic.yogas,
-          sadeSati: vedic.sadeSati,
-          lucky: vedic.lucky,
+
+          // REAL astronomical calculations
+          lagna: chart.lagna,
+          lagnaLord: chart.lagnaLord,
+          lagnaIndex: chart.lagnaIndex,
+          lagnaLongitude: chart.lagnaLongitude,
+          rashi: chart.rashi,
+          rashiLord: chart.rashiLord,
+          rashiIndex: chart.rashiIndex,
+          nakshatra: chart.nakshatra,
+          nakshatraLord: chart.nakshatraLord,
+          nakshatraPada: chart.nakshatraPada,
+          gana: chart.gana,
+          ayanamsha: chart.ayanamsha,
+          planets: chart.planets,
+          houses: chart.houses,
+          dashas: chart.dashas,
+          current_dasha: chart.currentDasha,
+          is_manglik: chart.isManglik,
+
+          // Numerology
+          life_path_number: numerology.lifePathNumber,
+          destiny_number: numerology.destinyNumber,
+          soul_urge_number: numerology.soulUrgeNumber,
           is_default: true,
         };
 
-        // 5. Generate Vedic AI analysis based on the REAL calculated chart
+        // 6. Generate AI report with REAL data
         const aiReport = await generateKundliReport(kundliData);
         kundliData.ai_report = aiReport;
 
-        // 6. Save to Supabase (and localStorage)
+        // 7. Save to Supabase + localStorage
         const saved = await saveKundli(user?.id, kundliData);
         if (saved?.id) {
           localStorage.setItem('current_kundli_id', saved.id);
@@ -105,7 +128,7 @@ export default function StepReveal({ formData, goBack }) {
           setReady(true);
         }
       } catch (err) {
-        console.warn('Calculation workflow error, using fallback:', err);
+        console.warn('Calculation workflow error:', err);
         if (isMounted) {
           setReady(true);
         }
@@ -120,8 +143,8 @@ export default function StepReveal({ formData, goBack }) {
     };
   }, []);
 
-  const lagnaVal = calculatedData?.lagna || 'Leo (Simha)';
-  const rashiVal = calculatedData?.rashi || 'Cancer (Karka)';
+  const lagnaVal = calculatedData?.lagna || 'Scorpio (Vrishchik)';
+  const rashiVal = calculatedData?.rashi || 'Gemini (Mithun)';
   const lifePath = calculatedData?.life_path_number || 7;
 
   const revealCards = [
@@ -131,7 +154,7 @@ export default function StepReveal({ formData, goBack }) {
       sub: lang === 'hinglish' ? 'Rising sign' : 'Rising sign',
       renderIcon: () => (
         <ZodiacIcon
-          sign={calculatedData?.lagnaSign?.toLowerCase() || 'leo'}
+          sign={calculatedData?.lagna?.split(' ')[0]?.toLowerCase() || 'scorpio'}
           size={28}
           style={{ color: 'var(--col-copper)' }}
         />
@@ -143,7 +166,7 @@ export default function StepReveal({ formData, goBack }) {
       sub: lang === 'hinglish' ? 'Moon sign' : 'Moon sign',
       renderIcon: () => (
         <ZodiacIcon
-          sign={calculatedData?.rashiSign?.toLowerCase() || 'cancer'}
+          sign={calculatedData?.rashi?.split(' ')[0]?.toLowerCase() || 'gemini'}
           size={28}
           style={{ color: 'var(--col-copper)' }}
         />
@@ -152,7 +175,7 @@ export default function StepReveal({ formData, goBack }) {
     {
       label: 'Life Path',
       value: String(lifePath),
-      sub: lang === 'hinglish' ? 'The Seeker' : 'The Seeker',
+      sub: lang === 'hinglish' ? 'Life Path Number' : 'Life Path Number',
       renderIcon: () => <span style={{ fontSize: 26, color: 'var(--col-copper)' }}>✦</span>,
       mono: true,
     },
@@ -166,7 +189,12 @@ export default function StepReveal({ formData, goBack }) {
   return (
     <div className="text-center">
       <div className="flex justify-center">
-        <KundliChart animate={!ready} size={ready ? 220 : 260} opacity={0.85} />
+        <KundliChart
+          planets={calculatedData?.planets}
+          animate={!ready}
+          size={ready ? 220 : 260}
+          opacity={0.9}
+        />
       </div>
 
       {!ready ? (
@@ -178,68 +206,48 @@ export default function StepReveal({ formData, goBack }) {
         </div>
       ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-            className="mt-6"
-            style={{ fontSize: 40, color: 'var(--col-copper)' }}
-          >
-            ✦
-          </motion.div>
-          <h1 className="font-display mt-3" style={{ fontSize: 'clamp(26px, 6vw, 38px)', color: 'var(--col-moonstone)' }}>
-            {t.onboarding_step5_ready[lang]}
-          </h1>
-          <div className="font-display mt-2" style={{ fontSize: '1rem', color: 'var(--col-copper)', opacity: 0.8 }}>
-            {lang === 'hinglish' ? 'आपकी कुंडली तैयार है' : 'Vedic Kundli Generated'}
+          <div className="mt-6 mb-2">
+            <span className="text-xs uppercase" style={{ color: 'var(--col-copper)', letterSpacing: '0.14em' }}>
+              ✦ {lang === 'hinglish' ? 'Aapka Janam Kundli Vivaran' : 'Your Vedic Birth Chart'} ✦
+            </span>
+            <h2 className="font-display text-2xl mt-1" style={{ color: 'var(--col-moonstone)' }}>
+              {formData.name || 'Seeker'}
+            </h2>
           </div>
 
-          <div className="mt-7 grid gap-4 sm:grid-cols-3 max-w-xl mx-auto">
-            {revealCards.map((c, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
+            {revealCards.map((card, i) => (
               <motion.div
-                key={c.label}
-                initial={{ opacity: 0, y: 24, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 220, damping: 16, delay: 0.2 + i * 0.12 }}
-                className="glass-card text-center"
-                style={{ padding: 20, border: '1px solid rgba(200,130,42,0.35)' }}
+                key={card.label}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.4 }}
+                className="glass-card flex flex-col items-center justify-center p-4 text-center"
+                style={{ minHeight: 120 }}
               >
-                <div className="flex items-center justify-center h-8">
-                  {c.renderIcon()}
-                </div>
-                <div className="mt-2 text-xs uppercase" style={{ color: 'var(--col-moonstone-dim)', letterSpacing: '0.12em' }}>
-                  {c.label}
+                <div className="mb-1.5">{card.renderIcon()}</div>
+                <div className="text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>
+                  {card.label}
                 </div>
                 <div
-                  className={`mt-2 ${c.mono ? 'font-mono-num' : 'font-display'}`}
-                  style={{ color: 'var(--col-copper)', fontSize: '1.4rem' }}
+                  className={`font-semibold text-sm mt-0.5 ${card.mono ? 'font-mono-num' : ''}`}
+                  style={{ color: 'var(--col-moonstone)' }}
                 >
-                  {c.value}
+                  {card.value}
                 </div>
-                <div className="mt-1 text-xs" style={{ color: 'var(--col-moonstone-dim)' }}>{c.sub}</div>
+                <div className="text-[10px] mt-0.5" style={{ color: 'var(--col-copper)' }}>
+                  {card.sub}
+                </div>
               </motion.div>
             ))}
           </div>
 
-          <div className="glass-card mt-7 text-center" style={{ padding: '9px 22px', display: 'inline-block' }}>
-            <span style={{ color: 'var(--col-moonstone-dim)', fontSize: '0.85rem' }}>
-              {formData.name} &nbsp;•&nbsp; {formData.dob.day}/{formData.dob.month}/{formData.dob.year} &nbsp;•&nbsp; {formData.birthPlace}
-            </span>
-          </div>
-
-          <div className="mt-8 px-4">
-            <button
-              className="btn-primary animate-glow-pulse w-full sm:w-auto justify-center cursor-pointer"
-              style={{ padding: '16px 44px', fontSize: '1.05rem' }}
-              onClick={viewKundli}
-            >
-              {t.onboarding_view_btn[lang]}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+            <button onClick={viewKundli} className="btn-copper text-sm font-bold tracking-wide cursor-pointer">
+              {lang === 'hinglish' ? 'Sampoorna Kundli Dekhein →' : 'Explore Full Kundli →'}
             </button>
-          </div>
-
-          <div className="mt-5">
-            <button onClick={goBack} className="text-sm cursor-pointer" style={{ color: 'var(--col-moonstone-dim)' }}>
-              {t.onboarding_back[lang]}
+            <button onClick={goBack} className="btn-ghost text-sm cursor-pointer">
+              {lang === 'hinglish' ? 'Details Badlein' : 'Edit Details'}
             </button>
           </div>
         </motion.div>
