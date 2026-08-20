@@ -2,22 +2,69 @@ import { GoogleGenAI, Modality } from '@google/genai';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-// ── Build System Prompt from Kundli Data ──
+// ── Convert Linear PCM16 to Standard WAV Blob ────────
+export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
+  const binaryStr = atob(base64Pcm);
+  const dataSize = binaryStr.length;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  // RIFF identifier
+  view.setUint8(0, 'R'.charCodeAt(0));
+  view.setUint8(1, 'I'.charCodeAt(0));
+  view.setUint8(2, 'F'.charCodeAt(0));
+  view.setUint8(3, 'F'.charCodeAt(0));
+  view.setUint32(4, 36 + dataSize, true);
+  view.setUint8(8, 'W'.charCodeAt(0));
+  view.setUint8(9, 'A'.charCodeAt(0));
+  view.setUint8(10, 'V'.charCodeAt(0));
+  view.setUint8(11, 'E'.charCodeAt(0));
+
+  // fmt subchunk
+  view.setUint8(12, 'f'.charCodeAt(0));
+  view.setUint8(13, 'm'.charCodeAt(0));
+  view.setUint8(14, 't'.charCodeAt(0));
+  view.setUint8(15, ' '.charCodeAt(0));
+  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+  view.setUint16(20, 1, true);  // AudioFormat (1 for PCM)
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * 2, true); // ByteRate
+  view.setUint16(32, numChannels * 2, true); // BlockAlign
+  view.setUint16(34, 16, true); // BitsPerSample
+
+  // data subchunk
+  view.setUint8(36, 'd'.charCodeAt(0));
+  view.setUint8(37, 'a'.charCodeAt(0));
+  view.setUint8(38, 't'.charCodeAt(0));
+  view.setUint8(39, 'a'.charCodeAt(0));
+  view.setUint32(40, dataSize, true);
+
+  // Write PCM data
+  const uint8View = new Uint8Array(buffer, 44);
+  for (let i = 0; i < dataSize; i++) {
+    uint8View[i] = binaryStr.charCodeAt(i);
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+// ── Build System Prompt from Kundli Data ──────────────
 export function buildAstroContext(kundliData) {
   if (!kundliData) {
     return `
-You are ज्योतिष AI, an authentic, wise Vedic Astrologer (Jyotishi).
-Answer questions about Vedic astrology with warm, conversational clarity.
+You are an expert, compassionate Vedic Astrologer (Jyotishi).
+Answer with warm, conversational clarity.
 Keep answers concise — 2 to 3 spoken sentences.
-Occasionally weave in natural Sanskrit terms (Lagna, Rashi, Dasha, Karma, Dharma).
+Weave in natural Sanskrit terms (Lagna, Rashi, Dasha, Karma, Dharma).
 Never use markdown asterisks (*, **), bullet points, or numbered lists because your response will be spoken aloud to the user.
 `;
   }
 
   return `
-You are ज्योतिष AI, an authentic, wise Vedic Astrologer (Jyotishi) with deep knowledge of the seeker's birth chart.
+You are an expert, compassionate Vedic Astrologer (Jyotishi) with deep knowledge of the seeker's birth chart.
 
-SEEKER'S COMPLETE VEDIC KUNDLI:
+SEEKER'S VEDIC CHART:
 Name: ${kundliData.name || 'Seeker'}
 Date of Birth: ${kundliData.date_of_birth || 'Not specified'}
 Birth Place: ${kundliData.birth_place || 'Not specified'}
@@ -33,27 +80,25 @@ Manglik: ${kundliData.is_manglik ? 'Yes' : 'No'}
 PLANETARY POSITIONS:
 ${kundliData.planets ? 
   Object.entries(kundliData.planets)
-    .map(([p, d]) => `${p}: ${d.sign || d.rashi || ''}, House ${d.house || ''}, ${d.degree || ''}`)
+    .map(([p, d]) => `${p}: ${d.sign || d.rashi || ''}, House ${d.house || ''}`)
     .join('\n') 
-  : 'Sun in Leo, Moon in Gemini, Mars in Leo, Mercury in Virgo, Jupiter in Virgo, Venus in Cancer, Saturn in Cancer, Rahu in Aries, Ketu in Libra'}
+  : 'Planets favorably placed in chart'}
 
 CURRENT DASHA:
 ${kundliData.current_dasha ? 
   `${kundliData.current_dasha.lord || ''} Mahadasha (${kundliData.current_dasha.start || ''} - ${kundliData.current_dasha.end || ''})`
-  : 'Dasha period currently active'}
+  : 'Current auspicious Dasha operating'}
 
 NUMEROLOGY:
 Life Path Number: ${kundliData.life_path_number || kundliData.numerology?.lifePathNumber || '7'}
 Destiny Number: ${kundliData.destiny_number || kundliData.numerology?.destinyNumber || '9'}
 
-SPOKEN RESPONSE RULES:
-1. You have full access to this person's chart above.
-2. Answer the seeker's question directly with warm, uplifting, spoken Vedic wisdom.
-3. Keep each answer concise — 2 to 3 sentences maximum (under 30 seconds spoken).
-4. Address them by name "${kundliData.name || 'Seeker'}" naturally.
-5. Reference their specific Lagna, Moon sign, Nakshatra, or planets when relevant.
-6. Do NOT use markdown symbols like *, **, #, or bullet points because this will be spoken aloud in audio.
-7. Be empowering, positive, and spiritually grounded.
+RULES FOR SPOKEN VOICE:
+1. Speak warmly and naturally like an authentic Indian Astrologer on a live phone consultation.
+2. Answer the question directly in 2 to 3 sentences (under 30 seconds spoken).
+3. Call the seeker "${kundliData.name || 'Seeker'}" naturally.
+4. Reference their actual Lagna, Moon sign, Nakshatra, or planetary yogas when relevant.
+5. Strictly NO markdown characters (*, **, #, bullets) because this is audio output.
 `;
 }
 
@@ -72,7 +117,6 @@ export async function generateGeminiAstrologyAnswer(question, kundliData) {
     return text || `Based on your ${kundliData?.lagna || 'chart'}, the planetary energies show auspicious clarity and progress for your path.`;
   } catch (err) {
     console.warn('Gemini 3.6 Flash generation error:', err);
-    // Fallback
     return `According to your ${kundliData?.lagna || 'Lagna'} and ${kundliData?.rashi || 'Moon'} sign, current planetary alignments bring strength and auspicious guidance for your journey.`;
   }
 }
@@ -118,8 +162,8 @@ export async function generateZephyrAudio(text, voiceName = 'Zephyr') {
   return null;
 }
 
-// ── Main Conversational Gemini Live Voice Session ─────
-export class GeminiLiveSession {
+// ── Main Live Voice Call Session Manager ───────────────
+export class LiveVoiceCallSession {
   constructor() {
     this.isActive = false;
 
@@ -128,30 +172,28 @@ export class GeminiLiveSession {
     this.mediaStream = null;
     this.analyser = null;
     this.animFrameId = null;
-    this.activeSource = null;
+    this.activeAudio = null;
 
     // Speech Recognition
     this.recognition = null;
 
     // Callbacks
-    this.onTranscript = null;
-    this.onAiResponse = null;
     this.onAudioLevel = null;
-    this.onStateChange = null;
+    this.onStateChange = null; // 'listening' | 'thinking' | 'speaking' | 'disconnected'
     this.onError = null;
 
     this.kundliData = null;
     this.voiceName = 'Zephyr';
   }
 
-  // ── Start Live Voice Session ───────────
-  async start(kundliData, voiceName = 'Zephyr') {
+  // ── Start Live Call ───────────────────
+  async startCall(kundliData, voiceName = 'Zephyr') {
     this.kundliData = kundliData;
     this.voiceName = voiceName || 'Zephyr';
     this.isActive = true;
 
     try {
-      // 1. Microphone access & Waveform analyzer
+      // 1. Initialize microphone & audio visualizer
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -160,9 +202,10 @@ export class GeminiLiveSession {
         },
       });
 
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-        sampleRate: 24000,
-      });
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
 
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.analyser = this.audioContext.createAnalyser();
@@ -185,8 +228,7 @@ export class GeminiLiveSession {
           if (!this.isActive) return;
           const transcript = event.results?.[0]?.[0]?.transcript;
           if (transcript && transcript.trim()) {
-            this.onTranscript?.(transcript);
-            await this.processUserSpeech(transcript);
+            await this.processTurn(transcript);
           }
         };
 
@@ -197,7 +239,7 @@ export class GeminiLiveSession {
         };
 
         this.recognition.onend = () => {
-          if (this.isActive && this.audioContext && !this.activeSource) {
+          if (this.isActive && !this.activeAudio) {
             this._restartRecognition();
           }
         };
@@ -209,12 +251,18 @@ export class GeminiLiveSession {
         }
       }
 
-      this.onStateChange?.('listening');
+      // Initial spoken greeting
+      const greeting = kundliData?.name
+        ? `Namaste ${kundliData.name}! I have your ${kundliData.lagna || 'Ascendant'} chart in front of me. What question is on your mind?`
+        : 'Namaste! I am your Vedic astrology guide. What guidance do you seek today?';
+
+      await this.speakResponse(greeting);
+
       return true;
     } catch (err) {
-      console.error('Failed to start Live Voice session:', err);
+      console.error('Failed to start Voice Call:', err);
       this.onError?.(err);
-      this.onStateChange?.('error');
+      this.onStateChange?.('disconnected');
       return false;
     }
   }
@@ -240,23 +288,63 @@ export class GeminiLiveSession {
     this.animFrameId = requestAnimationFrame(update);
   }
 
-  // ── Process User Speech: Brain + Zephyr Voice ──
-  async processUserSpeech(userText) {
+  // ── Process Conversation Turn ──────────
+  async processTurn(userSpeech) {
     if (!this.isActive) return;
 
     this.onStateChange?.('thinking');
 
     try {
-      // 1. Generate Vedic Astrological Answer
-      const aiAnswer = await generateGeminiAstrologyAnswer(userText, this.kundliData);
-      this.onAiResponse?.(aiAnswer);
+      // 1. Compute personalized Vedic astrology reading
+      const answer = await generateGeminiAstrologyAnswer(userSpeech, this.kundliData);
 
-      // 2. Generate HD Zephyr Voice Audio
-      const audioBase64 = await generateZephyrAudio(aiAnswer, this.voiceName);
+      // 2. Speak answer in Ultra-HD Zephyr Voice
+      await this.speakResponse(answer);
+    } catch (err) {
+      console.error('Turn processing error:', err);
+      if (this.isActive) {
+        this.onStateChange?.('listening');
+        this._restartRecognition();
+      }
+    }
+  }
+
+  // ── Speak Response via Zephyr Audio ────
+  async speakResponse(text) {
+    if (!this.isActive) return;
+
+    this.onStateChange?.('thinking');
+
+    try {
+      const audioBase64 = await generateZephyrAudio(text, this.voiceName);
 
       if (audioBase64 && this.isActive) {
+        const wavBlob = pcm16ToWavBlob(audioBase64, 24000, 1);
+        const audioUrl = URL.createObjectURL(wavBlob);
+
         this.onStateChange?.('speaking');
-        await this._playAudioBase64(audioBase64);
+
+        await new Promise((resolve) => {
+          const audio = new Audio(audioUrl);
+          this.activeAudio = audio;
+
+          audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            this.activeAudio = null;
+            resolve();
+          };
+
+          audio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            this.activeAudio = null;
+            resolve();
+          };
+
+          audio.play().catch((err) => {
+            console.warn('Audio play interrupted:', err);
+            resolve();
+          });
+        });
       }
 
       if (this.isActive) {
@@ -264,7 +352,7 @@ export class GeminiLiveSession {
         this._restartRecognition();
       }
     } catch (err) {
-      console.error('Error processing speech turn:', err);
+      console.error('speakResponse error:', err);
       if (this.isActive) {
         this.onStateChange?.('listening');
         this._restartRecognition();
@@ -272,81 +360,32 @@ export class GeminiLiveSession {
     }
   }
 
-  // ── Play HD Zephyr Audio Chunk ────────
-  async _playAudioBase64(base64Audio) {
-    return new Promise((resolve) => {
-      if (!this.audioContext || !this.isActive) {
-        resolve();
-        return;
-      }
-
-      try {
-        const binaryStr = atob(base64Audio);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-
-        // Convert PCM16 (24kHz) to Float32
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
-        }
-
-        const audioBuffer = this.audioContext.createBuffer(1, float32.length, 24000);
-        audioBuffer.getChannelData(0).set(float32);
-
-        const source = this.audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(this.audioContext.destination);
-
-        this.activeSource = source;
-
-        source.onended = () => {
-          this.activeSource = null;
-          resolve();
-        };
-
-        source.start();
-      } catch (err) {
-        console.error('Audio playback error:', err);
-        resolve();
-      }
-    });
-  }
-
-  // ── Restart Speech Recognition safely ──
+  // ── Restart Speech Recognition ────────
   _restartRecognition() {
-    if (this.recognition && this.isActive && !this.activeSource) {
+    if (this.recognition && this.isActive && !this.activeAudio) {
       try {
         this.recognition.start();
       } catch (e) {
-        /* already active */
+        /* already running */
       }
     }
   }
 
-  // ── Send text question directly ───────
-  async sendText(text) {
-    if (!this.isActive) return;
-    await this.processUserSpeech(text);
-  }
-
-  // ── Stop active speech playback ───────
-  stopPlayback() {
-    if (this.activeSource) {
+  // ── Stop active audio playback ────────
+  stopAudio() {
+    if (this.activeAudio) {
       try {
-        this.activeSource.stop();
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
       } catch (e) {
         /* ignore */
       }
-      this.activeSource = null;
+      this.activeAudio = null;
     }
   }
 
-  // ── End session ───────────────────────
-  async stop() {
+  // ── End Call ──────────────────────────
+  async endCall() {
     this.isActive = false;
 
     if (this.animFrameId) {
@@ -354,7 +393,7 @@ export class GeminiLiveSession {
       this.animFrameId = null;
     }
 
-    this.stopPlayback();
+    this.stopAudio();
 
     if (this.recognition) {
       try {

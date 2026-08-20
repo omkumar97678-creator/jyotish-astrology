@@ -1,32 +1,32 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { GeminiLiveSession, generateGeminiAstrologyAnswer } from '@/lib/geminiLive';
+import { LiveVoiceCallSession, generateGeminiAstrologyAnswer } from '@/lib/geminiLive';
 import StarField from '@/components/StarField';
 
-// ── Waveform component ─────────────────
+// ── Waveform Component ─────────────────
 function Waveform({ level, voiceState }) {
-  const BAR_COUNT = 32;
+  const BAR_COUNT = 36;
   const bars = Array.from({ length: BAR_COUNT });
 
   const getBarHeight = (i) => {
-    if (voiceState === 'idle' || voiceState === 'disconnected') return 4;
+    if (voiceState === 'disconnected' || voiceState === 'idle') return 4;
 
     if (voiceState === 'listening') {
-      const base = Math.max(4, (level || 0.1) * 80);
-      const variation = Math.sin(Date.now() / 200 + i * 0.5) * base * 0.5;
-      return Math.max(4, base + variation);
+      const base = Math.max(6, (level || 0.12) * 100);
+      const variation = Math.sin(Date.now() / 180 + i * 0.4) * base * 0.4;
+      return Math.max(6, base + variation);
     }
 
     if (voiceState === 'speaking') {
-      return Math.max(4, 20 + Math.sin(Date.now() / 150 + i * 0.3) * 25);
+      return Math.max(8, 25 + Math.sin(Date.now() / 120 + i * 0.35) * 35);
     }
 
     if (voiceState === 'thinking') {
-      return Math.max(4, 8 + Math.sin(Date.now() / 400 + i * 0.8) * 6);
+      return Math.max(6, 12 + Math.sin(Date.now() / 300 + i * 0.6) * 8);
     }
 
-    return 4;
+    return 6;
   };
 
   const getBarColor = () => {
@@ -36,7 +36,7 @@ function Waveform({ level, voiceState }) {
       case 'speaking':
         return '#2AABA8';
       case 'thinking':
-        return 'rgba(200,130,42,0.6)';
+        return '#E09840';
       default:
         return 'rgba(232,228,220,0.2)';
     }
@@ -47,8 +47,8 @@ function Waveform({ level, voiceState }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '3px',
-        height: '80px',
+        gap: '4px',
+        height: '90px',
         justifyContent: 'center',
       }}
     >
@@ -56,12 +56,12 @@ function Waveform({ level, voiceState }) {
         <motion.div
           key={i}
           animate={{ height: getBarHeight(i) }}
-          transition={{ duration: 0.1, ease: 'easeOut' }}
+          transition={{ duration: 0.08, ease: 'easeOut' }}
           style={{
-            width: '3px',
-            borderRadius: '2px',
+            width: '4px',
+            borderRadius: '3px',
             background: getBarColor(),
-            minHeight: '4px',
+            minHeight: '6px',
             transition: 'background 0.3s',
           }}
         />
@@ -70,75 +70,60 @@ function Waveform({ level, voiceState }) {
   );
 }
 
-// ── Mic button with ripple ─────────────
-function MicButton({ voiceState, onClick }) {
-  const isActive = voiceState === 'listening' || voiceState === 'thinking';
-  const isSpeaking = voiceState === 'speaking';
-
+// ── Three-Dots Typing Indicator ────────
+function TypingIndicator() {
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      {/* Ripple rings when listening */}
-      {isActive &&
-        [1, 2, 3].map((i) => (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5 }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '12px 18px',
+        background: 'rgba(42,171,168,0.08)',
+        border: '1px solid rgba(42,171,168,0.25)',
+        borderRadius: '16px 16px 16px 4px',
+        width: 'fit-content',
+        marginBottom: '16px',
+      }}
+    >
+      <span
+        style={{
+          fontSize: '0.8rem',
+          color: '#2AABA8',
+          fontWeight: '500',
+          fontFamily: 'DM Sans, sans-serif',
+        }}
+      >
+        ✦ ज्योतिष AI is reading your chart
+      </span>
+      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '50%',
-              border: '2px solid rgba(200,130,42,0.4)',
-            }}
-            animate={{
-              scale: [1, 1.5 + i * 0.3],
-              opacity: [0.6, 0],
-            }}
+            animate={{ y: [0, -6, 0] }}
             transition={{
-              duration: 1.5,
+              duration: 0.6,
               repeat: Infinity,
-              delay: i * 0.4,
-              ease: 'easeOut',
+              delay: i * 0.18,
+              ease: 'easeInOut',
+            }}
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#2AABA8',
             }}
           />
         ))}
-
-      <motion.button
-        onClick={onClick}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        style={{
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '28px',
-          background: isSpeaking
-            ? 'linear-gradient(135deg, #2AABA8, #1d8a87)'
-            : 'linear-gradient(135deg, #C8822A, #E09840)',
-          boxShadow: isActive
-            ? '0 0 40px rgba(200,130,42,0.5)'
-            : '0 0 20px rgba(200,130,42,0.2)',
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        {voiceState === 'connecting'
-          ? '⏳'
-          : voiceState === 'thinking'
-          ? '🌟'
-          : isSpeaking
-          ? '⬜'
-          : '🎙️'}
-      </motion.button>
-    </div>
+      </div>
+    </motion.div>
   );
 }
 
-// ── Message bubble ─────────────────────
+// ── Message Bubble ─────────────────────
 function MessageBubble({ message }) {
   const isUser = message.role === 'user';
 
@@ -146,11 +131,11 @@ function MessageBubble({ message }) {
     <motion.div
       initial={{ opacity: 0, x: isUser ? 20 : -20, y: 10 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       style={{
         display: 'flex',
         justifyContent: isUser ? 'flex-end' : 'flex-start',
-        marginBottom: '12px',
+        marginBottom: '14px',
       }}
     >
       {!isUser && (
@@ -165,7 +150,7 @@ function MessageBubble({ message }) {
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '12px',
-            marginRight: '8px',
+            marginRight: '10px',
             flexShrink: 0,
             marginTop: '4px',
           }}
@@ -177,20 +162,20 @@ function MessageBubble({ message }) {
       <div
         style={{
           maxWidth: '75%',
-          padding: '10px 14px',
-          borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-          background: isUser ? 'rgba(200,130,42,0.12)' : 'rgba(42,171,168,0.08)',
+          padding: '12px 16px',
+          borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+          background: isUser ? 'rgba(200,130,42,0.14)' : 'rgba(42,171,168,0.08)',
           border: isUser
-            ? '1px solid rgba(200,130,42,0.25)'
+            ? '1px solid rgba(200,130,42,0.3)'
             : '1px solid rgba(42,171,168,0.2)',
         }}
       >
         {!isUser && (
           <div
             style={{
-              fontSize: '0.7rem',
+              fontSize: '0.75rem',
               color: '#2AABA8',
-              marginBottom: '4px',
+              marginBottom: '6px',
               fontWeight: '600',
             }}
           >
@@ -200,9 +185,10 @@ function MessageBubble({ message }) {
         <p
           style={{
             color: '#E8E4DC',
-            fontSize: '0.9rem',
-            lineHeight: '1.5',
+            fontSize: '0.92rem',
+            lineHeight: '1.6',
             margin: 0,
+            whiteSpace: 'pre-wrap',
           }}
         >
           {message.text}
@@ -211,7 +197,7 @@ function MessageBubble({ message }) {
           style={{
             fontSize: '0.7rem',
             color: 'rgba(232,228,220,0.35)',
-            marginTop: '4px',
+            marginTop: '6px',
             textAlign: isUser ? 'right' : 'left',
           }}
         >
@@ -222,36 +208,39 @@ function MessageBubble({ message }) {
   );
 }
 
-// ── MAIN VOICE PAGE ────────────────────
+// ── MAIN VOICE & ASTROLOGY PAGE ────────
 export default function Voice() {
   const navigate = useNavigate();
 
-  // State
-  const [voiceState, setVoiceState] = useState('idle');
+  // Call Mode vs Text Mode
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [callState, setCallState] = useState('disconnected'); // 'connecting' | 'listening' | 'thinking' | 'speaking'
+  const [callSeconds, setCallSeconds] = useState(0);
+  const [audioLevel, setAudioLevel] = useState(0);
+
+  // Text Chat State
   const [messages, setMessages] = useState([]);
   const [textInput, setTextInput] = useState('');
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
 
-  // Kundli data
+  // Kundli Data
   const [kundliData, setKundliData] = useState(null);
 
   // Refs
-  const sessionRef = useRef(null);
+  const callSessionRef = useRef(null);
   const messagesEndRef = useRef(null);
   const timerRef = useRef(null);
   const animFrameRef = useRef(null);
   const audioLevelRef = useRef(0);
 
-  // ── Load kundli data on mount ─────────
+  // ── Load Kundli on Mount ──────────────
   useEffect(() => {
     const stored = localStorage.getItem('kundli_data');
     if (stored) {
       try {
         setKundliData(JSON.parse(stored));
       } catch (e) {
-        console.error('Failed to parse kundli data', e);
+        console.error('Failed to parse kundli', e);
       }
     } else {
       const onboard = localStorage.getItem('jyotish_onboarding');
@@ -259,36 +248,30 @@ export default function Voice() {
         try {
           setKundliData(JSON.parse(onboard));
         } catch (e) {
-          /* fallback */
+          /* ignore */
         }
       }
     }
   }, []);
 
-  // ── Auto scroll messages ──────────────
+  // ── Auto Scroll Chat ──────────────────
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth',
-    });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
-  // ── Session timer ─────────────────────
+  // ── Call Timer ────────────────────────
   useEffect(() => {
-    if (
-      voiceState !== 'idle' &&
-      voiceState !== 'disconnected' &&
-      voiceState !== 'error'
-    ) {
+    if (isCallActive && callState !== 'disconnected') {
       timerRef.current = setInterval(() => {
-        setSeconds((s) => s + 1);
+        setCallSeconds((s) => s + 1);
       }, 1000);
     } else {
       clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [voiceState]);
+  }, [isCallActive, callState]);
 
-  // ── Waveform animation ────────────────
+  // ── Waveform Animation ────────────────
   useEffect(() => {
     const animate = () => {
       setAudioLevel(audioLevelRef.current);
@@ -298,23 +281,23 @@ export default function Voice() {
     return () => cancelAnimationFrame(animFrameRef.current);
   }, []);
 
-  // ── Cleanup on unmount ────────────────
+  // ── Cleanup on Unmount ────────────────
   useEffect(() => {
     return () => {
-      sessionRef.current?.stop();
+      callSessionRef.current?.endCall();
       clearInterval(timerRef.current);
       cancelAnimationFrame(animFrameRef.current);
     };
   }, []);
 
-  // ── Format timer ──────────────────────
+  // ── Format Timer (MM:SS) ──────────────
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
-  // ── Add message to chat ───────────────
+  // ── Add Message Helper ────────────────
   const addMessage = useCallback((role, text) => {
     const time = new Date().toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -323,36 +306,17 @@ export default function Voice() {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, text, time }]);
   }, []);
 
-  // ── Start voice session ───────────────
-  const handleStartSession = async () => {
-    setError(null);
-    setVoiceState('requesting_mic');
+  // ── START LIVE VOICE CALL ─────────────
+  const handleStartCall = async () => {
+    setIsCallActive(true);
+    setCallState('connecting');
+    setCallSeconds(0);
 
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      setError('Microphone access denied. Please allow mic permission and try again.');
-      setVoiceState('error');
-      return;
-    }
-
-    setVoiceState('connecting');
-
-    const session = new GeminiLiveSession();
-    sessionRef.current = session;
+    const session = new LiveVoiceCallSession();
+    callSessionRef.current = session;
 
     session.onStateChange = (state) => {
-      setVoiceState(state);
-    };
-
-    session.onTranscript = (userText) => {
-      addMessage('user', userText);
-    };
-
-    session.onAiResponse = (aiText) => {
-      if (aiText && aiText.trim()) {
-        addMessage('ai', aiText);
-      }
+      setCallState(state);
     };
 
     session.onAudioLevel = (level) => {
@@ -360,59 +324,65 @@ export default function Voice() {
     };
 
     session.onError = (err) => {
-      console.error('Gemini Live session error:', err);
-      setError(err?.message || 'Voice session connection issue.');
-      setVoiceState('error');
+      console.error('Call session error:', err);
     };
 
-    const success = await session.start(kundliData, 'Zephyr');
-
-    if (success) {
-      setTimeout(() => {
-        addMessage(
-          'ai',
-          kundliData
-            ? `Namaste ${kundliData.name || 'Seeker'}! I have your complete Vedic chart ready (${kundliData.lagna || 'Ascendant'} Lagna). Speak your question, I am listening.`
-            : 'Namaste! I am your Vedic astrology guide. Speak your question, I am listening.'
-        );
-      }, 1000);
-    }
+    await session.startCall(kundliData, 'Zephyr');
   };
 
-  // ── End session ───────────────────────
-  const handleEndSession = async () => {
-    if (sessionRef.current) {
-      await sessionRef.current.stop();
-      sessionRef.current = null;
+  // ── END LIVE VOICE CALL ───────────────
+  const handleEndCall = async () => {
+    if (callSessionRef.current) {
+      await callSessionRef.current.endCall();
+      callSessionRef.current = null;
     }
-
-    setVoiceState('disconnected');
-    setSeconds(0);
-    addMessage(
-      'ai',
-      'Session ended. Jai Jyotisha! 🙏 Come back anytime for cosmic guidance.'
-    );
+    setIsCallActive(false);
+    setCallState('disconnected');
+    setCallSeconds(0);
   };
 
-  // ── Send text message (Clean quiet text chat - NO voice) ──
+  // ── SEND TEXT MESSAGE (Normal Quiet Chat) ──
   const handleSendText = async () => {
     const text = textInput.trim();
-    if (!text) return;
+    if (!text || isTyping) return;
 
     addMessage('user', text);
     setTextInput('');
+    setIsTyping(true);
 
     try {
       const response = await generateGeminiAstrologyAnswer(text, kundliData);
+      setIsTyping(false);
       addMessage('ai', response);
     } catch (err) {
-      console.error('Text question processing error:', err);
-      const fallback = `Based on your chart, the planetary alignments encourage steady focus and auspicious progress.`;
-      addMessage('ai', fallback);
+      setIsTyping(false);
+      addMessage(
+        'ai',
+        'Based on your chart, the planetary alignments encourage steady focus and auspicious progress.'
+      );
     }
   };
 
-  // ── Suggested questions (Clean quiet text chat - NO voice) ──
+  // ── SUGGESTION CLICK (Normal Quiet Chat) ──
+  const handleSuggestion = async (question) => {
+    if (isTyping) return;
+
+    addMessage('user', question);
+    setIsTyping(true);
+
+    try {
+      const response = await generateGeminiAstrologyAnswer(question, kundliData);
+      setIsTyping(false);
+      addMessage('ai', response);
+    } catch (err) {
+      setIsTyping(false);
+      addMessage(
+        'ai',
+        'According to your Vedic planetary alignments, this is an auspicious time for thoughtful decisions and growth.'
+      );
+    }
+  };
+
   const SUGGESTIONS = [
     'What does my Lagna reveal about me?',
     'Tell me about my current Mahadasha',
@@ -421,50 +391,6 @@ export default function Voice() {
     'Are there any Yogas in my chart?',
     'What are my lucky numbers?',
   ];
-
-  const handleSuggestion = async (question) => {
-    addMessage('user', question);
-    try {
-      const response = await generateGeminiAstrologyAnswer(question, kundliData);
-      addMessage('ai', response);
-    } catch (err) {
-      console.error('Suggestion processing error:', err);
-      const fallback = `According to your Vedic planetary alignments, this is an auspicious time for thoughtful decisions and growth.`;
-      addMessage('ai', fallback);
-    }
-  };
-
-  // ── Status text ───────────────────────
-  const getStatusText = () => {
-    switch (voiceState) {
-      case 'idle':
-        return 'Tap the mic to start live voice consultation';
-      case 'requesting_mic':
-        return 'Requesting microphone access...';
-      case 'connecting':
-        return 'Connecting with Zephyr Voice...';
-      case 'listening':
-        return 'Listening... speak your question';
-      case 'thinking':
-        return '✦ Reading the stars...';
-      case 'speaking':
-        return 'ज्योतिष AI is speaking (Zephyr Voice)';
-      case 'disconnected':
-        return 'Session ended';
-      case 'error':
-        return error || 'Something went wrong';
-      default:
-        return '';
-    }
-  };
-
-  const isSessionActive = ![
-    'idle',
-    'disconnected',
-    'error',
-    'requesting_mic',
-    'connecting',
-  ].includes(voiceState);
 
   return (
     <main
@@ -483,7 +409,7 @@ export default function Voice() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '20px 32px',
+          padding: '18px 32px',
           position: 'relative',
           zIndex: 10,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -506,11 +432,11 @@ export default function Voice() {
         <div
           style={{
             fontFamily: 'Yatra One, serif',
-            fontSize: '1.2rem',
+            fontSize: '1.25rem',
             color: '#C8822A',
           }}
         >
-          ✦ ज्योतिष
+          ✦ ज्योतिष AI
         </div>
 
         <div
@@ -518,327 +444,422 @@ export default function Voice() {
             background: 'rgba(42,171,168,0.1)',
             border: '1px solid rgba(42,171,168,0.3)',
             borderRadius: '20px',
-            padding: '4px 12px',
+            padding: '4px 14px',
             fontSize: '0.75rem',
             color: '#2AABA8',
+            fontWeight: '500',
           }}
         >
-          Powered by Gemini 3.1 · Zephyr Voice
+          Google Zephyr HD Voice
         </div>
       </nav>
 
-      {/* ── Main content ── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '20px',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
-        {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <h1
+      {/* ── CONDITIONAL VIEW: LIVE CALL MODE VS TEXT CHAT ── */}
+      {isCallActive ? (
+        /* ══════════════════════════════════════════════════════════════
+           LIVE VOICE CONSULTATION INTERFACE (Call Mode - Pure Audio)
+           ══════════════════════════════════════════════════════════════ */
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            position: 'relative',
+            zIndex: 10,
+            maxWidth: '600px',
+            margin: '0 auto',
+            width: '100%',
+          }}
+        >
+          {/* Kundli badge */}
+          {kundliData && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'rgba(200,130,42,0.08)',
+                border: '1px solid rgba(200,130,42,0.25)',
+                borderRadius: '30px',
+                padding: '6px 18px',
+                marginBottom: '28px',
+                fontSize: '0.85rem',
+                color: '#E8E4DC',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ color: '#C8822A' }}>✦</span>
+              <span>
+                Reading for: <strong>{kundliData.name || 'Seeker'}</strong> ({kundliData.lagna || 'Ascendant'})
+              </span>
+            </motion.div>
+          )}
+
+          {/* Central Pulsating Orb / Sphere */}
+          <div
             style={{
-              fontFamily: 'Yatra One, serif',
-              fontSize: 'clamp(24px, 4vw, 36px)',
-              color: '#E8E4DC',
-              marginBottom: '8px',
+              position: 'relative',
+              width: '180px',
+              height: '180px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '36px',
             }}
           >
-            Voice Astrology
-          </h1>
-          <p style={{ color: 'rgba(232,228,220,0.5)', fontSize: '0.9rem' }}>
-            Speak naturally and receive spoken guidance in Zephyr voice
-          </p>
-        </div>
+            {/* Ambient pulsating rings */}
+            {[1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  border: `2px solid ${
+                    callState === 'speaking'
+                      ? 'rgba(42,171,168,0.4)'
+                      : callState === 'thinking'
+                      ? 'rgba(224,152,64,0.4)'
+                      : 'rgba(200,130,42,0.3)'
+                  }`,
+                }}
+                animate={{
+                  scale: [1, 1.4 + i * 0.25],
+                  opacity: [0.6, 0],
+                }}
+                transition={{
+                  duration: 2.2,
+                  repeat: Infinity,
+                  delay: i * 0.5,
+                  ease: 'easeOut',
+                }}
+              />
+            ))}
 
-        {/* Kundli context card */}
-        {kundliData && (
+            {/* Core Orb Button */}
+            <motion.div
+              animate={{
+                scale:
+                  callState === 'speaking'
+                    ? [1, 1.08, 1]
+                    : callState === 'listening'
+                    ? [1, 1.04, 1]
+                    : 1,
+                boxShadow:
+                  callState === 'speaking'
+                    ? '0 0 60px rgba(42,171,168,0.6)'
+                    : callState === 'thinking'
+                    ? '0 0 50px rgba(224,152,64,0.5)'
+                    : '0 0 40px rgba(200,130,42,0.4)',
+              }}
+              transition={{ repeat: Infinity, duration: 1.6 }}
+              style={{
+                width: '140px',
+                height: '140px',
+                borderRadius: '50%',
+                background:
+                  callState === 'speaking'
+                    ? 'radial-gradient(circle, #2AABA8 0%, #176563 100%)'
+                    : callState === 'thinking'
+                    ? 'radial-gradient(circle, #E09840 0%, #8c5311 100%)'
+                    : 'radial-gradient(circle, #C8822A 0%, #6d400e 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '44px',
+                border: '3px solid rgba(255,255,255,0.2)',
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
+              {callState === 'connecting'
+                ? '⏳'
+                : callState === 'thinking'
+                ? '🌟'
+                : callState === 'speaking'
+                ? '🔊'
+                : '🎙️'}
+            </motion.div>
+          </div>
+
+          {/* Real-time Waveform */}
+          <div style={{ width: '100%', marginBottom: '20px' }}>
+            <Waveform level={audioLevel} voiceState={callState} />
+          </div>
+
+          {/* Status Label */}
+          <motion.div
+            key={callState}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              textAlign: 'center',
+              marginBottom: '28px',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '1.25rem',
+                color: '#E8E4DC',
+                fontFamily: 'Yatra One, serif',
+                marginBottom: '4px',
+              }}
+            >
+              {callState === 'connecting'
+                ? 'Connecting to Live Consultation...'
+                : callState === 'listening'
+                ? 'Listening... Speak your question'
+                : callState === 'thinking'
+                ? '✦ Astrologer is reading your chart...'
+                : callState === 'speaking'
+                ? 'Astrologer is speaking'
+                : 'Live Consultation Active'}
+            </h2>
+            <p
+              style={{
+                color: 'rgba(232,228,220,0.4)',
+                fontSize: '0.85rem',
+                fontFamily: 'JetBrains Mono, monospace',
+                margin: 0,
+              }}
+            >
+              Call Duration: {formatTime(callSeconds)}
+            </p>
+          </motion.div>
+
+          {/* End Call Button */}
+          <motion.button
+            onClick={handleEndCall}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              background: 'linear-gradient(135deg, #e05252, #a82a2a)',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '30px',
+              padding: '14px 36px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 8px 24px rgba(224,82,82,0.35)',
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            <span>📞</span>
+            <span>End Consultation</span>
+          </motion.button>
+        </div>
+      ) : (
+        /* ══════════════════════════════════════════════════════════════
+           TEXT CONSULTATION & START CALL INTERFACE (Quiet Chat Mode)
+           ══════════════════════════════════════════════════════════════ */
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            maxWidth: '740px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '20px',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          {/* Header Banner with Call CTA */}
           <div
             style={{
               background: 'rgba(200,130,42,0.06)',
-              border: '1px solid rgba(200,130,42,0.2)',
-              borderRadius: '12px',
-              padding: '12px 16px',
+              border: '1px solid rgba(200,130,42,0.25)',
+              borderRadius: '16px',
+              padding: '16px 20px',
               marginBottom: '20px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
             }}
           >
             <div>
-              <div
+              <h1
                 style={{
-                  color: '#C8822A',
-                  fontSize: '0.75rem',
-                  marginBottom: '2px',
-                }}
-              >
-                Reading kundli for:
-              </div>
-              <div
-                style={{
+                  fontFamily: 'Yatra One, serif',
+                  fontSize: '1.35rem',
                   color: '#E8E4DC',
-                  fontWeight: '600',
-                  fontSize: '0.95rem',
+                  margin: '0 0 4px 0',
                 }}
               >
-                {kundliData.name || 'Seeker'}
-              </div>
-              <div
-                style={{
-                  color: 'rgba(232,228,220,0.5)',
-                  fontSize: '0.8rem',
-                }}
-              >
-                {kundliData.lagna || 'Ascendant'} · {kundliData.rashi || 'Chandra Rashi'}
-              </div>
+                Voice & Text Astrology
+              </h1>
+              <p style={{ color: 'rgba(232,228,220,0.5)', fontSize: '0.85rem', margin: 0 }}>
+                {kundliData?.name
+                  ? `Reading for ${kundliData.name} (${kundliData.lagna || 'Ascendant'} · ${kundliData.rashi || 'Rashi'})`
+                  : 'Instant Vedic astrological consultation'}
+              </p>
             </div>
-            <button
-              onClick={() => navigate('/onboarding')}
+
+            <motion.button
+              onClick={handleStartCall}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               style={{
-                background: 'none',
-                border: '1px solid rgba(200,130,42,0.3)',
-                borderRadius: '8px',
-                color: '#C8822A',
-                padding: '6px 12px',
-                fontSize: '0.8rem',
+                background: 'linear-gradient(135deg, #C8822A, #E09840)',
+                color: '#0D0F2B',
+                border: 'none',
+                borderRadius: '24px',
+                padding: '10px 22px',
+                fontSize: '0.9rem',
+                fontWeight: '700',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 16px rgba(200,130,42,0.3)',
                 fontFamily: 'DM Sans, sans-serif',
               }}
             >
-              Change
-            </button>
+              <span>🎙️</span>
+              <span>Start Voice Call</span>
+            </motion.button>
           </div>
-        )}
 
-        {/* Waveform */}
-        <Waveform level={audioLevel} voiceState={voiceState} />
-
-        {/* Status text */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={voiceState}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            style={{
-              textAlign: 'center',
-              color:
-                voiceState === 'error' ? '#e07070' : 'rgba(232,228,220,0.6)',
-              fontSize: '0.9rem',
-              marginBottom: '20px',
-              minHeight: '24px',
-            }}
-          >
-            {getStatusText()}
-          </motion.p>
-        </AnimatePresence>
-
-        {/* Mic button */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '24px',
-          }}
-        >
-          <MicButton
-            voiceState={voiceState}
-            onClick={isSessionActive ? handleEndSession : handleStartSession}
-          />
-        </div>
-
-        {/* Suggested questions — only when idle */}
-        <AnimatePresence>
-          {(voiceState === 'idle' || voiceState === 'listening') &&
-            messages.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                style={{ marginBottom: '20px' }}
+          {/* Suggestions (only when chat is empty) */}
+          {messages.length === 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <p
+                style={{
+                  color: 'rgba(232,228,220,0.45)',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                  marginBottom: '12px',
+                }}
               >
-                <p
-                  style={{
-                    color: 'rgba(232,228,220,0.4)',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    marginBottom: '10px',
-                  }}
-                >
-                  Try asking...
-                </p>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {SUGGESTIONS.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => handleSuggestion(q)}
-                      style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '20px',
-                        padding: '6px 14px',
-                        color: 'rgba(232,228,220,0.7)',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        fontFamily: 'DM Sans, sans-serif',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.borderColor = 'rgba(200,130,42,0.4)';
-                        e.target.style.color = '#C8822A';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.borderColor = 'rgba(255,255,255,0.08)';
-                        e.target.style.color = 'rgba(232,228,220,0.7)';
-                      }}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-        </AnimatePresence>
+                Suggested questions about your destiny:
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  justifyContent: 'center',
+                }}
+              >
+                {SUGGESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleSuggestion(q)}
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '20px',
+                      padding: '8px 16px',
+                      color: 'rgba(232,228,220,0.75)',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      fontFamily: 'DM Sans, sans-serif',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = 'rgba(200,130,42,0.4)';
+                      e.target.style.color = '#C8822A';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                      e.target.style.color = 'rgba(232,228,220,0.75)';
+                    }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Chat messages */}
-        {messages.length > 0 && (
+          {/* Chat Messages Scroll Container */}
           <div
             style={{
               flex: 1,
               overflowY: 'auto',
               marginBottom: '16px',
-              maxHeight: '350px',
-              paddingRight: '4px',
+              minHeight: '280px',
+              maxHeight: '440px',
+              paddingRight: '6px',
             }}
           >
             {messages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} />
             ))}
 
-            {/* Typing indicator */}
-            {voiceState === 'thinking' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 14px',
-                  background: 'rgba(42,171,168,0.08)',
-                  border: '1px solid rgba(42,171,168,0.2)',
-                  borderRadius: '16px 16px 16px 4px',
-                  width: 'fit-content',
-                  marginBottom: '12px',
-                }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{
-                      duration: 0.8,
-                      repeat: Infinity,
-                      delay: i * 0.15,
-                    }}
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#2AABA8',
-                    }}
-                  />
-                ))}
-              </motion.div>
-            )}
+            {/* Animated 3-dot Typing Indicator */}
+            <AnimatePresence>{isTyping && <TypingIndicator />}</AnimatePresence>
 
             <div ref={messagesEndRef} />
           </div>
-        )}
 
-        {/* Text input bar */}
-        <div
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '16px',
-            padding: '10px 14px',
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            marginBottom: '12px',
-          }}
-        >
-          <input
-            value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && textInput.trim()) {
-                handleSendText();
-              }
-            }}
-            placeholder="Or type your question here..."
+          {/* Text Input Bar */}
+          <div
             style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: '#E8E4DC',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '0.9rem',
-            }}
-          />
-          <button
-            onClick={handleSendText}
-            disabled={!textInput.trim()}
-            style={{
-              background: textInput.trim()
-                ? 'linear-gradient(135deg, #C8822A, #E09840)'
-                : 'rgba(255,255,255,0.08)',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '8px 16px',
-              color: textInput.trim() ? '#0D0F2B' : 'rgba(232,228,220,0.3)',
-              fontWeight: '600',
-              cursor: textInput.trim() ? 'pointer' : 'not-allowed',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '0.85rem',
-              transition: 'all 0.2s',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              padding: '8px 12px',
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
             }}
           >
-            Send →
-          </button>
+            <input
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && textInput.trim() && !isTyping) {
+                  handleSendText();
+                }
+              }}
+              placeholder="Type your astrology question here..."
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#E8E4DC',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '0.92rem',
+                padding: '6px',
+              }}
+            />
+            <button
+              onClick={handleSendText}
+              disabled={!textInput.trim() || isTyping}
+              style={{
+                background:
+                  textInput.trim() && !isTyping
+                    ? 'linear-gradient(135deg, #C8822A, #E09840)'
+                    : 'rgba(255,255,255,0.08)',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '8px 18px',
+                color: textInput.trim() && !isTyping ? '#0D0F2B' : 'rgba(232,228,220,0.3)',
+                fontWeight: '600',
+                cursor: textInput.trim() && !isTyping ? 'pointer' : 'not-allowed',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '0.85rem',
+                transition: 'all 0.2s',
+              }}
+            >
+              Send →
+            </button>
+          </div>
         </div>
-
-        {/* Session info */}
-        {isSessionActive && (
-          <p
-            style={{
-              textAlign: 'center',
-              color: 'rgba(232,228,220,0.3)',
-              fontSize: '0.75rem',
-              fontFamily: 'JetBrains Mono, monospace',
-            }}
-          >
-            Session active · {formatTime(seconds)} elapsed · Tap mic to end
-          </p>
-        )}
-      </div>
+      )}
     </main>
   );
 }
