@@ -1,406 +1,847 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { GeminiLiveSession } from '@/lib/geminiLive';
 import StarField from '@/components/StarField';
-import VoiceHeader from '@/components/voice/VoiceHeader';
-import KundliContext from '@/components/voice/KundliContext';
-import Waveform from '@/components/voice/Waveform';
-import StatusText from '@/components/voice/StatusText';
-import MicButton from '@/components/voice/MicButton';
-import Suggestions from '@/components/voice/Suggestions';
-import Conversation from '@/components/voice/Conversation';
-import SessionBar from '@/components/voice/SessionBar';
-import { generateVoiceResponse } from '@/lib/aiService';
-import { useAuth } from '@/context/AuthContext';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-const isUUID = (str) =>
-  typeof str === 'string' &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+// ── Waveform component ─────────────────
+function Waveform({ level, voiceState }) {
+  const BAR_COUNT = 32;
+  const bars = Array.from({ length: BAR_COUNT });
 
-export default function Voice() {
-  const { user } = useAuth();
-  const [voiceState, setVoiceState] = useState('idle'); // 'idle' | 'listening' | 'speaking'
-  const [messages, setMessages] = useState([]);
-  const [seconds, setSeconds] = useState(0);
-  const [inputMode, setInputMode] = useState('voice');
-  const [textInput, setTextInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [kundliData, setKundliData] = useState({});
-  const [sessionId, setSessionId] = useState(null);
-
-  const recognitionRef = useRef(null);
-
-  // ── FIX 1: Session Timer ──────────────
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSeconds((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ── FIX 3: Load Real User Kundli Data ──
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('kundli_data') || localStorage.getItem('jyotish_onboarding') || '{}';
-      const parsed = JSON.parse(stored);
-      setKundliData(parsed);
-
-      const name = parsed.name || 'Seeker';
-      const lagna = parsed.lagna || 'Scorpio';
-      const rashi = parsed.rashi ? `, ${parsed.rashi} Rashi` : '';
-
-      setMessages([
-        {
-          id: 1,
-          role: 'ai',
-          text: `Namaste ${name}! I have your Vedic birth chart ready (${lagna} Lagna${rashi}). Ask me anything about your planetary transits, career, relationships, or destiny.`,
-          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    } catch {
-      setKundliData({});
-    }
-  }, []);
-
-  // ── Browser Speech Recognition (Voice Input) ──
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setVoiceState('listening');
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setVoiceState('idle');
-          handleSendMessage(transcript);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error/notice:', event.error);
-        setVoiceState('idle');
-      };
-
-      recognition.onend = () => {
-        setVoiceState((prev) => (prev === 'listening' ? 'idle' : prev));
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, [kundliData]);
-
-  // ── Text-To-Speech (AI Speaking Voice) ──
-  const speakText = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*#_~]/g, '');
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 0.98;
-      utterance.pitch = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(
-        (v) =>
-          v.lang.includes('en') &&
-          (v.name.includes('Natural') ||
-            v.name.includes('Google') ||
-            v.name.includes('Samantha') ||
-            v.name.includes('Daniel') ||
-            v.name.includes('Alex'))
-      );
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-
-      utterance.onstart = () => {
-        setVoiceState('speaking');
-      };
-      utterance.onend = () => {
-        setVoiceState('idle');
-      };
-      utterance.onerror = () => {
-        setVoiceState('idle');
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn('Speech synthesis error:', err);
-      setVoiceState('idle');
-    }
-  };
-
-  const toggleMicListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Voice recognition is not supported in this browser. Please switch to text mode or use Google Chrome/Safari.');
-      setInputMode('text');
-      return;
-    }
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+  const getBarHeight = (i) => {
+    if (voiceState === 'idle' || voiceState === 'disconnected') return 4;
 
     if (voiceState === 'listening') {
-      recognitionRef.current?.stop();
-      setVoiceState('idle');
-    } else {
-      try {
-        recognitionRef.current?.start();
-        setVoiceState('listening');
-      } catch (err) {
-        console.warn('Recognition start notice:', err);
-        setVoiceState('listening');
-      }
+      // Animate based on actual audio level
+      const base = level * 80;
+      const variation = Math.sin(Date.now() / 200 + i * 0.5) * base * 0.5;
+      return Math.max(4, base + variation);
     }
+
+    if (voiceState === 'speaking') {
+      return Math.max(4, 20 + Math.sin(Date.now() / 150 + i * 0.3) * 25);
+    }
+
+    if (voiceState === 'thinking') {
+      return Math.max(4, 8 + Math.sin(Date.now() / 400 + i * 0.8) * 6);
+    }
+
+    return 4;
   };
 
-  // ── Supabase Session Sync ──
-  useEffect(() => {
-    const createSession = async () => {
-      if (!isSupabaseConfigured()) return;
-      try {
-        const kundliId = localStorage.getItem('current_kundli_id');
-        const { data, error } = await supabase
-          .from('voice_sessions')
-          .insert({
-            user_id: isUUID(user?.id) ? user.id : null,
-            kundli_id: isUUID(kundliId) ? kundliId : null,
-            messages: [],
-            session_duration: 0,
-          })
-          .select()
-          .single();
-
-        if (!error && data?.id) {
-          setSessionId(data.id);
-          console.log('Voice session created ✅', data.id);
-        }
-      } catch (err) {
-        console.error('Session create failed:', err);
-      }
-    };
-
-    createSession();
-  }, [user]);
-
-  const saveMessages = async (updatedMessages) => {
-    if (!sessionId || !isSupabaseConfigured()) return;
-    try {
-      await supabase
-        .from('voice_sessions')
-        .update({
-          messages: updatedMessages,
-          session_duration: seconds,
-        })
-        .eq('id', sessionId);
-      console.log('Voice session messages saved ✅');
-    } catch (err) {
-      console.error('Messages save failed:', err);
-    }
-  };
-
-  // ── Handle Send Message (Voice & Text) ──
-  const handleSendMessage = async (text) => {
-    if (!text || !text.trim()) return;
-    const queryText = text.trim();
-
-    // Stop any active speech
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    // Add user message to chat
-    const userMsg = {
-      id: Date.now(),
-      role: 'user',
-      text: queryText,
-      time: new Date().toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
-    const afterUserMessages = [...messages, userMsg];
-    setMessages(afterUserMessages);
-    saveMessages(afterUserMessages);
-
-    // Show typing indicator
-    setIsTyping(true);
-    setVoiceState('speaking');
-
-    try {
-      // Call AI with exact real user kundli context
-      const response = await generateVoiceResponse(queryText, kundliData);
-      const answerText =
-        typeof response === 'string'
-          ? response
-          : response?.answer ||
-            response?.response ||
-            response?.reply ||
-            response?.insights ||
-            'Based on your Vedic chart, your planetary alignment brings clarity, wisdom, and auspicious progress.';
-
-      const aiMsg = {
-        id: Date.now() + 1,
-        role: 'ai',
-        text: answerText,
-        time: new Date().toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
-      const finalMessages = [...afterUserMessages, aiMsg];
-      setMessages(finalMessages);
-      saveMessages(finalMessages);
-
-      // Speak response out loud
-      speakText(answerText);
-    } catch (err) {
-      console.warn('Voice response error:', err);
-      const errorMsg = {
-        id: Date.now() + 1,
-        role: 'ai',
-        text: 'Sorry, could not connect. Please try asking again.',
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      };
-      const finalMessages = [...afterUserMessages, errorMsg];
-      setMessages(finalMessages);
-      saveMessages(finalMessages);
-      setVoiceState('idle');
-    } finally {
-      setIsTyping(false);
+  const getBarColor = () => {
+    switch (voiceState) {
+      case 'listening':
+        return '#C8822A';
+      case 'speaking':
+        return '#2AABA8';
+      case 'thinking':
+        return 'rgba(200,130,42,0.5)';
+      default:
+        return 'rgba(232,228,220,0.2)';
     }
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: 'var(--col-midnight)' }}>
-      <StarField count={120} />
-      <main className="relative z-10 max-w-4xl mx-auto px-5 pt-28 pb-20">
-        <VoiceHeader />
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '3px',
+        height: '80px',
+        justifyContent: 'center',
+      }}
+    >
+      {bars.map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ height: getBarHeight(i) }}
+          transition={{ duration: 0.1, ease: 'easeOut' }}
+          style={{
+            width: '3px',
+            borderRadius: '2px',
+            background: getBarColor(),
+            minHeight: '4px',
+            transition: 'background 0.3s',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
-        {/* Real User Kundli Context */}
-        <div className="mt-8">
-          <KundliContext kundliData={kundliData} />
+// ── Mic button with ripple ─────────────
+function MicButton({ voiceState, onClick }) {
+  const isActive = voiceState === 'listening' || voiceState === 'thinking';
+  const isSpeaking = voiceState === 'speaking';
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Ripple rings when listening */}
+      {isActive &&
+        [1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              border: '2px solid rgba(200,130,42,0.4)',
+            }}
+            animate={{
+              scale: [1, 1.5 + i * 0.3],
+              opacity: [0.6, 0],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: 'easeOut',
+            }}
+          />
+        ))}
+
+      <motion.button
+        onClick={onClick}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '28px',
+          background: isSpeaking
+            ? 'linear-gradient(135deg, #2AABA8, #1d8a87)'
+            : 'linear-gradient(135deg, #C8822A, #E09840)',
+          boxShadow: isActive
+            ? '0 0 40px rgba(200,130,42,0.5)'
+            : '0 0 20px rgba(200,130,42,0.2)',
+          transition: 'all 0.3s ease',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {voiceState === 'connecting'
+          ? '⏳'
+          : voiceState === 'thinking'
+          ? '🌟'
+          : isSpeaking
+          ? '⬜'
+          : '🎙️'}
+      </motion.button>
+    </div>
+  );
+}
+
+// ── Message bubble ─────────────────────
+function MessageBubble({ message }) {
+  const isUser = message.role === 'user';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: isUser ? 20 : -20, y: 10 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      transition={{ duration: 0.3 }}
+      style={{
+        display: 'flex',
+        justifyContent: isUser ? 'flex-end' : 'flex-start',
+        marginBottom: '12px',
+      }}
+    >
+      {!isUser && (
+        <div
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            background: 'rgba(42,171,168,0.2)',
+            border: '1px solid rgba(42,171,168,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            marginRight: '8px',
+            flexShrink: 0,
+            marginTop: '4px',
+          }}
+        >
+          ✦
         </div>
+      )}
 
-        {/* Voice Visualization & Interactive Mic */}
-        <div className="mt-12 text-center flex flex-col items-center">
-          <Waveform state={voiceState} />
-          <div className="mt-6">
-            <StatusText state={voiceState} />
+      <div
+        style={{
+          maxWidth: '75%',
+          padding: '10px 14px',
+          borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          background: isUser ? 'rgba(200,130,42,0.12)' : 'rgba(42,171,168,0.08)',
+          border: isUser
+            ? '1px solid rgba(200,130,42,0.25)'
+            : '1px solid rgba(42,171,168,0.2)',
+        }}
+      >
+        {!isUser && (
+          <div
+            style={{
+              fontSize: '0.7rem',
+              color: '#2AABA8',
+              marginBottom: '4px',
+              fontWeight: '600',
+            }}
+          >
+            ✦ ज्योतिष AI
           </div>
-          <div className="mt-6">
-            <MicButton state={voiceState} onClick={toggleMicListening} />
-          </div>
+        )}
+        <p
+          style={{
+            color: '#E8E4DC',
+            fontSize: '0.9rem',
+            lineHeight: '1.5',
+            margin: 0,
+          }}
+        >
+          {message.text}
+        </p>
+        <div
+          style={{
+            fontSize: '0.7rem',
+            color: 'rgba(232,228,220,0.35)',
+            marginTop: '4px',
+            textAlign: isUser ? 'right' : 'left',
+          }}
+        >
+          {message.time}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── MAIN VOICE PAGE ────────────────────
+export default function Voice() {
+  const navigate = useNavigate();
+
+  // State
+  const [voiceState, setVoiceState] = useState('idle');
+  const [messages, setMessages] = useState([]);
+  const [textInput, setTextInput] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+  const [error, setError] = useState(null);
+  const [micPermission, setMicPermission] = useState('unknown'); // 'unknown'|'granted'|'denied'
+
+  // Kundli data
+  const [kundliData, setKundliData] = useState(null);
+
+  // Refs
+  const sessionRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const timerRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const audioLevelRef = useRef(0);
+
+  // ── Load kundli data on mount ─────────
+  useEffect(() => {
+    const stored = localStorage.getItem('kundli_data');
+    if (stored) {
+      try {
+        setKundliData(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse kundli data', e);
+      }
+    }
+  }, []);
+
+  // ── Auto scroll messages ──────────────
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+    });
+  }, [messages]);
+
+  // ── Session timer ─────────────────────
+  useEffect(() => {
+    if (
+      voiceState !== 'idle' &&
+      voiceState !== 'disconnected' &&
+      voiceState !== 'error'
+    ) {
+      timerRef.current = setInterval(() => {
+        setSeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [voiceState]);
+
+  // ── Waveform animation ────────────────
+  useEffect(() => {
+    const animate = () => {
+      setAudioLevel(audioLevelRef.current);
+      animFrameRef.current = requestAnimationFrame(animate);
+    };
+    animFrameRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, []);
+
+  // ── Cleanup on unmount ────────────────
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.stop();
+      clearInterval(timerRef.current);
+      cancelAnimationFrame(animFrameRef.current);
+    };
+  }, []);
+
+  // ── Format timer ──────────────────────
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
+
+  // ── Add message to chat ───────────────
+  const addMessage = (role, text) => {
+    const time = new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, text, time }]);
+  };
+
+  // ── Start voice session ───────────────
+  const handleStartSession = async () => {
+    setError(null);
+    setVoiceState('requesting_mic');
+
+    // Check mic permission first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicPermission('granted');
+    } catch (err) {
+      setMicPermission('denied');
+      setError('Microphone access denied. Please allow mic access and try again.');
+      setVoiceState('error');
+      return;
+    }
+
+    setVoiceState('connecting');
+
+    const session = new GeminiLiveSession();
+    sessionRef.current = session;
+
+    // Set callbacks
+    session.onStateChange = (state) => {
+      setVoiceState(state);
+    };
+
+    session.onAiResponse = (text) => {
+      if (text && text.trim()) {
+        addMessage('ai', text);
+      }
+    };
+
+    session.onAudioLevel = (level) => {
+      audioLevelRef.current = level;
+    };
+
+    session.onError = (err) => {
+      setError(err?.message || 'Connection failed. Please try again.');
+      setVoiceState('error');
+    };
+
+    const success = await session.start(kundliData);
+
+    if (success) {
+      // Welcome message
+      setTimeout(() => {
+        addMessage(
+          'ai',
+          kundliData
+            ? `Namaste ${kundliData.name}! I can see your complete Vedic chart. Your ${kundliData.lagna} Lagna gives you a unique cosmic blueprint. What would you like to know?`
+            : 'Namaste! I am your Vedic astrology guide. Please share your birth details and ask me anything about your cosmic journey.'
+        );
+      }, 1500);
+    }
+  };
+
+  // ── End session ───────────────────────
+  const handleEndSession = async () => {
+    await sessionRef.current?.stop();
+    sessionRef.current = null;
+    setVoiceState('disconnected');
+    setSeconds(0);
+    addMessage(
+      'ai',
+      'Session ended. Jai Jyotisha! 🙏 Come back anytime for cosmic guidance.'
+    );
+  };
+
+  // ── Send text message ─────────────────
+  const handleSendText = async () => {
+    const text = textInput.trim();
+    if (!text) return;
+
+    addMessage('user', text);
+    setTextInput('');
+
+    if (sessionRef.current?.isActive) {
+      await sessionRef.current.sendText(text);
+    } else {
+      // No active session — use OpenAI fallback
+      try {
+        const { generateVoiceResponse } = await import('@/lib/aiService');
+        const response = await generateVoiceResponse(text, kundliData);
+        addMessage('ai', response?.answer || response || 'Cosmic insights received.');
+      } catch (err) {
+        addMessage(
+          'ai',
+          'Sorry, I could not connect. Please start a voice session or verify your API key.'
+        );
+      }
+    }
+  };
+
+  // ── Suggested questions ───────────────
+  const SUGGESTIONS = [
+    'What does my Lagna reveal about me?',
+    'Tell me about my current Mahadasha',
+    'When will I get married?',
+    'What career suits me best?',
+    'Are there any Yogas in my chart?',
+    'What are my lucky numbers?',
+  ];
+
+  const handleSuggestion = async (question) => {
+    addMessage('user', question);
+    if (sessionRef.current?.isActive) {
+      await sessionRef.current.sendText(question);
+    } else {
+      try {
+        const { generateVoiceResponse } = await import('@/lib/aiService');
+        const response = await generateVoiceResponse(question, kundliData);
+        addMessage('ai', response?.answer || response || 'Cosmic insights received.');
+      } catch (err) {
+        addMessage(
+          'ai',
+          'Sorry, I could not connect. Please start a voice session.'
+        );
+      }
+    }
+  };
+
+  // ── Status text ───────────────────────
+  const getStatusText = () => {
+    switch (voiceState) {
+      case 'idle':
+        return 'Tap the mic to begin your cosmic conversation';
+      case 'requesting_mic':
+        return 'Requesting microphone access...';
+      case 'connecting':
+        return 'Connecting to ज्योतिष AI...';
+      case 'listening':
+        return 'Listening... speak your question';
+      case 'thinking':
+        return '✦ Reading the stars...';
+      case 'speaking':
+        return 'ज्योतिष AI is speaking';
+      case 'disconnected':
+        return 'Session ended';
+      case 'error':
+        return error || 'Something went wrong';
+      default:
+        return '';
+    }
+  };
+
+  const isSessionActive = ![
+    'idle',
+    'disconnected',
+    'error',
+    'requesting_mic',
+    'connecting',
+  ].includes(voiceState);
+
+  return (
+    <main
+      style={{
+        background: '#0D0F2B',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <StarField count={80} />
+
+      {/* ── Navbar ── */}
+      <nav
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 32px',
+          position: 'relative',
+          zIndex: 10,
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <button
+          onClick={() => navigate('/kundli')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(232,228,220,0.6)',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          ← Back to Kundli
+        </button>
+
+        <div
+          style={{
+            fontFamily: 'Yatra One, serif',
+            fontSize: '1.2rem',
+            color: '#C8822A',
+          }}
+        >
+          ✦ ज्योतिष
         </div>
 
-        {/* Quick Astrological Suggestion Chips */}
-        <div className="mt-10">
-          <Suggestions show={true} onSelect={(q) => handleSendMessage(q)} onAsk={(q) => handleSendMessage(q)} />
+        <div
+          style={{
+            background: 'rgba(42,171,168,0.1)',
+            border: '1px solid rgba(42,171,168,0.3)',
+            borderRadius: '20px',
+            padding: '4px 12px',
+            fontSize: '0.75rem',
+            color: '#2AABA8',
+          }}
+        >
+          Powered by Gemini Live · Zephyr
+        </div>
+      </nav>
+
+      {/* ── Main content ── */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: '720px',
+          width: '100%',
+          margin: '0 auto',
+          padding: '20px',
+          position: 'relative',
+          zIndex: 10,
+        }}
+      >
+        {/* Title */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h1
+            style={{
+              fontFamily: 'Yatra One, serif',
+              fontSize: 'clamp(24px, 4vw, 36px)',
+              color: '#E8E4DC',
+              marginBottom: '8px',
+            }}
+          >
+            Voice Astrology
+          </h1>
+          <p style={{ color: 'rgba(232,228,220,0.5)', fontSize: '0.9rem' }}>
+            Ask anything about your kundli and destiny
+          </p>
         </div>
 
-        {/* Conversation List with Typing Indicator */}
-        <div className="mt-8">
-          <Conversation messages={messages} isTyping={isTyping} />
-        </div>
-
-        {/* ── Switch to Text / Text Input ── */}
-        <div className="mt-8">
-          {inputMode === 'text' ? (
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                padding: '12px 16px',
-                background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '16px',
-              }}
-            >
-              <input
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                placeholder="Type your question..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && textInput.trim()) {
-                    handleSendMessage(textInput);
-                    setTextInput('');
-                  }
-                }}
+        {/* Kundli context card */}
+        {kundliData && (
+          <div
+            style={{
+              background: 'rgba(200,130,42,0.06)',
+              border: '1px solid rgba(200,130,42,0.2)',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <div
                 style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
+                  color: '#C8822A',
+                  fontSize: '0.75rem',
+                  marginBottom: '2px',
+                }}
+              >
+                Reading kundli for:
+              </div>
+              <div
+                style={{
                   color: '#E8E4DC',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: '600',
                   fontSize: '0.95rem',
                 }}
-                autoFocus
-              />
-              <button
-                onClick={() => {
-                  if (textInput.trim()) {
-                    handleSendMessage(textInput);
-                    setTextInput('');
-                  }
-                }}
+              >
+                {kundliData.name}
+              </div>
+              <div
                 style={{
-                  background: 'linear-gradient(135deg, #C8822A, #E09840)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '8px 16px',
-                  color: '#0D0F2B',
-                  fontWeight: '600',
-                  cursor: 'pointer',
+                  color: 'rgba(232,228,220,0.5)',
+                  fontSize: '0.8rem',
                 }}
               >
-                Send →
-              </button>
+                {kundliData.lagna} · {kundliData.rashi}
+              </div>
             </div>
-          ) : (
-            <div className="flex justify-center">
-              <button
-                onClick={() => setInputMode('text')}
-                className="btn-ghost text-sm cursor-pointer"
-                style={{ padding: '12px 24px' }}
-              >
-                ⌨ Switch to text
-              </button>
-            </div>
-          )}
+            <button
+              onClick={() => navigate('/onboarding')}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(200,130,42,0.3)',
+                borderRadius: '8px',
+                color: '#C8822A',
+                padding: '6px 12px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              Change
+            </button>
+          </div>
+        )}
 
-          {inputMode === 'text' && (
-            <div className="flex justify-center mt-3">
-              <button
-                onClick={() => setInputMode('voice')}
-                className="btn-ghost text-xs cursor-pointer"
-                style={{ padding: '8px 16px', color: 'var(--col-moonstone-dim)' }}
-              >
-                🎙 Switch to voice
-              </button>
-            </div>
-          )}
+        {/* Waveform */}
+        <Waveform level={audioLevel} voiceState={voiceState} />
+
+        {/* Status text */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={voiceState}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            style={{
+              textAlign: 'center',
+              color:
+                voiceState === 'error' ? '#e07070' : 'rgba(232,228,220,0.6)',
+              fontSize: '0.9rem',
+              marginBottom: '20px',
+              minHeight: '24px',
+            }}
+          >
+            {getStatusText()}
+          </motion.p>
+        </AnimatePresence>
+
+        {/* Mic button */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '24px',
+          }}
+        >
+          <MicButton
+            voiceState={voiceState}
+            onClick={isSessionActive ? handleEndSession : handleStartSession}
+          />
         </div>
 
-        {/* ── Session Timer ── */}
-        <div className="mt-6">
-          <SessionBar seconds={seconds} />
+        {/* Suggested questions — only when idle */}
+        <AnimatePresence>
+          {(voiceState === 'idle' || voiceState === 'listening') &&
+            messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                style={{ marginBottom: '20px' }}
+              >
+                <p
+                  style={{
+                    color: 'rgba(232,228,220,0.4)',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    marginBottom: '10px',
+                  }}
+                >
+                  Try asking...
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {SUGGESTIONS.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleSuggestion(q)}
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '20px',
+                        padding: '6px 14px',
+                        color: 'rgba(232,228,220,0.7)',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        fontFamily: 'DM Sans, sans-serif',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.borderColor = 'rgba(200,130,42,0.4)';
+                        e.target.style.color = '#C8822A';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                        e.target.style.color = 'rgba(232,228,220,0.7)';
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* Chat messages */}
+        {messages.length > 0 && (
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              marginBottom: '16px',
+              maxHeight: '350px',
+              paddingRight: '4px',
+            }}
+          >
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} />
+            ))}
+
+            {/* Typing indicator */}
+            {voiceState === 'thinking' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  background: 'rgba(42,171,168,0.08)',
+                  border: '1px solid rgba(42,171,168,0.2)',
+                  borderRadius: '16px 16px 16px 4px',
+                  width: 'fit-content',
+                  marginBottom: '12px',
+                }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.15,
+                    }}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#2AABA8',
+                    }}
+                  />
+                ))}
+              </motion.div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+
+        {/* Text input bar */}
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px',
+            padding: '10px 14px',
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            marginBottom: '12px',
+          }}
+        >
+          <input
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && textInput.trim()) {
+                handleSendText();
+              }
+            }}
+            placeholder="Or type your question here..."
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#E8E4DC',
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: '0.9rem',
+            }}
+          />
+          <button
+            onClick={handleSendText}
+            disabled={!textInput.trim()}
+            style={{
+              background: textInput.trim()
+                ? 'linear-gradient(135deg, #C8822A, #E09840)'
+                : 'rgba(255,255,255,0.08)',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '8px 16px',
+              color: textInput.trim() ? '#0D0F2B' : 'rgba(232,228,220,0.3)',
+              fontWeight: '600',
+              cursor: textInput.trim() ? 'pointer' : 'not-allowed',
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: '0.85rem',
+              transition: 'all 0.2s',
+            }}
+          >
+            Send →
+          </button>
         </div>
-      </main>
-    </div>
+
+        {/* Session info */}
+        {isSessionActive && (
+          <p
+            style={{
+              textAlign: 'center',
+              color: 'rgba(232,228,220,0.3)',
+              fontSize: '0.75rem',
+              fontFamily: 'JetBrains Mono, monospace',
+            }}
+          >
+            Session active · {formatTime(seconds)} elapsed · Tap mic to end
+          </p>
+        )}
+      </div>
+    </main>
   );
 }
