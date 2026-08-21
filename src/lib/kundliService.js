@@ -450,54 +450,84 @@ export function calculateNumerology(name, dob) {
 }
 
 // ── Supabase Kundli Operations ───────────────────
-export async function saveKundli(kundliData) {
+export async function saveKundli(arg1, arg2) {
+  let userId = null;
+  let kundliData = null;
+
+  if (arg2 && typeof arg2 === 'object') {
+    // Called as saveKundli(userId, kundliData)
+    userId = typeof arg1 === 'string' && isUUID(arg1) ? arg1 : null;
+    kundliData = arg2;
+  } else if (arg1 && typeof arg1 === 'object') {
+    // Called as saveKundli(kundliData)
+    kundliData = arg1;
+    userId = typeof kundliData.user_id === 'string' && isUUID(kundliData.user_id) ? kundliData.user_id : null;
+  }
+
+  if (!kundliData) {
+    console.error('saveKundli called with invalid parameters:', { arg1, arg2 });
+    return null;
+  }
+
+  // If userId is still null, try fetching current authenticated user session
+  if (!userId && isSupabaseConfigured()) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const sessionUser = sessionData?.session?.user;
+      if (sessionUser?.id && isUUID(sessionUser.id)) {
+        userId = sessionUser.id;
+      }
+    } catch (e) {
+      /* ignore auth session check */
+    }
+  }
+
   if (!isSupabaseConfigured()) {
     console.warn('Supabase not configured, saving to localStorage only.');
     return { id: 'local_' + Date.now(), ...kundliData };
   }
 
   try {
-    const isLocalUser = !isUUID(kundliData.user_id);
-    const userId = isLocalUser ? null : kundliData.user_id;
-
     const payload = {
       user_id: userId,
-      name: kundliData.name,
-      date_of_birth: kundliData.date_of_birth,
-      time_of_birth: kundliData.time_of_birth,
-      birth_place: kundliData.birth_place,
-      latitude: kundliData.latitude,
-      longitude: kundliData.longitude,
-      lagna: kundliData.lagna,
-      rashi: kundliData.rashi,
-      nakshatra: kundliData.nakshatra,
-      nakshatra_pada: kundliData.nakshatra_pada,
-      nakshatra_lord: kundliData.nakshatra_lord,
-      gana: kundliData.gana,
-      life_path_number: kundliData.life_path_number,
-      destiny_number: kundliData.destiny_number,
-      soul_urge_number: kundliData.soul_urge_number,
-      planets_data: kundliData.planets,
-      ayanamsha: kundliData.ayanamsha,
-      houses: kundliData.houses,
-      dashas: kundliData.dashas,
-      current_dasha: kundliData.current_dasha,
-      is_manglik: kundliData.is_manglik,
-      ai_report: kundliData.ai_report,
-      pdf_url: kundliData.pdf_url,
+      name: kundliData.name || 'Seeker',
+      date_of_birth: kundliData.date_of_birth || (typeof kundliData.dob === 'string' ? kundliData.dob : null),
+      time_of_birth: kundliData.time_of_birth || null,
+      birth_place: kundliData.birth_place || kundliData.birthPlace || null,
+      latitude: kundliData.latitude || null,
+      longitude: kundliData.longitude || null,
+      lagna: kundliData.lagna || null,
+      rashi: kundliData.rashi || null,
+      nakshatra: kundliData.nakshatra || null,
+      nakshatra_pada: kundliData.nakshatra_pada || kundliData.nakshatraPada || null,
+      nakshatra_lord: kundliData.nakshatra_lord || kundliData.nakshatraLord || null,
+      gana: kundliData.gana || null,
+      life_path_number: kundliData.life_path_number || kundliData.lifePathNumber || null,
+      destiny_number: kundliData.destiny_number || kundliData.destinyNumber || null,
+      soul_urge_number: kundliData.soul_urge_number || kundliData.soulUrgeNumber || null,
+      planets_data: kundliData.planets || kundliData.planets_data || null,
+      ayanamsha: kundliData.ayanamsha || null,
+      houses: kundliData.houses || null,
+      dashas: kundliData.dashas || null,
+      current_dasha: kundliData.current_dasha || null,
+      is_manglik: typeof kundliData.is_manglik === 'boolean' ? kundliData.is_manglik : null,
+      ai_report: kundliData.ai_report || null,
+      pdf_url: kundliData.pdf_url || null,
     };
 
+    console.log('✦ Saving Kundli to Supabase with user_id:', userId);
     const { data, error } = await supabase.from('kundlis').insert([payload]).select().single();
 
     if (error) {
       console.error('Supabase save error:', error);
-      throw error;
+      return { id: 'local_' + Date.now(), ...kundliData };
     }
 
+    console.log('✦ Kundli saved successfully to Supabase:', data?.id);
     return data;
   } catch (err) {
     console.error('saveKundli failed:', err);
-    throw err;
+    return { id: 'local_' + Date.now(), ...kundliData };
   }
 }
 
