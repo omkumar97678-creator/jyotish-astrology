@@ -174,7 +174,7 @@ export class GeminiLiveSession {
 
             try {
               this.session.sendRealtimeInput({
-                media: {
+                audio: {
                   mimeType: 'audio/pcm;rate=16000',
                   data: base64Chunk,
                 },
@@ -291,7 +291,7 @@ export class GeminiLiveSession {
 
       try {
         this.session.sendRealtimeInput({
-          media: {
+          audio: {
             mimeType: 'audio/pcm;rate=16000',
             data: base64Chunk,
           },
