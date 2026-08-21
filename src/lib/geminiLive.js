@@ -1,64 +1,10 @@
-import { GoogleGenAI, Modality } from '@google/genai';
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { getCompleteNumerology } from './kundliService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
-
-// ── Convert Linear PCM16 to Standard WAV Blob ────────
-export function pcm16ToWavBlob(base64Pcm, sampleRate = 24000, numChannels = 1) {
-  const binaryStr = atob(base64Pcm);
-  const dataSize = binaryStr.length;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  // RIFF identifier
-  view.setUint8(0, 'R'.charCodeAt(0));
-  view.setUint8(1, 'I'.charCodeAt(0));
-  view.setUint8(2, 'F'.charCodeAt(0));
-  view.setUint8(3, 'F'.charCodeAt(0));
-  view.setUint32(4, 36 + dataSize, true);
-  view.setUint8(8, 'W'.charCodeAt(0));
-  view.setUint8(9, 'A'.charCodeAt(0));
-  view.setUint8(10, 'V'.charCodeAt(0));
-  view.setUint8(11, 'E'.charCodeAt(0));
-
-  // fmt subchunk
-  view.setUint8(12, 'f'.charCodeAt(0));
-  view.setUint8(13, 'm'.charCodeAt(0));
-  view.setUint8(14, 't'.charCodeAt(0));
-  view.setUint8(15, ' '.charCodeAt(0));
-  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-  view.setUint16(20, 1, true);  // AudioFormat (1 for PCM)
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * numChannels * 2, true); // ByteRate
-  view.setUint16(32, numChannels * 2, true); // BlockAlign
-  view.setUint16(34, 16, true); // BitsPerSample
-
-  // data subchunk
-  view.setUint8(36, 'd'.charCodeAt(0));
-  view.setUint8(37, 'a'.charCodeAt(0));
-  view.setUint8(38, 't'.charCodeAt(0));
-  view.setUint8(39, 'a'.charCodeAt(0));
-  view.setUint32(40, dataSize, true);
-
-  // Write PCM data
-  const uint8View = new Uint8Array(buffer, 44);
-  for (let i = 0; i < dataSize; i++) {
-    uint8View[i] = binaryStr.charCodeAt(i);
-  }
-
-  return new Blob([buffer], { type: 'audio/wav' });
-}
-
-// ── Build Conversational Astrologer System Prompt ─────
-export function buildAstroContext(kundliData) {
+// ── Build Full Astrologer System Prompt with Kundli & Numerology ──
+export function buildAstroSystemPrompt(kundliData) {
   const name = kundliData?.name || 'Seeker';
   const dob = kundliData?.date_of_birth || kundliData?.dob || '2004-09-08';
   const birthPlace = kundliData?.birth_place || kundliData?.place || 'Delhi, India';
@@ -67,7 +13,7 @@ export function buildAstroContext(kundliData) {
   const rashi = kundliData?.rashi || 'Gemini (Mithun)';
   const nakshatra = kundliData?.nakshatra || 'Ardra';
 
-  // Calculate complete numerology
+  // Calculate complete numerology numbers
   const numerology = getCompleteNumerology(name, dob);
   const mulank = kundliData?.mulank || numerology?.mulank || 8;
   const lifePath = kundliData?.life_path_number || numerology?.lifePathNumber || 5;
@@ -78,17 +24,17 @@ export function buildAstroContext(kundliData) {
   const dasha = kundliData?.current_dasha?.lord || kundliData?.mahadasha?.activeDasha?.planet || 'Active Mahadasha';
 
   return `
-You are a warm, wise, authentic Indian Vedic Astrologer (Jyotishi) speaking on a 1-on-1 consultation with ${name}.
+You are a warm, wise, authentic Vedic Astrologer (Jyotishi) speaking on a 1-on-1 LIVE voice phone consultation with ${name}.
 
-SEEKER'S COMPLETE BIRTH CHART & NUMEROLOGY PROFILE:
-- Seeker Name: ${name}
-- Date of Birth (DOB): ${typeof dob === 'object' ? `${dob.year}-${dob.month}-${dob.day}` : dob}
+SEEKER'S VEDIC CHART & NUMEROLOGY CONTEXT:
+- Name: ${name}
+- Date of Birth: ${typeof dob === 'object' ? `${dob.year}-${dob.month}-${dob.day}` : dob}
 - Birth Place: ${birthPlace}
 - Birth Time: ${typeof birthTime === 'object' ? `${birthTime.hour}:${birthTime.minute} ${birthTime.period || ''}` : birthTime}
 - Ascendant / Lagna: ${lagna}
 - Moon Sign (Chandra Rashi): ${rashi}
 - Janma Nakshatra: ${nakshatra}
-- Current Mahadasha: ${dasha}
+- Active Mahadasha: ${dasha}
 - Mulank (Birth Day Number): ${mulank}
 - Bhagyank / Life Path Number: ${lifePath}
 - Namank / Destiny Number: ${destiny}
@@ -96,174 +42,332 @@ SEEKER'S COMPLETE BIRTH CHART & NUMEROLOGY PROFILE:
 - Lucky Numbers: ${luckyNumbers}
 - Lucky Colors: ${luckyColors}
 
-CRITICAL RULES (READ CAREFULLY):
-1. **NEVER ASK FOR BIRTH DETAILS**:
-   - You ALREADY have the seeker's complete profile above (Name, DOB, Time, Place, Lagna, Rashi, Nakshatra, Mulank, Life Path Number, Destiny Number).
-   - NEVER ask "Mujhe apna name ya date of birth batao" or "Please share your birth details".
-   - If the seeker asks "Mera Life Path Number kya hai?" or "Mera Mulank kya hai?", answer IMMEDIATELY with their exact numbers (Life Path: ${lifePath}, Mulank: ${mulank}, Destiny: ${destiny}) and explain its astrological meaning!
-2. **Natural Human Conversation**:
-   - For greetings ("hello", "hi", "namaste", "kaise ho", "sun rahe ho"):
-     Reply warmly: "Namaste ${name} ji! Ji main aapko sun raha hoon. Aaj aap apne jeevan ya kundli ke kis vishay me baat karna chahte hain?"
-   - For specific questions (career, marriage, health, yogas, numbers, dasha):
-     Provide an authentic, uplifting, personalized answer in 2 to 3 sentences using their chart details above.
-3. **Format**:
-   - Speak in clear conversational Hindi-English / English.
-   - Do NOT use markdown asterisks (* or **) or bullet points in your output.
+STRICT CONVERSATIONAL RULES:
+1. **Never Ask for Birth Details**:
+   - You ALREADY have the seeker's complete chart and numerology numbers above.
+   - If seeker asks "Mera Life Path Number kya hai?" or "Mera Mulank kya hai?", answer IMMEDIATELY with their exact numbers (Life Path: ${lifePath}, Mulank: ${mulank}, Destiny: ${destiny}).
+2. **Natural Phone Call Flow**:
+   - Speak naturally like a real human astrologer on a phone call.
+   - If user says "Hello" or "Namaste", greet them warmly in 1 short sentence: "Namaste ${name} ji! Main aapka Jyotish saathi hoon. Kahiye, aaj aap kis vishay me baat karna chahte hain?"
+   - For astrology questions, keep responses concise (2 to 3 spoken sentences) so the user can easily talk back and forth.
+3. **Audio-Only Output**:
+   - Never use markdown (*, **, #, bullet points). Speak in clean, warm conversational Hindi-English / English.
 `;
 }
 
-// ── Generate Astrological Response via Gemini 3.6 Flash ──
-export async function generateGeminiAstrologyAnswer(question, kundliData) {
-  const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  const systemPrompt = buildAstroContext(kundliData);
-
-  try {
-    const response = await client.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: `${systemPrompt}\n\nSeeker Question: "${question}"\nAstrologer Response:`,
-    });
-
-    const text = response.text?.trim();
-    return text || `Namaste ${kundliData?.name || 'ji'}! May the divine stars illuminate your path. How can I guide you today?`;
-  } catch (err) {
-    console.warn('Gemini 3.6 Flash generation error:', err);
-    return `Namaste ${kundliData?.name || 'ji'}! Ji main sun raha hoon. Kripya apna prashna poochein.`;
+// ── Convert PCM Float32 to 16-bit PCM Little Endian ──────────────
+function floatTo16BitPCM(float32Array) {
+  const buffer = new ArrayBuffer(float32Array.length * 2);
+  const view = new DataView(buffer);
+  for (let i = 0; i < float32Array.length; i++) {
+    let s = Math.max(-1, Math.min(1, float32Array[i]));
+    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
+  return buffer;
 }
 
-// ── Ultra-HD Studio Natural Voice Generator ───────────
-// 1. Google Gemini 3.1 Flash TTS (Zephyr Voice)
-// 2. OpenAI Neural Studio Voice (Nova / Alloy - 100% human natural tone)
-export async function generateSpeechAudioBlob(text, voiceName = 'Zephyr') {
-  const cleanText = text.replace(/[*_#`~]/g, '').trim();
-
-  // Tier 1: Try Gemini TTS (Zephyr Voice)
-  if (GEMINI_API_KEY) {
-    try {
-      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-      const response = await client.models.generateContent({
-        model: 'gemini-3.1-flash-tts-preview',
-        contents: cleanText,
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: voiceName || 'Zephyr'
-              }
-            }
-          }
-        }
-      });
-
-      const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (audioData) {
-        return pcm16ToWavBlob(audioData, 24000, 1);
-      }
-    } catch (err) {
-      console.warn('Gemini TTS limit, using OpenAI HD Studio Voice:', err?.message || err);
-    }
+// ── ArrayBuffer to Base64 ─────────────────────────────────────────
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
-
-  // Tier 2: OpenAI HD Studio Voice (Nova / Alloy)
-  if (OPENAI_API_KEY) {
-    try {
-      const mp3 = await openai.audio.speech.create({
-        model: 'tts-1',
-        voice: 'nova', // Expressive, natural, warm human tone
-        input: cleanText,
-      });
-
-      const arrayBuffer = await mp3.arrayBuffer();
-      return new Blob([arrayBuffer], { type: 'audio/mp3' });
-    } catch (err) {
-      console.warn('OpenAI SDK TTS error:', err?.message || err);
-    }
-  }
-
-  return null;
+  return btoa(binary);
 }
 
-// ── Main Live Voice Call Session Manager ───────────────
-export class LiveVoiceCallSession {
+// ── Decode Base64 PCM16 to Float32Array ───────────────────────────
+function base64PCM16ToFloat32(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const buffer = new ArrayBuffer(len);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const view = new DataView(buffer);
+  const numSamples = Math.floor(len / 2);
+  const float32 = new Float32Array(numSamples);
+  for (let i = 0; i < numSamples; i++) {
+    const int16 = view.getInt16(i * 2, true);
+    float32[i] = int16 < 0 ? int16 / 32768 : int16 / 32767;
+  }
+  return float32;
+}
+
+// ── Gemini 3.1 Live Session Manager ──────────────────────────────
+export class GeminiLiveSession {
   constructor() {
+    this.client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    this.session = null;
     this.isActive = false;
-    this.isSpeaking = false;
-    this.isRecognizing = false;
 
-    // Web Audio
-    this.audioContext = null;
+    // Audio Input (Microphone)
     this.mediaStream = null;
-    this.analyser = null;
-    this.animFrameId = null;
-    this.activeAudio = null;
+    this.inputAudioContext = null;
+    this.inputSource = null;
+    this.processor = null;
+    this.inputAnalyser = null;
 
-    // Speech Recognition
-    this.recognition = null;
+    // Audio Output (Speaker Queue)
+    this.outputAudioContext = null;
+    this.nextPlayTime = 0;
+    this.isPlaying = false;
+    this.audioQueue = [];
+    this.activeSourceNodes = [];
 
     // Callbacks
-    this.onAudioLevel = null;
-    this.onStateChange = null; // 'listening' | 'thinking' | 'speaking' | 'disconnected'
-    this.onError = null;
+    this.onStateChange = null; // 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'disconnected' | 'error'
+    this.onAudioLevel = null;  // (level: number) => void
+    this.onAiResponse = null;  // (text: string) => void
+    this.onError = null;       // (err: any) => void
 
-    this.kundliData = null;
-    this.voiceName = 'Zephyr';
+    this.animFrameId = null;
   }
 
-  // ── Start Live Call ───────────────────
-  async startCall(kundliData, voiceName = 'Zephyr') {
-    this.kundliData = kundliData;
-    this.voiceName = voiceName || 'Zephyr';
+  // ── Start Gemini Live Session ───────────────────
+  async start(kundliData) {
+    if (this.isActive) return true;
+
     this.isActive = true;
-    this.isSpeaking = false;
+    this.onStateChange?.('connecting');
+
+    const systemPrompt = buildAstroSystemPrompt(kundliData);
 
     try {
-      // 1. Initialize microphone & audio visualizer
+      // 1. Initialize Microphone (Audio Input)
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          channelCount: 1,
+          sampleRate: 16000,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         },
       });
 
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
+      this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: 16000,
+      });
+
+      if (this.inputAudioContext.state === 'suspended') {
+        await this.inputAudioContext.resume();
       }
 
-      const source = this.audioContext.createMediaStreamSource(this.mediaStream);
-      this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = 64;
-      source.connect(this.analyser);
+      this.inputSource = this.inputAudioContext.createMediaStreamSource(this.mediaStream);
+      this.inputAnalyser = this.inputAudioContext.createAnalyser();
+      this.inputAnalyser.fftSize = 64;
+      this.inputSource.connect(this.inputAnalyser);
 
-      this._startWaveformTracking();
-      this._initSpeechRecognition();
+      // ScriptProcessor for 16kHz PCM streaming
+      this.processor = this.inputAudioContext.createScriptProcessor(2048, 1, 1);
+      this.inputSource.connect(this.processor);
+      this.processor.connect(this.inputAudioContext.destination);
 
-      // Initial spoken greeting
-      const greeting = kundliData?.name
-        ? `Namaste ${kundliData.name}! Main aapka Jyotish saathi hoon. Kahiye, aaj aap kis baare me baat karna chahte hain?`
-        : 'Namaste! Main aapka Jyotish saathi hoon. Kahiye, aaj aap kya janna chahte hain?';
+      this.processor.onaudioprocess = (e) => {
+        if (!this.isActive || !this.session) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16Buffer = floatTo16BitPCM(inputData);
+        const base64Chunk = arrayBufferToBase64(pcm16Buffer);
 
-      await this.speakResponse(greeting);
+        try {
+          this.session.sendRealtimeInput({
+            mediaChunks: [
+              {
+                mimeType: 'audio/pcm;rate=16000',
+                data: base64Chunk,
+              },
+            ],
+          });
+        } catch (err) {
+          // Ignore transient send errors
+        }
+      };
+
+      // 2. Initialize Output Audio Context (24kHz for Gemini Live Audio)
+      this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: 24000,
+      });
+      if (this.outputAudioContext.state === 'suspended') {
+        await this.outputAudioContext.resume();
+      }
+      this.nextPlayTime = this.outputAudioContext.currentTime;
+
+      // 3. Connect to Gemini 3.1 Live WebSocket API
+      this.session = await this.client.live.connect({
+        model: 'gemini-3.1-flash-live-preview',
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: 'Zephyr', // Natural, warm conversational voice
+              },
+            },
+          },
+          thinkingConfig: {
+            thinkingLevel: 'minimal', // Lowest latency
+          },
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+        },
+        callbacks: {
+          onopen: () => {
+            console.log('✦ Gemini Live WebSocket connected');
+            this.onStateChange?.('listening');
+            this._startWaveformTracking();
+          },
+          onmessage: (message) => {
+            // Check for AI audio output
+            if (message.serverContent?.modelTurn?.parts) {
+              const parts = message.serverContent.modelTurn.parts;
+              for (const part of parts) {
+                if (part.inlineData?.data) {
+                  this._playAudioChunk(part.inlineData.data);
+                  this.onStateChange?.('speaking');
+                }
+                if (part.text) {
+                  this.onAiResponse?.(part.text);
+                }
+              }
+            }
+
+            // User Interrupted AI speaking
+            if (message.serverContent?.interrupted) {
+              console.log('✦ User interrupted AI — stopping playback');
+              this._stopCurrentPlayback();
+              this.onStateChange?.('listening');
+            }
+
+            // Turn complete
+            if (message.serverContent?.turnComplete) {
+              this._scheduleTurnCompleteCheck();
+            }
+          },
+          onerror: (err) => {
+            console.error('Gemini Live error:', err);
+            this.onError?.(err?.message || 'Gemini Live error');
+          },
+          onclose: (e) => {
+            console.log('Gemini Live session closed:', e);
+            if (this.isActive) {
+              this.stop();
+            }
+          },
+        },
+      });
 
       return true;
     } catch (err) {
-      console.error('Failed to start Voice Call:', err);
-      this.onError?.(err);
-      this.onStateChange?.('disconnected');
+      console.error('Failed to start Gemini Live Session:', err);
+      this.stop();
+      this.onError?.(err?.message || 'Connection failed. Please check mic permissions.');
+      this.onStateChange?.('error');
       return false;
     }
   }
 
-  // ── Track real-time audio waveform level ──
+  // ── Play Incoming PCM Chunk Seamlessly ─────────
+  _playAudioChunk(base64Pcm) {
+    if (!this.outputAudioContext || !this.isActive) return;
+
+    try {
+      const float32Samples = base64PCM16ToFloat32(base64Pcm);
+      const audioBuffer = this.outputAudioContext.createBuffer(
+        1,
+        float32Samples.length,
+        24000
+      );
+      audioBuffer.getChannelData(0).set(float32Samples);
+
+      const sourceNode = this.outputAudioContext.createBufferSource();
+      sourceNode.buffer = audioBuffer;
+      sourceNode.connect(this.outputAudioContext.destination);
+
+      const currentTime = this.outputAudioContext.currentTime;
+      if (this.nextPlayTime < currentTime) {
+        this.nextPlayTime = currentTime + 0.02; // Small 20ms safety offset
+      }
+
+      sourceNode.start(this.nextPlayTime);
+      this.nextPlayTime += audioBuffer.duration;
+      this.isPlaying = true;
+      this.activeSourceNodes.push(sourceNode);
+
+      sourceNode.onended = () => {
+        const idx = this.activeSourceNodes.indexOf(sourceNode);
+        if (idx > -1) this.activeSourceNodes.splice(idx, 1);
+
+        if (
+          this.activeSourceNodes.length === 0 &&
+          this.outputAudioContext &&
+          this.outputAudioContext.currentTime >= this.nextPlayTime - 0.05
+        ) {
+          this.isPlaying = false;
+          if (this.isActive) {
+            this.onStateChange?.('listening');
+          }
+        }
+      };
+    } catch (err) {
+      console.warn('Audio chunk decode/play error:', err);
+    }
+  }
+
+  // ── Stop Current Audio Playback (For Interruptions) ──
+  _stopCurrentPlayback() {
+    for (const source of this.activeSourceNodes) {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    this.activeSourceNodes = [];
+    this.isPlaying = false;
+    if (this.outputAudioContext) {
+      this.nextPlayTime = this.outputAudioContext.currentTime;
+    }
+  }
+
+  // ── Interrupt AI ───────────────────────────────
+  interrupt() {
+    this._stopCurrentPlayback();
+    this.onStateChange?.('listening');
+  }
+
+  // ── Schedule Return to Listening when Queue Ends ──
+  _scheduleTurnCompleteCheck() {
+    const checkInterval = setInterval(() => {
+      if (!this.isActive) {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      if (
+        !this.isPlaying ||
+        !this.outputAudioContext ||
+        this.outputAudioContext.currentTime >= this.nextPlayTime - 0.05
+      ) {
+        clearInterval(checkInterval);
+        this.isPlaying = false;
+        this.onStateChange?.('listening');
+      }
+    }, 150);
+  }
+
+  // ── Waveform Level Tracking ────────────────────
   _startWaveformTracking() {
-    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+    if (!this.inputAnalyser) return;
+    const dataArray = new Uint8Array(this.inputAnalyser.frequencyBinCount);
 
-    const update = () => {
-      if (!this.isActive || !this.analyser) return;
+    const track = () => {
+      if (!this.isActive || !this.inputAnalyser) return;
 
-      this.analyser.getByteFrequencyData(dataArray);
+      this.inputAnalyser.getByteFrequencyData(dataArray);
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
         sum += dataArray[i];
@@ -271,202 +375,85 @@ export class LiveVoiceCallSession {
       const level = sum / dataArray.length / 255;
       this.onAudioLevel?.(level);
 
-      this.animFrameId = requestAnimationFrame(update);
+      this.animFrameId = requestAnimationFrame(track);
     };
 
-    this.animFrameId = requestAnimationFrame(update);
+    this.animFrameId = requestAnimationFrame(track);
   }
 
-  // ── Initialize Speech Recognition Engine ──
-  _initSpeechRecognition() {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  // ── Send Text Prompt through Live Session ──────
+  async sendText(text) {
+    if (!this.session || !this.isActive) return;
 
-    if (!SpeechRecognition) {
-      console.warn('SpeechRecognition not supported in browser');
-      return;
-    }
-
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-IN';
-
-      this.recognition.onstart = () => {
-        this.isRecognizing = true;
-      };
-
-      this.recognition.onresult = async (event) => {
-        if (!this.isActive || this.isSpeaking || this.activeAudio) return;
-
-        const transcript = event.results?.[0]?.[0]?.transcript;
-        if (transcript && transcript.trim()) {
-          console.log('User speech recognized:', transcript);
-          await this.processTurn(transcript);
-        }
-      };
-
-      this.recognition.onerror = (e) => {
-        this.isRecognizing = false;
-        if (e.error === 'no-speech' && this.isActive && !this.isSpeaking && !this.activeAudio) {
-          setTimeout(() => this._startRecognitionSafe(), 300);
-        }
-      };
-
-      this.recognition.onend = () => {
-        this.isRecognizing = false;
-        if (this.isActive && !this.isSpeaking && !this.activeAudio) {
-          setTimeout(() => this._startRecognitionSafe(), 300);
-        }
-      };
-    } catch (err) {
-      console.warn('SpeechRecognition init error:', err);
-    }
-  }
-
-  // ── Safely start recognition ──────────
-  _startRecognitionSafe() {
-    if (!this.isActive || this.isSpeaking || this.activeAudio || !this.recognition) return;
-    if (this.isRecognizing) return;
-
-    try {
-      this.recognition.start();
-    } catch (e) {
-      // If already running, ignore
-    }
-  }
-
-  // ── Safely stop recognition ───────────
-  _stopRecognitionSafe() {
-    if (this.recognition) {
-      try {
-        this.recognition.abort();
-      } catch (e) {
-        /* ignore */
-      }
-      this.isRecognizing = false;
-    }
-  }
-
-  // ── Process Conversation Turn ──────────
-  async processTurn(userSpeech) {
-    if (!this.isActive) return;
-
-    this._stopRecognitionSafe();
     this.onStateChange?.('thinking');
 
     try {
-      // 1. Compute personalized Vedic astrology reading
-      const answer = await generateGeminiAstrologyAnswer(userSpeech, this.kundliData);
-
-      // 2. Speak answer in Ultra-HD Studio Voice
-      await this.speakResponse(answer);
+      await this.session.sendClientContent({
+        turns: [
+          {
+            role: 'user',
+            parts: [{ text: text }],
+          },
+        ],
+        turnComplete: true,
+      });
     } catch (err) {
-      console.error('Turn processing error:', err);
-      if (this.isActive) {
-        this.isSpeaking = false;
-        this.onStateChange?.('listening');
-        this._startRecognitionSafe();
-      }
-    }
-  }
-
-  // ── Speak Response via HD Audio ────────
-  async speakResponse(text) {
-    if (!this.isActive) return;
-
-    this._stopRecognitionSafe();
-    this.isSpeaking = true;
-    this.onStateChange?.('thinking');
-
-    try {
-      const audioBlob = await generateSpeechAudioBlob(text, this.voiceName);
-
-      if (audioBlob && this.isActive) {
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        this.onStateChange?.('speaking');
-
-        await new Promise((resolve) => {
-          const audio = new Audio(audioUrl);
-          this.activeAudio = audio;
-
-          audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            this.activeAudio = null;
-            resolve();
-          };
-
-          audio.onerror = () => {
-            URL.revokeObjectURL(audioUrl);
-            this.activeAudio = null;
-            resolve();
-          };
-
-          audio.play().catch((err) => {
-            console.warn('Audio play error:', err);
-            resolve();
-          });
-        });
-      }
-    } catch (err) {
-      console.error('speakResponse error:', err);
-    }
-
-    // Audio completed — wait 400ms before opening mic again
-    if (this.isActive) {
-      this.isSpeaking = false;
+      console.error('sendText error:', err);
       this.onStateChange?.('listening');
-      setTimeout(() => {
-        if (this.isActive && !this.isSpeaking && !this.activeAudio) {
-          this._startRecognitionSafe();
-        }
-      }, 400);
     }
   }
 
-  // ── Stop active audio playback ────────
-  stopAudio() {
-    if (this.activeAudio) {
-      try {
-        this.activeAudio.pause();
-        this.activeAudio.currentTime = 0;
-      } catch (e) {
-        /* ignore */
-      }
-      this.activeAudio = null;
-    }
-    this.isSpeaking = false;
-  }
-
-  // ── End Call ──────────────────────────
-  async endCall() {
+  // ── Stop / End Session ─────────────────────────
+  async stop() {
     this.isActive = false;
-    this.isSpeaking = false;
-    this.isRecognizing = false;
 
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
 
-    this.stopAudio();
-    this._stopRecognitionSafe();
-    this.recognition = null;
+    this._stopCurrentPlayback();
+
+    if (this.processor) {
+      this.processor.disconnect();
+      this.processor = null;
+    }
+
+    if (this.inputSource) {
+      this.inputSource.disconnect();
+      this.inputSource = null;
+    }
 
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach((t) => t.stop());
+      this.mediaStream.getTracks().forEach((track) => track.stop());
       this.mediaStream = null;
     }
 
-    if (this.audioContext) {
+    if (this.inputAudioContext) {
       try {
-        await this.audioContext.close();
+        await this.inputAudioContext.close();
       } catch (e) {
         /* ignore */
       }
-      this.audioContext = null;
+      this.inputAudioContext = null;
+    }
+
+    if (this.outputAudioContext) {
+      try {
+        await this.outputAudioContext.close();
+      } catch (e) {
+        /* ignore */
+      }
+      this.outputAudioContext = null;
+    }
+
+    if (this.session) {
+      try {
+        if (this.session.close) await this.session.close();
+      } catch (e) {
+        /* ignore */
+      }
+      this.session = null;
     }
 
     this.onStateChange?.('disconnected');
