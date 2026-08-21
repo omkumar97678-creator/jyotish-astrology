@@ -28,9 +28,10 @@ export default function GunaTable({ gunaScores }) {
     } else if (typeof item === 'number') {
       scoredVal = item;
     }
+    const displayScore = Math.min(Number(scoredVal) || 0, g.max);
     return {
       ...g,
-      score: scoredVal,
+      score: displayScore,
     };
   });
 

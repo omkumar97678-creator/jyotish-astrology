@@ -11,6 +11,7 @@ import Mahadasha from '@/components/kundli/Mahadasha';
 import Yogas from '@/components/kundli/Yogas';
 import AshtakvargaTable from '@/components/kundli/AshtakvargaTable';
 import Lucky from '@/components/kundli/Lucky';
+import UpayRemedies from '@/components/kundli/UpayRemedies';
 import BirthPanchang from '@/components/kundli/BirthPanchang';
 import SadeSati from '@/components/kundli/SadeSati';
 import BhavaAnalysis from '@/components/kundli/BhavaAnalysis';
@@ -223,6 +224,9 @@ export default function Kundli() {
         </div>
         <div className="mt-6">
           <Lucky lucky={data.lucky} />
+        </div>
+        <div className="mt-6">
+          <UpayRemedies data={data} />
         </div>
         <div className="mt-6">
           <CompleteAiAnalysis report={aiReport} data={data} />
