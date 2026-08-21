@@ -50,7 +50,10 @@ export default function KundliChart({
           animate: { pathLength: 1, opacity: 1 },
           transition: { duration: 0.6, delay: i * 0.08, ease: 'easeInOut' },
         }
-      : {};
+      : {
+          initial: false,
+          animate: { pathLength: 1, opacity: 1 },
+        };
 
   // Group planets by house to offset multiples
   const planetsByHouse = {};
@@ -67,7 +70,13 @@ export default function KundliChart({
       viewBox="0 0 300 300"
       width={size}
       height={size}
-      style={{ opacity, overflow: 'visible' }}
+      style={{
+        opacity,
+        overflow: 'visible',
+        display: 'block',
+        margin: '0 auto',
+        maxWidth: '100%',
+      }}
       aria-hidden="true"
     >
       {/* 100% Pure Straight Lines */}
@@ -121,15 +130,15 @@ export default function KundliChart({
       {/* Fallback default planets if none passed */}
       {!planets && (
         <>
-          <motion.text x="150" y="60" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☉</motion.text>
-          <motion.text x="60" y="240" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">☽</motion.text>
-          <motion.text x="135" y="35" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">♂</motion.text>
-          <motion.text x="135" y="265" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">☿</motion.text>
-          <motion.text x="165" y="35" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">♃</motion.text>
-          <motion.text x="240" y="60" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">♀</motion.text>
-          <motion.text x="35" y="150" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">♄</motion.text>
-          <motion.text x="165" y="265" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☊</motion.text>
-          <motion.text x="165" y="35" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☋</motion.text>
+          <text x="150" y="60" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☉</text>
+          <text x="60" y="240" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">☽</text>
+          <text x="135" y="35" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">♂</text>
+          <text x="135" y="265" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">☿</text>
+          <text x="165" y="35" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">♃</text>
+          <text x="240" y="60" textAnchor="middle" fill={teal} fontSize="11" fontWeight="700">♀</text>
+          <text x="35" y="150" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">♄</text>
+          <text x="165" y="265" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☊</text>
+          <text x="165" y="35" textAnchor="middle" fill={copper} fontSize="11" fontWeight="700">☋</text>
         </>
       )}
     </svg>
