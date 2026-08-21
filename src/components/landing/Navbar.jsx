@@ -37,7 +37,7 @@ export default function Navbar() {
     { name: t.nav_numerology[lang] || 'Numerology', path: '/numerology', icon: '∑' },
     { name: t.nav_gunmilan[lang] || 'Gun Milan', path: '/gunmilan', icon: '⚭' },
     { name: t.nav_horoscope[lang] || 'Horoscope', path: '/horoscope', icon: '☽' },
-    { name: t.nav_voice[lang] || 'AI Voice', path: '/voice', icon: '🎙️' },
+    { name: t.nav_voice[lang] || 'Voice Consultation', path: '/voice', icon: '🎙️' },
   ];
 
   return (

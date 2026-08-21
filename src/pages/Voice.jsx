@@ -178,7 +178,7 @@ function TypingIndicator() {
           fontFamily: 'DM Sans, sans-serif',
         }}
       >
-        ✦ ज्योतिष AI is reading your chart
+        ✦ ज्योतिषी जी आपकी कुंडली देख रहे हैं...
       </span>
       <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
         {[0, 1, 2].map((i) => (
@@ -260,7 +260,7 @@ function MessageBubble({ message }) {
               fontWeight: '600',
             }}
           >
-            ✦ ज्योतिष AI
+            ✦ ज्योतिषी
           </div>
         )}
         <p
@@ -513,7 +513,6 @@ export default function Voice() {
     setIsTyping(true);
 
     try {
-      // OpenAI text only — NO Gemini, NO audio, completely silent
       const response = await generateVoiceResponse(text, kundliData);
       addTextMessage('ai', response.answer);
     } catch (err) {
@@ -527,8 +526,8 @@ export default function Voice() {
     idle: '✦ Tap the orb to connect with your Jyotishi',
     connecting: 'Establishing cosmic connection...',
     listening: '🎙️ Listening — speak your question',
-    thinking: '✦ Reading the stars...',
-    speaking: 'ज्योतिष AI is speaking (Zephyr Voice)',
+    thinking: '✦ Consulting the planetary positions...',
+    speaking: 'ज्योतिषी बोल रहे हैं (Live Call)',
     disconnected: 'Session ended — Jai Jyotisha 🙏',
     error: error || 'Connection failed. Please check mic permission.',
   };
@@ -553,59 +552,9 @@ export default function Voice() {
     >
       <StarField count={75} />
 
-      {/* ── Top Navbar ── */}
-      <nav
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 28px',
-          position: 'relative',
-          zIndex: 10,
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
-        <button
-          onClick={() => navigate('/kundli')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'rgba(232,228,220,0.6)',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            fontFamily: 'DM Sans, sans-serif',
-          }}
-        >
-          ← Back to Kundli
-        </button>
-
-        <div
-          style={{
-            fontFamily: 'Yatra One, serif',
-            fontSize: '1.25rem',
-            color: '#C8822A',
-          }}
-        >
-          ✦ ज्योतिष AI
-        </div>
-
-        <div
-          style={{
-            background: 'rgba(42,171,168,0.1)',
-            border: '1px solid rgba(42,171,168,0.3)',
-            borderRadius: '20px',
-            padding: '4px 14px',
-            fontSize: '0.75rem',
-            color: '#2AABA8',
-            fontWeight: '500',
-          }}
-        >
-          Gemini 3.1 Live + Zephyr
-        </div>
-      </nav>
-
-      {/* ── Main Content Container ── */}
+      {/* ── Main Content Container (Proper padding to clear fixed top Navbar on mobile & desktop) ── */}
       <div
+        className="pt-24 sm:pt-28 pb-16 px-4 sm:px-6"
         style={{
           flex: 1,
           display: 'flex',
@@ -613,11 +562,54 @@ export default function Voice() {
           maxWidth: '680px',
           width: '100%',
           margin: '0 auto',
-          padding: '24px 20px',
           position: 'relative',
           zIndex: 10,
         }}
       >
+        {/* Top Breadcrumb & Live Consultation Badge */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+            flexWrap: 'wrap',
+            gap: '8px',
+          }}
+        >
+          <button
+            onClick={() => navigate('/kundli')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(232,228,220,0.6)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontFamily: 'DM Sans, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: 0,
+            }}
+          >
+            ← Back to Kundli
+          </button>
+
+          <div
+            style={{
+              background: 'rgba(42,171,168,0.1)',
+              border: '1px solid rgba(42,171,168,0.3)',
+              borderRadius: '20px',
+              padding: '4px 14px',
+              fontSize: '0.75rem',
+              color: '#2AABA8',
+              fontWeight: '500',
+            }}
+          >
+            ✦ Live Vedic Consultation
+          </div>
+        </div>
+
         {/* Kundli Context Banner */}
         {kundliData && (
           <motion.div
