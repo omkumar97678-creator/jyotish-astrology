@@ -417,8 +417,18 @@ export async function generateVoiceResponse(transcript, kundliData = {}) {
   const lagna = kundliData.lagna || 'Scorpio (Vrishchik)';
   const rashi = kundliData.rashi || 'Gemini (Mithun)';
   const nakshatra = kundliData.nakshatra || 'Ardra';
-  const lifePath = kundliData.life_path_number || kundliData.numerology?.lifePathNumber || '5';
-  const destiny = kundliData.destiny_number || kundliData.numerology?.destinyNumber || '11';
+  const dob = kundliData.date_of_birth || kundliData.dob || '2004-09-08';
+  const birthPlace = kundliData.birth_place || kundliData.place || 'Delhi, India';
+
+  // Get ALL numerology numbers from the computed numerology object
+  const mulank = kundliData.mulank || kundliData.numerology?.mulank || 8;
+  const lifePath = kundliData.life_path_number || kundliData.numerology?.lifePathNumber || 5;
+  const destiny = kundliData.destiny_number || kundliData.numerology?.destinyNumber || 11;
+  const soulUrge = kundliData.soul_urge_number || kundliData.numerology?.soulUrgeNumber || 9;
+  const luckyNumbers = kundliData.numerology?.luckyNumbers?.join(', ') || '5, 3, 6';
+  const luckyColors = kundliData.numerology?.luckyColors?.join(', ') || 'Golden Yellow, Emerald Green';
+  const dasha = kundliData.current_dasha?.lord || kundliData.mahadasha?.activeDasha?.planet || '';
+
   const planetsInfo = Array.isArray(kundliData.planets)
     ? kundliData.planets.map(p => `${p.name}: ${p.sign}`).join(', ')
     : 'Sun: Leo, Moon: Gemini, Mars: Leo, Mercury: Virgo, Jupiter: Virgo, Venus: Cancer, Saturn: Cancer, Rahu: Aries, Ketu: Libra';
@@ -427,25 +437,36 @@ export async function generateVoiceResponse(transcript, kundliData = {}) {
 A seeker named "${name}" asked this astrological question:
 "${transcript}"
 
-Seeker's Real Vedic Astrology Chart Details:
+SEEKER'S COMPLETE VEDIC CHART & NUMEROLOGY DATA (ALREADY KNOWN — DO NOT ASK AGAIN):
 - Name: ${name}
+- Date of Birth: ${typeof dob === 'object' ? `${dob.year}-${dob.month}-${dob.day}` : dob}
+- Birth Place: ${birthPlace}
 - Ascendant / Lagna: ${lagna}
 - Chandra Rashi (Moon Sign): ${rashi}
-- Nakshatra: ${nakshatra}
-- Numerology Life Path Number: ${lifePath}
-- Numerology Destiny Number: ${destiny}
+- Janma Nakshatra: ${nakshatra}
+${dasha ? `- Active Mahadasha: ${dasha}` : ''}
+- Mulank (Birth Day Number): ${mulank}
+- Bhagyank / Life Path Number: ${lifePath}
+- Namank / Destiny Number: ${destiny}
+- Soul Urge Number: ${soulUrge}
+- Lucky Numbers: ${luckyNumbers}
+- Lucky Colors: ${luckyColors}
 - Planetary Sign Placements: ${planetsInfo}
 
-Instructions:
-1. Provide an authentic, deeply personalized, spoken Vedic astrology answer specifically addressing the user's question "${transcript}".
-2. Directly reference their actual chart placements (Lagna, Rashi, Nakshatra, Life Path Number, or Planets) as relevant.
-3. Keep it natural, warm, and spoken (2 to 4 sentences maximum).
-4. Do NOT use markdown asterisks (* or **), bullet points, or lists because this will be spoken aloud to the user.
-5. Return valid JSON only with the key "answer". Example: { "answer": "Your detailed personalized response here..." }
+STRICT RULES:
+1. NEVER ask the user for their birth details, name, DOB, or any information — you ALREADY have everything above.
+2. If user asks "Mera Mulank kya hai?" → Answer IMMEDIATELY: "Aapka Mulank ${mulank} hai" (Birth Day Number).
+3. If user asks "Mera Life Path Number kya hai?" → Answer: "Aapka Life Path Number / Bhagyank ${lifePath} hai."
+4. If user asks "Mera Destiny Number kya hai?" → Answer: "Aapka Destiny Number / Namank ${destiny} hai."
+5. Mulank (${mulank}) and Life Path (${lifePath}) are DIFFERENT numbers. Do NOT confuse them.
+6. Directly reference their actual chart placements (Lagna, Rashi, Nakshatra, specific numbers, Planets) when relevant.
+7. Keep response natural, warm, and spoken (2 to 4 sentences maximum).
+8. Do NOT use markdown formatting (no *, **, #, bullet points). This is for spoken/displayed conversational output.
+9. Return valid JSON only with the key "answer". Example: { "answer": "Your detailed personalized response here..." }
 `;
 
   try {
-    const res = await callAI(prompt, 350);
+    const res = await callAI(prompt, 400);
     const answer =
       typeof res === 'string'
         ? res
@@ -460,12 +481,12 @@ Instructions:
     return {
       answer:
         answer ||
-        `Based on your ${lagna} Lagna and ${rashi} Moon sign, your planetary positions indicate strong mental clarity and auspicious potential for your journey.`,
+        `Based on your ${lagna} Lagna and ${rashi} Moon sign, your Mulank is ${mulank} and Life Path Number is ${lifePath}. Your planetary positions indicate strong clarity and auspicious potential.`,
     };
   } catch (err) {
     console.error('generateVoiceResponse error:', err);
     return {
-      answer: `According to your ${lagna} Lagna and ${rashi} Chandra Rashi in ${nakshatra}, your cosmic alignments highlight wisdom, transformative strength, and steady progress.`,
+      answer: `According to your ${lagna} Lagna and ${rashi} Chandra Rashi in ${nakshatra}, your Mulank is ${mulank} and Life Path Number is ${lifePath}. Your cosmic alignments highlight transformative strength and steady progress.`,
     };
   }
 }

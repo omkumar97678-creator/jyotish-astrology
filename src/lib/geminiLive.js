@@ -174,15 +174,13 @@ export class GeminiLiveSession {
 
             try {
               this.session.sendRealtimeInput({
-                mediaChunks: [
-                  {
-                    mimeType: 'audio/pcm;rate=16000',
-                    data: base64Chunk,
-                  },
-                ],
+                media: {
+                  mimeType: 'audio/pcm;rate=16000',
+                  data: base64Chunk,
+                },
               });
             } catch (err) {
-              // Ignore transient send errors
+              console.warn('Audio send error:', err);
             }
           };
 
@@ -293,15 +291,13 @@ export class GeminiLiveSession {
 
       try {
         this.session.sendRealtimeInput({
-          mediaChunks: [
-            {
-              mimeType: 'audio/pcm;rate=16000',
-              data: base64Chunk,
-            },
-          ],
+          media: {
+            mimeType: 'audio/pcm;rate=16000',
+            data: base64Chunk,
+          },
         });
       } catch (err) {
-        // Ignore transient send errors
+        console.warn('Audio send error (fallback):', err);
       }
     };
   }
