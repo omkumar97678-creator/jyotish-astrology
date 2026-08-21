@@ -17,8 +17,8 @@ const rawTranslations = {
     hinglish: 'Rashifal'
   },
   nav_voice: {
-    en: 'Voice Consultation',
-    hinglish: 'Voice Kundli'
+    en: 'AI Voice',
+    hinglish: 'Voice Jyotish'
   },
   nav_cta: {
     en: 'Start Free →',

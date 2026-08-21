@@ -37,7 +37,7 @@ export default function Navbar() {
     { name: t.nav_numerology[lang] || 'Numerology', path: '/numerology', icon: '∑' },
     { name: t.nav_gunmilan[lang] || 'Gun Milan', path: '/gunmilan', icon: '⚭' },
     { name: t.nav_horoscope[lang] || 'Horoscope', path: '/horoscope', icon: '☽' },
-    { name: t.nav_voice[lang] || 'Voice Consultation', path: '/voice', icon: '◉' },
+    { name: t.nav_voice[lang] || 'AI Voice', path: '/voice', icon: '🎙️' },
   ];
 
   return (
@@ -70,25 +70,40 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Links (Hidden on mobile/tablet) */}
-          <div className="hidden lg:flex items-center gap-7">
-            {navLinks.slice(0, 4).map((l) => {
+          <div className="hidden lg:flex items-center gap-6">
+            {navLinks.map((l) => {
               const isActive = location.pathname === l.path;
               return (
                 <Link
                   key={l.path}
                   to={l.path}
-                  className="text-sm font-medium transition-colors"
+                  className="text-sm font-medium transition-all flex items-center gap-1.5"
                   style={{
-                    color: isActive ? 'var(--col-copper)' : 'var(--col-moonstone-dim)',
+                    color: isActive
+                      ? 'var(--col-copper)'
+                      : l.path === '/voice'
+                      ? '#2AABA8'
+                      : 'var(--col-moonstone-dim)',
+                    background:
+                      l.path === '/voice'
+                        ? 'rgba(42, 171, 168, 0.08)'
+                        : 'transparent',
+                    border:
+                      l.path === '/voice'
+                        ? '1px solid rgba(42, 171, 168, 0.25)'
+                        : '1px solid transparent',
+                    padding: l.path === '/voice' ? '4px 10px' : '0',
+                    borderRadius: l.path === '/voice' ? '12px' : '0',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.color = 'var(--col-moonstone)';
+                    if (!isActive && l.path !== '/voice') e.currentTarget.style.color = 'var(--col-moonstone)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.color = 'var(--col-moonstone-dim)';
+                    if (!isActive && l.path !== '/voice') e.currentTarget.style.color = 'var(--col-moonstone-dim)';
                   }}
                 >
-                  {l.name}
+                  {l.path === '/voice' && <span style={{ fontSize: '13px' }}>🎙️</span>}
+                  <span>{l.name}</span>
                 </Link>
               );
             })}
