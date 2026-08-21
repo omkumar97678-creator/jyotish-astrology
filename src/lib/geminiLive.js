@@ -107,6 +107,7 @@ export class GeminiLiveSession {
     this.mediaStream = null;
     this.inputAudioContext = null;
     this.inputSource = null;
+    this.workletNode = null;
     this.processor = null;
     this.inputAnalyser = null;
 
@@ -114,7 +115,6 @@ export class GeminiLiveSession {
     this.outputAudioContext = null;
     this.nextPlayTime = 0;
     this.isPlaying = false;
-    this.audioQueue = [];
     this.activeSourceNodes = [];
 
     // Callbacks
@@ -160,30 +160,40 @@ export class GeminiLiveSession {
       this.inputAnalyser.fftSize = 64;
       this.inputSource.connect(this.inputAnalyser);
 
-      // ScriptProcessor for 16kHz PCM streaming
-      this.processor = this.inputAudioContext.createScriptProcessor(2048, 1, 1);
-      this.inputSource.connect(this.processor);
-      this.processor.connect(this.inputAudioContext.destination);
-
-      this.processor.onaudioprocess = (e) => {
-        if (!this.isActive || !this.session) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm16Buffer = floatTo16BitPCM(inputData);
-        const base64Chunk = arrayBufferToBase64(pcm16Buffer);
-
+      // Modern AudioWorklet for 16kHz PCM streaming
+      if (this.inputAudioContext.audioWorklet) {
         try {
-          this.session.sendRealtimeInput({
-            mediaChunks: [
-              {
-                mimeType: 'audio/pcm;rate=16000',
-                data: base64Chunk,
-              },
-            ],
-          });
-        } catch (err) {
-          // Ignore transient send errors
+          await this.inputAudioContext.audioWorklet.addModule('/audio-processor.js');
+          this.workletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
+
+          this.workletNode.port.onmessage = (e) => {
+            if (!this.isActive || !this.session) return;
+            const float32Data = e.data;
+            const pcm16Buffer = floatTo16BitPCM(float32Data);
+            const base64Chunk = arrayBufferToBase64(pcm16Buffer);
+
+            try {
+              this.session.sendRealtimeInput({
+                mediaChunks: [
+                  {
+                    mimeType: 'audio/pcm;rate=16000',
+                    data: base64Chunk,
+                  },
+                ],
+              });
+            } catch (err) {
+              // Ignore transient send errors
+            }
+          };
+
+          this.inputSource.connect(this.workletNode);
+        } catch (workletErr) {
+          console.warn('AudioWorklet load failed, falling back to ScriptProcessor:', workletErr);
+          this._setupScriptProcessorFallback();
         }
-      };
+      } else {
+        this._setupScriptProcessorFallback();
+      }
 
       // 2. Initialize Output Audio Context (24kHz for Gemini Live Audio)
       this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -267,6 +277,33 @@ export class GeminiLiveSession {
       this.onStateChange?.('error');
       return false;
     }
+  }
+
+  // ── ScriptProcessor Fallback (if AudioWorklet unsupported) ──
+  _setupScriptProcessorFallback() {
+    this.processor = this.inputAudioContext.createScriptProcessor(2048, 1, 1);
+    this.inputSource.connect(this.processor);
+    this.processor.connect(this.inputAudioContext.destination);
+
+    this.processor.onaudioprocess = (e) => {
+      if (!this.isActive || !this.session) return;
+      const inputData = e.inputBuffer.getChannelData(0);
+      const pcm16Buffer = floatTo16BitPCM(inputData);
+      const base64Chunk = arrayBufferToBase64(pcm16Buffer);
+
+      try {
+        this.session.sendRealtimeInput({
+          mediaChunks: [
+            {
+              mimeType: 'audio/pcm;rate=16000',
+              data: base64Chunk,
+            },
+          ],
+        });
+      } catch (err) {
+        // Ignore transient send errors
+      }
+    };
   }
 
   // ── Play Incoming PCM Chunk Seamlessly ─────────
@@ -413,6 +450,11 @@ export class GeminiLiveSession {
     }
 
     this._stopCurrentPlayback();
+
+    if (this.workletNode) {
+      this.workletNode.disconnect();
+      this.workletNode = null;
+    }
 
     if (this.processor) {
       this.processor.disconnect();
