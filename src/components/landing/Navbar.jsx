@@ -82,8 +82,8 @@ export default function Navbar() {
                     color: isActive
                       ? 'var(--col-copper)'
                       : l.path === '/voice'
-                      ? '#2AABA8'
-                      : 'var(--col-moonstone-dim)',
+                        ? '#2AABA8'
+                        : 'var(--col-moonstone-dim)',
                     background:
                       l.path === '/voice'
                         ? 'rgba(42, 171, 168, 0.08)'

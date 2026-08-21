@@ -488,31 +488,34 @@ export async function saveKundli(arg1, arg2) {
   }
 
   try {
+    let cleanTime = null;
+    if (kundliData.time_of_birth) {
+      const tStr = String(kundliData.time_of_birth).trim();
+      if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(tStr)) {
+        cleanTime = tStr.length === 5 ? `${tStr}:00` : tStr;
+      }
+    }
+
     const payload = {
       user_id: userId,
       name: kundliData.name || 'Seeker',
       date_of_birth: kundliData.date_of_birth || (typeof kundliData.dob === 'string' ? kundliData.dob : null),
-      time_of_birth: kundliData.time_of_birth || null,
+      time_of_birth: cleanTime,
       birth_place: kundliData.birth_place || kundliData.birthPlace || null,
-      latitude: kundliData.latitude || null,
-      longitude: kundliData.longitude || null,
+      latitude: typeof kundliData.latitude === 'number' ? kundliData.latitude : null,
+      longitude: typeof kundliData.longitude === 'number' ? kundliData.longitude : null,
+      timezone: kundliData.timezone || 'Asia/Kolkata',
       lagna: kundliData.lagna || null,
       rashi: kundliData.rashi || null,
       nakshatra: kundliData.nakshatra || null,
-      nakshatra_pada: kundliData.nakshatra_pada || kundliData.nakshatraPada || null,
-      nakshatra_lord: kundliData.nakshatra_lord || kundliData.nakshatraLord || null,
       gana: kundliData.gana || null,
       life_path_number: kundliData.life_path_number || kundliData.lifePathNumber || null,
       destiny_number: kundliData.destiny_number || kundliData.destinyNumber || null,
       soul_urge_number: kundliData.soul_urge_number || kundliData.soulUrgeNumber || null,
-      planets_data: kundliData.planets || kundliData.planets_data || null,
-      ayanamsha: kundliData.ayanamsha || null,
+      planets: kundliData.planets || kundliData.planets_data || null,
       houses: kundliData.houses || null,
-      dashas: kundliData.dashas || null,
-      current_dasha: kundliData.current_dasha || null,
-      is_manglik: typeof kundliData.is_manglik === 'boolean' ? kundliData.is_manglik : null,
       ai_report: kundliData.ai_report || null,
-      pdf_url: kundliData.pdf_url || null,
+      is_default: Boolean(kundliData.is_default !== false),
     };
 
     console.log('✦ Saving Kundli to Supabase with user_id:', userId);

@@ -110,17 +110,17 @@ function VoiceOrb({ voiceState, onClick }) {
         animate={{
           boxShadow: isListening
             ? [
-                '0 0 30px rgba(200,130,42,0.4)',
-                '0 0 60px rgba(200,130,42,0.7)',
-                '0 0 30px rgba(200,130,42,0.4)',
-              ]
+              '0 0 30px rgba(200,130,42,0.4)',
+              '0 0 60px rgba(200,130,42,0.7)',
+              '0 0 30px rgba(200,130,42,0.4)',
+            ]
             : isSpeaking
-            ? [
+              ? [
                 '0 0 30px rgba(42,171,168,0.4)',
                 '0 0 60px rgba(42,171,168,0.7)',
                 '0 0 30px rgba(42,171,168,0.4)',
               ]
-            : '0 0 20px rgba(200,130,42,0.2)',
+              : '0 0 20px rgba(200,130,42,0.2)',
         }}
         transition={{
           boxShadow: {
@@ -747,8 +747,8 @@ export default function Voice() {
                   voiceState === 'speaking'
                     ? '#2AABA8'
                     : voiceState === 'listening'
-                    ? '#C8822A'
-                    : 'rgba(232,228,220,0.6)',
+                      ? '#C8822A'
+                      : 'rgba(232,228,220,0.6)',
                 fontSize: '0.95rem',
                 fontFamily: 'DM Sans, sans-serif',
                 fontWeight: '500',
