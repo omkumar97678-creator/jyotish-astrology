@@ -529,7 +529,7 @@ export default function Voice() {
     thinking: '✦ Consulting the planetary positions...',
     speaking: 'ज्योतिषी बोल रहे हैं (Live Call)',
     disconnected: 'Session ended — Jai Jyotisha 🙏',
-    error: error || 'Connection failed. Please check mic permission.',
+    error: (typeof error === 'string' ? error : error?.message) || 'Connection failed. Please check mic permission.',
   };
 
   const SUGGESTIONS = [
