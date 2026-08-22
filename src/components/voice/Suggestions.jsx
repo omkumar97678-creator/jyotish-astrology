@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const currentYear = new Date().getFullYear();
+
 const chips = [
   'What does my Lagna mean?',
   'When will I get married?',
-  'Is 2025 good for my career?',
+  `Is ${currentYear} good for my career?`,
   'What are my lucky numbers?',
   'Tell me about my Saturn placement',
   'What is my Moon sign personality?',

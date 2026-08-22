@@ -50,9 +50,9 @@ export function getDynamicVedicReport(kundliData = {}) {
       ],
       currentPhase: `Currently moving through favorable planetary periods supporting intellectual expansion, career restructuring, and authoritative recognition.`,
       timeline: [
-        { period: '2024–2025', prediction: 'Professional consolidation, skill enhancement, and key foundational achievements.' },
-        { period: '2025–2026', prediction: 'Expansion of responsibilities, lucrative opportunities, and positive peer recognition.' },
-        { period: '2026–2027', prediction: 'High-impact milestones, enhanced autonomy, and long-term vocational stability.' },
+        { period: `${new Date().getFullYear()}–${new Date().getFullYear() + 1}`, prediction: 'Professional consolidation, skill enhancement, and key foundational achievements.' },
+        { period: `${new Date().getFullYear() + 1}–${new Date().getFullYear() + 2}`, prediction: 'Expansion of responsibilities, lucrative opportunities, and positive peer recognition.' },
+        { period: `${new Date().getFullYear() + 2}–${new Date().getFullYear() + 3}`, prediction: 'High-impact milestones, enhanced autonomy, and long-term vocational stability.' },
       ],
     },
     love: {
@@ -238,6 +238,14 @@ export async function generateKundliReport(kundliData) {
     ? `${kundliData.mahadasha.activeDasha.planet} Mahadasha (${kundliData.mahadasha.activeDasha.range})`
     : 'Active Planetary Period';
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const todayDateStr = now.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   const prompt = `
 You are an expert Vedic astrologer generating a 
 COMPLETELY UNIQUE and PERSONALIZED report.
@@ -247,6 +255,11 @@ person's specific chart data below.
 Do NOT give generic readings.
 Do NOT repeat the same career fields or health 
 areas for different people.
+
+=== REAL-WORLD TEMPORAL CONTEXT ===
+Today's Date: ${todayDateStr}
+Current Year: ${currentYear}
+RULE: Today is ${todayDateStr} (${currentYear}). All predictions must be for the present year ${currentYear} or future years (${currentYear + 1}, ${currentYear + 2}, etc.). NEVER mention 2024 or 2025 as future years.
 
 === THIS PERSON'S UNIQUE CHART ===
 Name: ${kundliData.name || 'Seeker'}
@@ -316,18 +329,18 @@ Using ONLY the specific chart data above, generate this JSON. Each section MUST:
       "Field 4 — based on Jupiter placement",
       "Field 5 — based on Life Path number"
     ],
-    "currentPhase": "What ${dashaInfo} means for career RIGHT NOW in 2025-2026",
+    "currentPhase": "What ${dashaInfo} means for career RIGHT NOW in ${currentYear}-${currentYear + 1}",
     "timeline": [
       {
-        "period": "2024–2025",
+        "period": "${currentYear}–${currentYear + 1}",
         "prediction": "Specific to ${dashaInfo} and current transits"
       },
       {
-        "period": "2025–2026",
+        "period": "${currentYear + 1}–${currentYear + 2}",
         "prediction": "Based on upcoming planetary transits for ${kundliData.rashi}"
       },
       {
-        "period": "2026–2027",
+        "period": "${currentYear + 2}–${currentYear + 3}",
         "prediction": "Based on dasha progression"
       }
     ]
@@ -348,7 +361,7 @@ Using ONLY the specific chart data above, generate this JSON. Each section MUST:
         "reason": "Why based on chart elements"
       }
     ],
-    "marriageTiming": "Marriage timing based on Jupiter transit AND 7th lord AND ${dashaInfo}",
+    "marriageTiming": "Marriage timing based on Jupiter transit AND 7th lord AND ${dashaInfo} starting from ${currentYear} onwards",
     "relationshipLesson": "Key lesson from 7th house and Venus position"
   },
   "health": {
@@ -513,10 +526,22 @@ Return this exact JSON:
 
 // ── ASTRO CHAT (Kundli Guru) ─────────
 export async function generateAstroChatResponse(messages, kundliData) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const todayDateStr = now.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   let systemPrompt = `You are a wise, compassionate female Vedic Astrologer (विदुषी ज्योतिषाचार्या) with 30+ years of deep experience.
 You answer questions based on authentic Vedic astrology principles.
 Speak with warmth, maternal wisdom, and clarity. Use natural Hindi/Sanskrit terms (Lagna, Rashi, Dasha, Karma, Dharma, Kundli).
 GENDER & GRAMMAR RULE: You are a female astrologer. Always use first-person FEMININE Hindi verbs (use "main karti hoon", "main batati hoon", "main dekh rahi hoon" — NEVER "karta hoon", "batata hoon", "dekh raha hoon").
+REAL-WORLD DATE & TIME CONTEXT:
+- TODAY'S REAL-WORLD DATE: ${todayDateStr}
+- CURRENT YEAR: ${currentYear}
+- CRITICAL TIME RULE: Today is ${todayDateStr} (${currentYear}). NEVER mention 2024 or 2025 as future years. All upcoming predictions (marriage, career, transits) must be for the PRESENT YEAR (${currentYear}) or FUTURE YEARS (${currentYear + 1}, ${currentYear + 2}, etc.).
 Keep answers concise, actionable, and spiritually uplifting.`;
 
   if (kundliData) {
@@ -544,6 +569,22 @@ export async function generateVoiceResponse(transcript, kundliData = {}) {
   const dob = kundliData.date_of_birth || kundliData.dob || '2004-09-08';
   const birthPlace = kundliData.birth_place || kundliData.place || 'Delhi, India';
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const todayDateStr = now.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  let birthYear = 2004;
+  if (typeof dob === 'string' && dob.includes('-')) {
+    birthYear = parseInt(dob.split('-')[0], 10) || 2004;
+  } else if (typeof dob === 'object' && dob?.year) {
+    birthYear = parseInt(dob.year, 10) || 2004;
+  }
+  const currentAge = Math.max(1, currentYear - birthYear);
+
   // Get ALL numerology numbers from the computed numerology object
   const mulank = kundliData.mulank || kundliData.numerology?.mulank || 8;
   const lifePath = kundliData.life_path_number || kundliData.numerology?.lifePathNumber || 5;
@@ -560,6 +601,14 @@ export async function generateVoiceResponse(transcript, kundliData = {}) {
   const prompt = `
 You are a warm, wise female Vedic Astrologer (विदुषी ज्योतिषाचार्या).
 STRICT GENDER RULE: Always speak in FIRST-PERSON FEMININE Hindi / Hinglish (use "main batati hoon", "main dekh rahi hoon", "main karti hoon", "meri salah hai" — NEVER masculine forms like "batata hoon", "dekh raha hoon", "karta hoon").
+
+REAL-WORLD TEMPORAL CONTEXT (STRICT & CRITICAL):
+- TODAY'S REAL-WORLD DATE: ${todayDateStr}
+- CURRENT YEAR: ${currentYear}
+- SEEKER'S CURRENT AGE: ~${currentAge} years old (Born: ${birthYear})
+- CRITICAL TIME RULE: Today is in ${currentYear}. NEVER mention 2024 or 2025 as future years — they have ALREADY passed.
+- All future predictions (such as marriage timing, job/career milestones, favorable periods) MUST be for the PRESENT YEAR (${currentYear}) or FUTURE YEARS (${currentYear + 1}, ${currentYear + 2}, ${currentYear + 3}, etc.).
+- For marriage queries: Seeker is ~${currentAge} years old now in ${currentYear}. Analyze favorable marriage windows for ${currentYear} onwards (e.g. late ${currentYear}, ${currentYear + 1}, ${currentYear + 2}) based on Jupiter/Venus transits and current Mahadasha.
 
 A seeker named "${name}" asked this astrological question:
 "${transcript}"

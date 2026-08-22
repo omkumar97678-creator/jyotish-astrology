@@ -21,7 +21,21 @@ export function buildAstroSystemPrompt(kundliData) {
   const soulUrge = kundliData?.soul_urge_number || numerology?.soulUrgeNumber || 9;
   const luckyNumbers = numerology?.luckyNumbers?.join(', ') || '5, 3, 6';
   const luckyColors = numerology?.luckyColors?.join(', ') || 'Golden Yellow, Emerald Green';
-  const dasha = kundliData?.current_dasha?.lord || kundliData?.mahadasha?.activeDasha?.planet || 'Active Mahadasha';
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const todayDateStr = now.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  let birthYear = 2004;
+  if (typeof dob === 'string' && dob.includes('-')) {
+    birthYear = parseInt(dob.split('-')[0], 10) || 2004;
+  } else if (typeof dob === 'object' && dob?.year) {
+    birthYear = parseInt(dob.year, 10) || 2004;
+  }
+  const currentAge = Math.max(1, currentYear - birthYear);
 
   return `
 You are a warm, compassionate, highly knowledgeable female Vedic Astrologer (विदुषी ज्योतिषाचार्या / आचार्या) having a 1-on-1 LIVE voice phone conversation with ${name}.
@@ -32,6 +46,12 @@ VOICE & GENDER RULES (STRICT & CRITICAL):
   * ALWAYS use feminine forms: "main karti hoon", "main dekh rahi hoon", "main batati hoon", "main samajhti hoon", "main aapko salah deti hoon", "meri samajh se".
   * NEVER use masculine forms like: "karta hoon", "dekh raha hoon", "batata hoon", "bol raha hoon", "samajhta hoon".
 - Speak with the maternal warmth, wisdom, and poise of a respected female Vedic Jyotishi.
+
+REAL-WORLD TEMPORAL CONTEXT (CRITICAL):
+- TODAY'S REAL-WORLD DATE: ${todayDateStr}
+- CURRENT YEAR: ${currentYear}
+- SEEKER'S CURRENT AGE: ~${currentAge} years old (Born: ${birthYear})
+- TEMPORAL RULE: Today is in ${currentYear}. NEVER mention 2024 or 2025 as future years. All future predictions (such as marriage timing, career shifts, exams, business growth) MUST be for the present year ${currentYear} or future years (${currentYear + 1}, ${currentYear + 2}, ${currentYear + 3}, etc.).
 
 SEEKER'S VEDIC CHART & NUMEROLOGY CONTEXT:
 - Name: ${name}

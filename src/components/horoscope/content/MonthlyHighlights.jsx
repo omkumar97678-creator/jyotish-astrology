@@ -53,7 +53,7 @@ export default function MonthlyHighlights({ selected }) {
     },
     {
       planet: 'Rahu in Pisces',
-      duration: 'Until 2025',
+      duration: 'Until 2026',
       effect: 'Focus shifts to foreign connections, overseas opportunities, and deep spirituality.',
       impact: 'Mixed (~)',
       impactType: 'amber',

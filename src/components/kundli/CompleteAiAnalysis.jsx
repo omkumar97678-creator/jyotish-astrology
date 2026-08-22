@@ -13,6 +13,8 @@ export default function CompleteAiAnalysis({ report, data }) {
   const nakshatra = data?.nakshatra || 'Ardra';
   const name = data?.name || 'Seeker';
 
+  const currentYear = new Date().getFullYear();
+
   // Dynamic fallback report builder in English
   const defaultReportEn = {
     personality: {
@@ -44,9 +46,9 @@ export default function CompleteAiAnalysis({ report, data }) {
       ],
       currentPhase: `Currently moving through favorable planetary periods supporting intellectual expansion, career restructuring, and authoritative recognition.`,
       timeline: [
-        { period: '2024–2025', prediction: 'Professional consolidation, skill enhancement, and key foundational achievements.' },
-        { period: '2025–2026', prediction: 'Expansion of responsibilities, lucrative opportunities, and positive peer recognition.' },
-        { period: '2026–2027', prediction: 'High-impact milestones, enhanced autonomy, and long-term vocational stability.' },
+        { period: `${currentYear}–${currentYear + 1}`, prediction: 'Professional consolidation, skill enhancement, and key foundational achievements.' },
+        { period: `${currentYear + 1}–${currentYear + 2}`, prediction: 'Expansion of responsibilities, lucrative opportunities, and positive peer recognition.' },
+        { period: `${currentYear + 2}–${currentYear + 3}`, prediction: 'High-impact milestones, enhanced autonomy, and long-term vocational stability.' },
       ],
     },
     love: {
@@ -98,20 +100,20 @@ export default function CompleteAiAnalysis({ report, data }) {
         `Tezz Dimag — ${rashi} Chandra Rashi se jaldi seekhne aur naye vicharon ki kshamta milti hai.`,
         `Ladne Ka Jazba — Mushkilon aur chunautiyon ko paar karne ki ajeeb aatmik shakti.`,
         `Sahi Parakh — Asliyat aur chhupe huye uddeshya ko pehchanne ki kshamta.`,
-        `Prernadayak Vaani — ${nakshatra} nakshatra ki urja se nayi khoj aur aakarshak abhivyakti.`,
-        `Nishtha & Suraksha — Apne parivar aur aadarshon ke prati poori tarah samarpit.`,
+        `Nayi Disha — ${nakshatra} nakshatra se aakarshak abhivyakti aur vikas ki urja.`,
+        `Suraksha Bhav — Apne logon aur aadarshon ke prati poori nishtha.`,
       ],
       challenges: [
-        { title: 'Bhavnaon Ko Chhupana', desc: 'Apni gehri feelings ko jaldi share na karna. Bharosemand logon se khulkar baat karein.' },
-        { title: 'Zyaada Sochna (Overthinking)', desc: 'Chandra ke Mithun me hone se dimag zyaada daudta hai. Dhyan aur pranayam karein.' },
-        { title: 'Tez Urja Ka Santulan', desc: 'Scorpio urja bahut intense hoti hai; aage badhne ke sath aaram ka bhi dhyan rakhein.' },
+        { title: 'Bhavnaon Ko Chhupana', desc: 'Apne jazbaat andar hi rakhne ki aadat. Vishwaspaatr logon se khul kar baat karein.' },
+        { title: 'Chanchal Dimag', desc: 'Vayu tatva ke prabhav se mann bhatak sakta hai. Dhyan aur pranayama ka abhyas karein.' },
+        { title: 'Atyadhik Junoon', desc: 'Scorpio urja bohot tezz hoti hai; mahatvakanksha ke sath aaram ka santulan banayein.' },
       ],
-      lifePurpose: `“Aapki aatma chunautiyon ko gyaan me badalne, chhupe satya ko prakashit karne aur aatmik sahas ke sath dusron ko prerna dene aayi hai.”`,
+      lifePurpose: `“Aapki aatma chunautiyon ko gyaan me badalne, chhupe huye satya ko ujagar karne aur aatmik sahas se doosron ko prerit karne aayi hai.”`,
     },
     career: {
-      overview: `Aapki kundli me leadership, ran-neetik vishleshan, research, technology, communication aur advisory kshetron ke liye shreshth kshamta hai. Aap problem-solving aur specialized karyon me safal hote hain.`,
+      overview: `Aapki kundli me leadership, strategic analysis, research, technology, communication aur advisory kshetra me safalta ke spasht yog hain. Aap kathin samasyaon ko suljhane me maahir hain.`,
       bestFields: [
-        'Leadership & Management (प्रबंधन)',
+        'Strategic Management & Leadership (प्रबंधन)',
         'IT, Data & Engineering (तकनीक)',
         'Research & Analytics (शोध एवं विश्लेषण)',
         'Consulting & Mentorship (सलाहकार)',
@@ -120,9 +122,9 @@ export default function CompleteAiAnalysis({ report, data }) {
       ],
       currentPhase: `Vartaman grah dasha boudhik vistar, career restructure aur sammanit sthiti ko poora samarthan de rahi hai.`,
       timeline: [
-        { period: '2024–2025', prediction: 'Vyavsayik sthirta, skill enhancement aur mahatvapurna buniyaad ka nirmaan.' },
-        { period: '2025–2026', prediction: 'Zimmedariyon me vriddhi, labhdayak avasar aur sahyogiyon se prashansa.' },
-        { period: '2026–2027', prediction: 'Bade milestones, swantantrata aur lambi avadhi ki sthir sthiti.' },
+        { period: `${currentYear}–${currentYear + 1}`, prediction: 'Vyavsayik sthirta, skill enhancement aur mahatvapurna buniyaad ka nirmaan.' },
+        { period: `${currentYear + 1}–${currentYear + 2}`, prediction: 'Zimmedariyon me vriddhi, labhdayak avasar aur sahyogiyon se prashansa.' },
+        { period: `${currentYear + 2}–${currentYear + 3}`, prediction: 'Bade milestones, swantantrata aur lambi avadhi ki sthir sthiti.' },
       ],
     },
     love: {

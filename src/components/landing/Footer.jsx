@@ -18,7 +18,7 @@ export default function Footer() {
         For entertainment & educational purposes only. Not a substitute for professional consultation.
       </p>
       <p className="mt-3" style={{ color: 'rgba(232,228,220,0.35)', fontSize: '0.75rem' }}>
-        © 2025 Jyotish App • Made with Vedic Accuracy
+        © {new Date().getFullYear()} Jyotish App • Made with Vedic Accuracy
       </p>
     </footer>
   );
