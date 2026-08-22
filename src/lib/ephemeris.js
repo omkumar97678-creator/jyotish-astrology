@@ -1,6 +1,8 @@
+import { GeoVector, Ecliptic, AstroTime } from 'astronomy-engine';
+
 // ══════════════════════════════════════════════════════════════════════════
 // VEDIC ASTROLOGY CALCULATION ENGINE
-// Using Jean Meeus astronomical algorithms
+// Using Jean Meeus & Astronomy Engine algorithms
 // With Lahiri Ayanamsha (standard for India)
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -177,23 +179,19 @@ function getMoonLongitude(jd) {
   return moonLng;
 }
 
-// ── Planet Longitudes ───────────────────
+// ── Planet Longitudes (High-Precision Geocentric Ecliptic Longitude) ──
 function getPlanetLongitude(planet, jd) {
-  const T = (jd - 2451545.0) / 36525;
-
-  const elements = {
-    Mercury: { L: 252.25084 + 149472.67411 * T, M: 102.43961, e: 0.20563 },
-    Venus: { L: 181.97973 + 58517.81539 * T, M: 131.56370, e: 0.00677 },
-    Mars: { L: 355.45332 + 19140.30268 * T, M: 336.06023, e: 0.09340 },
-    Jupiter: { L: 34.40438 + 3034.90626 * T, M: 14.33131, e: 0.04839 },
-    Saturn: { L: 49.94432 + 1222.49362 * T, M: 93.05678, e: 0.05415 },
-  };
-
-  if (!elements[planet]) return 0;
-  const el = elements[planet];
-  let lng = el.L % 360;
-  if (lng < 0) lng += 360;
-  return lng;
+  try {
+    const time = new AstroTime(jd - 2451545.0);
+    const vec = GeoVector(planet, time, true);
+    const ecl = Ecliptic(vec);
+    let lng = ecl.elon % 360;
+    if (lng < 0) lng += 360;
+    return lng;
+  } catch (err) {
+    console.error(`Error calculating longitude for ${planet}:`, err);
+    return 0;
+  }
 }
 
 // ── Rahu & Ketu (Lunar Nodes) ──────────
