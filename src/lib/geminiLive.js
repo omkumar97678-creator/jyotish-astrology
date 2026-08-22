@@ -199,8 +199,8 @@ export class GeminiLiveSession {
 
     const systemPrompt = buildAstroSystemPrompt(kundliData);
 
+    // ── STEP 1: Microphone Access ──
     try {
-      // 1. Microphone Access with Mobile-Friendly Fallback
       try {
         this.mediaStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -209,16 +209,29 @@ export class GeminiLiveSession {
             autoGainControl: true,
           },
         });
-      } catch (mediaErr) {
-        if (mediaErr.name === 'NotAllowedError' || mediaErr.name === 'PermissionDeniedError') {
-          throw mediaErr;
+      } catch (advancedErr) {
+        if (advancedErr.name === 'NotAllowedError' || advancedErr.name === 'PermissionDeniedError') {
+          throw advancedErr;
         }
-        // Fallback to basic audio constraint for older mobile devices
-        console.warn('Advanced audio constraints failed, trying basic audio:', mediaErr);
+        console.warn('Advanced audio constraints failed, falling back to basic audio:', advancedErr);
         this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
+    } catch (micErr) {
+      console.error('Microphone access failed:', micErr);
+      const isPerm = micErr.name === 'NotAllowedError' || micErr.name === 'PermissionDeniedError';
+      this.stop();
+      this.onError?.({
+        message: isPerm
+          ? 'Microphone permission was denied. Please tap the lock icon 🔒 in your browser address bar and enable Microphone.'
+          : 'Could not find a working microphone on this device.',
+        isPermissionDenied: isPerm,
+      });
+      this.onStateChange?.('error');
+      return false;
+    }
 
-      // 2. Initialize Single Unified Audio Context
+    // ── STEP 2: Web Audio API & AudioContext ──
+    try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       this.audioContext = new AudioContextClass();
 
@@ -228,30 +241,26 @@ export class GeminiLiveSession {
 
       this.nextPlayTime = this.audioContext.currentTime;
 
-      // 3. Setup Audio Input Graph
       this.inputSource = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.inputAnalyser = this.audioContext.createAnalyser();
       this.inputAnalyser.fftSize = 64;
       this.inputSource.connect(this.inputAnalyser);
 
-      // Silent GainNode to keep audio graph running on Mobile Chrome & Safari
       this.silenceNode = this.audioContext.createGain();
       this.silenceNode.gain.value = 0;
       this.silenceNode.connect(this.audioContext.destination);
 
-      const nativeSampleRate = this.audioContext.sampleRate;
+      const nativeSampleRate = this.audioContext.sampleRate || 48000;
 
-      // Try Inline AudioWorklet first
+      // Initialize Worklet or fallback
       let workletInitialized = false;
       if (this.audioContext.audioWorklet) {
         try {
           const blob = new Blob([AUDIO_WORKLET_CODE], { type: 'application/javascript' });
           const workletUrl = URL.createObjectURL(blob);
           await this.audioContext.audioWorklet.addModule(workletUrl);
-          URL.revokeObjectURL(workletUrl);
 
           this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
-
           this.workletNode.port.onmessage = (e) => {
             if (!this.isActive || !this.session) return;
             const float32Data = e.data;
@@ -275,15 +284,26 @@ export class GeminiLiveSession {
           this.workletNode.connect(this.silenceNode);
           workletInitialized = true;
         } catch (workletErr) {
-          console.warn('Inline AudioWorklet failed, using ScriptProcessor fallback:', workletErr);
+          console.warn('Worklet load failed, falling back to ScriptProcessor:', workletErr);
         }
       }
 
       if (!workletInitialized) {
         this._setupScriptProcessorFallback(nativeSampleRate);
       }
+    } catch (audioErr) {
+      console.error('Audio initialization error:', audioErr);
+      this.stop();
+      this.onError?.({
+        message: 'Audio system initialization failed on this browser.',
+        isPermissionDenied: false,
+      });
+      this.onStateChange?.('error');
+      return false;
+    }
 
-      // 4. Connect to Gemini 3.1 Live WebSocket API
+    // ── STEP 3: Gemini Live WebSocket API Connection ──
+    try {
       this.session = await this.client.live.connect({
         model: 'gemini-3.1-flash-live-preview',
         config: {
@@ -336,9 +356,9 @@ export class GeminiLiveSession {
             }
           },
           onerror: (err) => {
-            console.error('Gemini Live error:', err);
+            console.error('Gemini Live WebSocket error:', err);
             this.onError?.({
-              message: err?.message || 'Connection error. Tap mic to retry.',
+              message: 'Connection dropped. Tap to reconnect.',
               isPermissionDenied: false,
             });
           },
@@ -352,20 +372,12 @@ export class GeminiLiveSession {
       });
 
       return true;
-    } catch (err) {
-      console.error('Failed to start Gemini Live Session:', err);
-      const isPerm =
-        err?.name === 'NotAllowedError' ||
-        err?.name === 'PermissionDeniedError' ||
-        err?.message?.toLowerCase()?.includes('permission') ||
-        err?.message?.toLowerCase()?.includes('denied');
-
+    } catch (wsErr) {
+      console.error('Failed to connect to Gemini Live WebSocket:', wsErr);
       this.stop();
       this.onError?.({
-        message: isPerm
-          ? 'Microphone permission denied. Please allow microphone access in browser settings.'
-          : err?.message || 'Unable to connect to live voice session.',
-        isPermissionDenied: isPerm,
+        message: 'Could not connect to live voice server. Tap Try Again to reconnect.',
+        isPermissionDenied: false,
       });
       this.onStateChange?.('error');
       return false;
