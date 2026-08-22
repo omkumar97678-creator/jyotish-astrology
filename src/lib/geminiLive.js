@@ -62,6 +62,30 @@ STRICT CONVERSATIONAL RULES:
 `;
 }
 
+// ── Universal Fast Downsampling to 16kHz PCM ─────────────────────
+function downsampleTo16k(buffer, fromSampleRate) {
+  if (!buffer || buffer.length === 0) return new Float32Array(0);
+  if (fromSampleRate === 16000) return buffer;
+  const sampleRateRatio = fromSampleRate / 16000;
+  const newLength = Math.round(buffer.length / sampleRateRatio);
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetBuffer = 0;
+  while (offsetResult < result.length) {
+    const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+    let accum = 0;
+    let count = 0;
+    for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+      accum += buffer[i];
+      count++;
+    }
+    result[offsetResult] = count > 0 ? accum / count : buffer[offsetBuffer];
+    offsetResult++;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return result;
+}
+
 // ── Convert PCM Float32 to 16-bit PCM Little Endian ──────────────
 function floatTo16BitPCM(float32Array) {
   const buffer = new ArrayBuffer(float32Array.length * 2);
@@ -103,6 +127,39 @@ function base64PCM16ToFloat32(base64) {
   return float32;
 }
 
+// ── Inline AudioWorklet Code ──────────────────────────────────────
+const AUDIO_WORKLET_CODE = `
+class AudioProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.bufferSize = 2048;
+    this.buffer = new Float32Array(this.bufferSize);
+    this.bytesWritten = 0;
+  }
+
+  process(inputs) {
+    const input = inputs[0];
+    if (!input || !input[0]) return true;
+
+    const channelData = input[0];
+    for (let i = 0; i < channelData.length; i++) {
+      this.buffer[this.bytesWritten++] = channelData[i];
+      if (this.bytesWritten >= this.bufferSize) {
+        this.flush();
+      }
+    }
+    return true;
+  }
+
+  flush() {
+    this.port.postMessage(new Float32Array(this.buffer));
+    this.bytesWritten = 0;
+  }
+}
+
+registerProcessor('audio-processor', AudioProcessor);
+`;
+
 // ── Gemini 3.1 Live Session Manager ──────────────────────────────
 export class GeminiLiveSession {
   constructor() {
@@ -110,16 +167,16 @@ export class GeminiLiveSession {
     this.session = null;
     this.isActive = false;
 
-    // Audio Input (Microphone)
+    // Single Unified AudioContext for Mobile & Desktop
+    this.audioContext = null;
     this.mediaStream = null;
-    this.inputAudioContext = null;
     this.inputSource = null;
     this.workletNode = null;
     this.processor = null;
+    this.silenceNode = null;
     this.inputAnalyser = null;
 
-    // Audio Output (Speaker Queue)
-    this.outputAudioContext = null;
+    // Output Speaker Queue
     this.nextPlayTime = 0;
     this.isPlaying = false;
     this.activeSourceNodes = [];
@@ -143,40 +200,63 @@ export class GeminiLiveSession {
     const systemPrompt = buildAstroSystemPrompt(kundliData);
 
     try {
-      // 1. Initialize Microphone (Audio Input)
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
-        sampleRate: 16000,
-      });
-
-      if (this.inputAudioContext.state === 'suspended') {
-        await this.inputAudioContext.resume();
+      // 1. Microphone Access with Mobile-Friendly Fallback
+      try {
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch (mediaErr) {
+        if (mediaErr.name === 'NotAllowedError' || mediaErr.name === 'PermissionDeniedError') {
+          throw mediaErr;
+        }
+        // Fallback to basic audio constraint for older mobile devices
+        console.warn('Advanced audio constraints failed, trying basic audio:', mediaErr);
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
 
-      this.inputSource = this.inputAudioContext.createMediaStreamSource(this.mediaStream);
-      this.inputAnalyser = this.inputAudioContext.createAnalyser();
+      // 2. Initialize Single Unified Audio Context
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      this.audioContext = new AudioContextClass();
+
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+
+      this.nextPlayTime = this.audioContext.currentTime;
+
+      // 3. Setup Audio Input Graph
+      this.inputSource = this.audioContext.createMediaStreamSource(this.mediaStream);
+      this.inputAnalyser = this.audioContext.createAnalyser();
       this.inputAnalyser.fftSize = 64;
       this.inputSource.connect(this.inputAnalyser);
 
-      // Modern AudioWorklet for 16kHz PCM streaming
-      if (this.inputAudioContext.audioWorklet) {
+      // Silent GainNode to keep audio graph running on Mobile Chrome & Safari
+      this.silenceNode = this.audioContext.createGain();
+      this.silenceNode.gain.value = 0;
+      this.silenceNode.connect(this.audioContext.destination);
+
+      const nativeSampleRate = this.audioContext.sampleRate;
+
+      // Try Inline AudioWorklet first
+      let workletInitialized = false;
+      if (this.audioContext.audioWorklet) {
         try {
-          await this.inputAudioContext.audioWorklet.addModule('/audio-processor.js');
-          this.workletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
+          const blob = new Blob([AUDIO_WORKLET_CODE], { type: 'application/javascript' });
+          const workletUrl = URL.createObjectURL(blob);
+          await this.audioContext.audioWorklet.addModule(workletUrl);
+          URL.revokeObjectURL(workletUrl);
+
+          this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
 
           this.workletNode.port.onmessage = (e) => {
             if (!this.isActive || !this.session) return;
             const float32Data = e.data;
-            const pcm16Buffer = floatTo16BitPCM(float32Data);
+            const downsampled = downsampleTo16k(float32Data, nativeSampleRate);
+            const pcm16Buffer = floatTo16BitPCM(downsampled);
             const base64Chunk = arrayBufferToBase64(pcm16Buffer);
 
             try {
@@ -192,24 +272,18 @@ export class GeminiLiveSession {
           };
 
           this.inputSource.connect(this.workletNode);
+          this.workletNode.connect(this.silenceNode);
+          workletInitialized = true;
         } catch (workletErr) {
-          console.warn('AudioWorklet load failed, falling back to ScriptProcessor:', workletErr);
-          this._setupScriptProcessorFallback();
+          console.warn('Inline AudioWorklet failed, using ScriptProcessor fallback:', workletErr);
         }
-      } else {
-        this._setupScriptProcessorFallback();
       }
 
-      // 2. Initialize Output Audio Context (24kHz for Gemini Live Audio)
-      this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
-        sampleRate: 24000,
-      });
-      if (this.outputAudioContext.state === 'suspended') {
-        await this.outputAudioContext.resume();
+      if (!workletInitialized) {
+        this._setupScriptProcessorFallback(nativeSampleRate);
       }
-      this.nextPlayTime = this.outputAudioContext.currentTime;
 
-      // 3. Connect to Gemini 3.1 Live WebSocket API
+      // 4. Connect to Gemini 3.1 Live WebSocket API
       this.session = await this.client.live.connect({
         model: 'gemini-3.1-flash-live-preview',
         config: {
@@ -217,7 +291,7 @@ export class GeminiLiveSession {
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: {
-                voiceName: 'Zephyr', // Natural, warm conversational voice
+                voiceName: 'Zephyr', // Natural, warm female voice
               },
             },
           },
@@ -263,7 +337,10 @@ export class GeminiLiveSession {
           },
           onerror: (err) => {
             console.error('Gemini Live error:', err);
-            this.onError?.(err?.message || 'Gemini Live error');
+            this.onError?.({
+              message: err?.message || 'Connection error. Tap mic to retry.',
+              isPermissionDenied: false,
+            });
           },
           onclose: (e) => {
             console.log('Gemini Live session closed:', e);
@@ -277,23 +354,35 @@ export class GeminiLiveSession {
       return true;
     } catch (err) {
       console.error('Failed to start Gemini Live Session:', err);
+      const isPerm =
+        err?.name === 'NotAllowedError' ||
+        err?.name === 'PermissionDeniedError' ||
+        err?.message?.toLowerCase()?.includes('permission') ||
+        err?.message?.toLowerCase()?.includes('denied');
+
       this.stop();
-      this.onError?.(err?.message || 'Connection failed. Please check mic permissions.');
+      this.onError?.({
+        message: isPerm
+          ? 'Microphone permission denied. Please allow microphone access in browser settings.'
+          : err?.message || 'Unable to connect to live voice session.',
+        isPermissionDenied: isPerm,
+      });
       this.onStateChange?.('error');
       return false;
     }
   }
 
-  // ── ScriptProcessor Fallback (if AudioWorklet unsupported) ──
-  _setupScriptProcessorFallback() {
-    this.processor = this.inputAudioContext.createScriptProcessor(2048, 1, 1);
+  // ── ScriptProcessor Fallback ───────────────────
+  _setupScriptProcessorFallback(nativeSampleRate) {
+    this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
     this.inputSource.connect(this.processor);
-    this.processor.connect(this.inputAudioContext.destination);
+    this.processor.connect(this.silenceNode);
 
     this.processor.onaudioprocess = (e) => {
       if (!this.isActive || !this.session) return;
       const inputData = e.inputBuffer.getChannelData(0);
-      const pcm16Buffer = floatTo16BitPCM(inputData);
+      const downsampled = downsampleTo16k(inputData, nativeSampleRate);
+      const pcm16Buffer = floatTo16BitPCM(downsampled);
       const base64Chunk = arrayBufferToBase64(pcm16Buffer);
 
       try {
@@ -311,24 +400,28 @@ export class GeminiLiveSession {
 
   // ── Play Incoming PCM Chunk Seamlessly ─────────
   _playAudioChunk(base64Pcm) {
-    if (!this.outputAudioContext || !this.isActive) return;
+    if (!this.audioContext || !this.isActive) return;
 
     try {
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+
       const float32Samples = base64PCM16ToFloat32(base64Pcm);
-      const audioBuffer = this.outputAudioContext.createBuffer(
+      const audioBuffer = this.audioContext.createBuffer(
         1,
         float32Samples.length,
         24000
       );
       audioBuffer.getChannelData(0).set(float32Samples);
 
-      const sourceNode = this.outputAudioContext.createBufferSource();
+      const sourceNode = this.audioContext.createBufferSource();
       sourceNode.buffer = audioBuffer;
-      sourceNode.connect(this.outputAudioContext.destination);
+      sourceNode.connect(this.audioContext.destination);
 
-      const currentTime = this.outputAudioContext.currentTime;
+      const currentTime = this.audioContext.currentTime;
       if (this.nextPlayTime < currentTime) {
-        this.nextPlayTime = currentTime + 0.02; // Small 20ms safety offset
+        this.nextPlayTime = currentTime + 0.02; // 20ms safety offset
       }
 
       sourceNode.start(this.nextPlayTime);
@@ -342,8 +435,8 @@ export class GeminiLiveSession {
 
         if (
           this.activeSourceNodes.length === 0 &&
-          this.outputAudioContext &&
-          this.outputAudioContext.currentTime >= this.nextPlayTime - 0.05
+          this.audioContext &&
+          this.audioContext.currentTime >= this.nextPlayTime - 0.05
         ) {
           this.isPlaying = false;
           if (this.isActive) {
@@ -368,8 +461,8 @@ export class GeminiLiveSession {
     }
     this.activeSourceNodes = [];
     this.isPlaying = false;
-    if (this.outputAudioContext) {
-      this.nextPlayTime = this.outputAudioContext.currentTime;
+    if (this.audioContext) {
+      this.nextPlayTime = this.audioContext.currentTime;
     }
   }
 
@@ -389,8 +482,8 @@ export class GeminiLiveSession {
 
       if (
         !this.isPlaying ||
-        !this.outputAudioContext ||
-        this.outputAudioContext.currentTime >= this.nextPlayTime - 0.05
+        !this.audioContext ||
+        this.audioContext.currentTime >= this.nextPlayTime - 0.05
       ) {
         clearInterval(checkInterval);
         this.isPlaying = false;
@@ -464,6 +557,11 @@ export class GeminiLiveSession {
       this.processor = null;
     }
 
+    if (this.silenceNode) {
+      this.silenceNode.disconnect();
+      this.silenceNode = null;
+    }
+
     if (this.inputSource) {
       this.inputSource.disconnect();
       this.inputSource = null;
@@ -474,22 +572,13 @@ export class GeminiLiveSession {
       this.mediaStream = null;
     }
 
-    if (this.inputAudioContext) {
+    if (this.audioContext) {
       try {
-        await this.inputAudioContext.close();
+        await this.audioContext.close();
       } catch (e) {
         /* ignore */
       }
-      this.inputAudioContext = null;
-    }
-
-    if (this.outputAudioContext) {
-      try {
-        await this.outputAudioContext.close();
-      } catch (e) {
-        /* ignore */
-      }
-      this.outputAudioContext = null;
+      this.audioContext = null;
     }
 
     if (this.session) {

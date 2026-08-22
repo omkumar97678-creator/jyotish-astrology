@@ -686,8 +686,8 @@ export default function Voice() {
         {/* ── MODE 1: VOICE MODE (Gemini 3.1 Live) ── */}
         {mode === 'voice' && (
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            {/* Mic Permission Error Card */}
-            {voiceState === 'error' && error?.toLowerCase().includes('permission') && (
+            {/* Mic Permission or Connection Error Card */}
+            {voiceState === 'error' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -700,36 +700,69 @@ export default function Voice() {
                   marginBottom: '20px',
                 }}
               >
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎤</div>
-                <h3 style={{ color: '#E8E4DC', margin: '0 0 8px 0' }}>Microphone Access Needed</h3>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+                  {(typeof error === 'object' ? error?.isPermissionDenied : error?.toLowerCase()?.includes('permission'))
+                    ? '🎤'
+                    : '⚠️'}
+                </div>
+                <h3 style={{ color: '#E8E4DC', margin: '0 0 8px 0', fontSize: '1.1rem' }}>
+                  {(typeof error === 'object' ? error?.isPermissionDenied : error?.toLowerCase()?.includes('permission'))
+                    ? 'Microphone Access Needed'
+                    : 'Voice Connection Issue'}
+                </h3>
                 <p
                   style={{
-                    color: 'rgba(232,228,220,0.6)',
-                    fontSize: '0.9rem',
+                    color: 'rgba(232,228,220,0.7)',
+                    fontSize: '0.88rem',
                     marginBottom: '16px',
+                    lineHeight: '1.5',
                   }}
                 >
-                  Allow microphone access in your browser settings to use Voice mode.
+                  {(typeof error === 'object' ? error?.message : error) ||
+                    'Please allow microphone access or tap below to reconnect.'}
                 </p>
-                <button
-                  onClick={() => {
-                    setError(null);
-                    setVoiceState('idle');
-                    setMode('text');
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #C8822A, #E09840)',
-                    border: 'none',
-                    borderRadius: '100px',
-                    padding: '10px 24px',
-                    color: '#0D0F2B',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
-                  }}
-                >
-                  Switch to Text Chat Instead
-                </button>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      setVoiceState('idle');
+                      handleStartSession();
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #C8822A, #E09840)',
+                      border: 'none',
+                      borderRadius: '100px',
+                      padding: '10px 20px',
+                      color: '#0D0F2B',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    🔄 Try Again
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      setVoiceState('idle');
+                      setMode('text');
+                    }}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '100px',
+                      padding: '10px 20px',
+                      color: '#E8E4DC',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    Switch to Text Chat
+                  </button>
+                </div>
               </motion.div>
             )}
 
