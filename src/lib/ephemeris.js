@@ -212,8 +212,10 @@ function getLocalSiderealTime(jd, longitude) {
   let GMST =
     280.46061837 +
     360.98564736629 * (jd - 2451545.0) +
-    T * T * 0.000387933 -
+    0.000387933 * T * T -
     (T * T * T) / 38710000;
+
+  GMST = ((GMST % 360) + 360) % 360;
 
   let LST = (GMST + longitude) % 360;
   if (LST < 0) LST += 360;
@@ -222,27 +224,29 @@ function getLocalSiderealTime(jd, longitude) {
 
 // ── Ascendant (Lagna) Calculation ──────
 function getAscendant(jd, latitude, longitude) {
-  const LST = getLocalSiderealTime(jd, longitude);
-  const RAMC = LST;
-
   const T = (jd - 2451545.0) / 36525;
-  const eps = 23.439291111 - 0.013004167 * T;
 
-  const RAMC_rad = RAMC * DEG_TO_RAD;
-  const eps_rad = eps * DEG_TO_RAD;
-  const lat_rad = latitude * DEG_TO_RAD;
+  // Accurate IAU Obliquity of the Ecliptic
+  const eps =
+    (23.439291111 - 0.013004167 * T - 0.000000164 * T * T) * DEG_TO_RAD;
 
-  let asc =
-    Math.atan2(
-      Math.cos(RAMC_rad),
-      -(
-        Math.sin(RAMC_rad) * Math.cos(eps_rad) +
-        Math.tan(lat_rad) * Math.sin(eps_rad)
-      )
-    ) * RAD_TO_DEG;
+  // Local Sidereal Time (RAMC)
+  const LST = getLocalSiderealTime(jd, longitude);
+  const RAMC = LST * DEG_TO_RAD;
+  const lat = latitude * DEG_TO_RAD;
 
+  // Placidus Ascendant formula
+  const tanLat = Math.tan(lat);
+  const sinEps = Math.sin(eps);
+  const cosEps = Math.cos(eps);
+
+  const y = Math.cos(RAMC);
+  const x = -(Math.sin(RAMC) * cosEps + tanLat * sinEps);
+
+  let asc = Math.atan2(y, x) * RAD_TO_DEG;
   if (asc < 0) asc += 360;
-  return asc;
+
+  return asc % 360;
 }
 
 // ── Convert Tropical to Sidereal ───────

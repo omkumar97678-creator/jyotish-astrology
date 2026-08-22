@@ -211,82 +211,205 @@ async function callClaude(prompt, maxTokens = 1000) {
 export async function generateKundliReport(kundliData) {
   const fallback = getDynamicVedicReport(kundliData);
 
+  // Build specific planet positions string
+  let planetStr = 'Standard positions';
+  if (kundliData.planets) {
+    if (Array.isArray(kundliData.planets)) {
+      planetStr = kundliData.planets
+        .map(
+          (p) =>
+            `${p.name}: ${p.sign}, House ${p.house || '1'}, ${p.longitude ? `${p.longitude}°` : ''}`
+        )
+        .join('\n');
+    } else if (typeof kundliData.planets === 'object') {
+      planetStr = Object.entries(kundliData.planets)
+        .map(
+          ([name, data]) =>
+            `${name}: ${data.sign || data.rashi?.name || 'Aries'}, House ${data.house || '1'}, ${data.degree || data.longitude || '0°'}`
+        )
+        .join('\n');
+    }
+  }
+
+  // Current dasha info
+  const dashaInfo = kundliData.current_dasha
+    ? `${kundliData.current_dasha.lord || kundliData.current_dasha.planet || 'Jupiter'} Mahadasha (${kundliData.current_dasha.start || 'Current'}–${kundliData.current_dasha.end || 'Next'})`
+    : kundliData.mahadasha?.activeDasha
+    ? `${kundliData.mahadasha.activeDasha.planet} Mahadasha (${kundliData.mahadasha.activeDasha.range})`
+    : 'Active Planetary Period';
+
   const prompt = `
-Generate a detailed, authentic, and deeply personalized Vedic kundli report based on the user's real astronomical chart.
+You are an expert Vedic astrologer generating a 
+COMPLETELY UNIQUE and PERSONALIZED report.
 
-User Astronomical Data:
-- Name: ${kundliData.name || 'Seeker'}
-- Date of Birth: ${kundliData.date_of_birth}
-- Lagna (Ascendant): ${kundliData.lagna} (Degree: ${kundliData.lagnaDegree || ''})
-- Chandra Rashi (Moon Sign): ${kundliData.rashi} (Degree: ${kundliData.rashiDegree || ''})
-- Nakshatra: ${kundliData.nakshatra} (Pada: ${kundliData.nakshatraPada || 1}, Lord: ${kundliData.nakshatraLord || 'Rahu'})
-- Gana: ${kundliData.gana || 'Manushya'}
-- Planetary Placements: ${JSON.stringify(
-    (kundliData.planets || []).map((p) => `${p.name} in ${p.sign} (House ${p.house})`)
-  )}
-- Current Vimshottari Mahadasha: ${kundliData.mahadasha?.activeDasha?.planet || 'Active'} (${kundliData.mahadasha?.activeDasha?.range || ''})
+STRICT RULE: Every sentence must reference THIS 
+person's specific chart data below. 
+Do NOT give generic readings.
+Do NOT repeat the same career fields or health 
+areas for different people.
 
-Return this exact JSON structure:
+=== THIS PERSON'S UNIQUE CHART ===
+Name: ${kundliData.name || 'Seeker'}
+Date of Birth: ${kundliData.date_of_birth || kundliData.dob || '2000-01-01'}
+Birth Time: ${kundliData.time_of_birth || 'Sunrise'}
+Birth Place: ${kundliData.birth_place || kundliData.birthPlace || 'India'}
+
+LAGNA (Ascendant): ${kundliData.lagna || 'Aries'}
+This means: The rising sign's qualities dominate the physical appearance and first impressions.
+
+RASHI (Moon Sign): ${kundliData.rashi || 'Aries'}
+This means: The emotional nature and instincts.
+
+NAKSHATRA: ${kundliData.nakshatra || 'Ashwini'}
+This is the star constellation at birth.
+
+GANA: ${kundliData.gana || 'Deva'}
+MANGLIK: ${kundliData.is_manglik ? 'Yes - Mars dosha present' : 'No Manglik dosha'}
+
+PLANETARY POSITIONS (use these SPECIFICALLY):
+${planetStr}
+
+CURRENT MAHADASHA: ${dashaInfo}
+This planetary period STRONGLY influences career, relationships right now.
+
+NUMEROLOGY:
+Life Path: ${kundliData.life_path_number || kundliData.numerology?.lifePathNumber || 1}
+Destiny: ${kundliData.destiny_number || kundliData.numerology?.destinyNumber || 1}
+Soul Urge: ${kundliData.soul_urge_number || kundliData.numerology?.soulUrgeNumber || 1}
+
+=== GENERATE PERSONALIZED REPORT ===
+
+Using ONLY the specific chart data above, generate this JSON. Each section MUST:
+1. Mention specific planets by name (Sun, Moon, Mars etc.)
+2. Reference the actual Lagna lord's qualities
+3. Reference the Moon sign emotional nature
+4. Reference the CURRENT Mahadasha lord's effects
+5. Give career fields based on 10th house planets
+6. Give health areas based on Lagna sign's body rulership
+7. Give relationship compatibility based on 7th house
+8. Be COMPLETELY DIFFERENT from any other person's report
+
 {
   "personality": {
-    "overview": "4-5 lines synthesizing exact ${kundliData.lagna} Lagna and ${kundliData.rashi} Moon",
-    "strengths": ["strength1", "strength2", "strength3", "strength4", "strength5", "strength6"],
-    "challenges": [
-      {"title": "challenge1 title", "desc": "actionable advice"},
-      {"title": "challenge2 title", "desc": "actionable advice"},
-      {"title": "challenge3 title", "desc": "actionable advice"}
+    "overview": "Write 4-5 sentences mentioning ${kundliData.lagna} Lagna qualities AND ${kundliData.rashi} Moon emotional nature AND ${kundliData.nakshatra} nakshatra traits",
+    "strengths": [
+      "Specific strength from Lagna planet placement",
+      "Specific strength from Moon sign",
+      "Specific strength from nakshatra lord",
+      "Specific strength from strongest planet",
+      "Specific strength from Life Path ${kundliData.life_path_number || 1}",
+      "Specific strength from Destiny ${kundliData.destiny_number || 1}"
     ],
-    "lifePurpose": "inspiring poetic life statement"
+    "challenges": [
+      {"title": "Challenge from weakest planet", "desc": "Actionable advice for this placement"},
+      {"title": "Challenge from current dasha ${dashaInfo}", "desc": "Actionable remedy or practice"},
+      {"title": "Challenge from Lagna/Moon combination", "desc": "Mindset balance technique"}
+    ],
+    "lifePurpose": "Soul purpose based on Life Path ${kundliData.life_path_number || 1} combined with ${kundliData.nakshatra} nakshatra"
   },
   "career": {
-    "overview": "4-5 lines about career and 10th house/Lagna strengths",
-    "bestFields": ["field1", "field2", "field3", "field4", "field5", "field6"],
-    "currentPhase": "Current dasha career insight",
+    "overview": "Career overview based on 10th house planets AND current ${dashaInfo} AND Life Path ${kundliData.life_path_number || 1}",
+    "bestFields": [
+      "Field 1 — based on 10th house planets",
+      "Field 2 — based on Lagna lord",
+      "Field 3 — based on Mercury placement",
+      "Field 4 — based on Jupiter placement",
+      "Field 5 — based on Life Path number"
+    ],
+    "currentPhase": "What ${dashaInfo} means for career RIGHT NOW in 2025-2026",
     "timeline": [
-      {"period": "2024–2025", "prediction": "..."},
-      {"period": "2025–2026", "prediction": "..."},
-      {"period": "2026–2027", "prediction": "..."}
+      {
+        "period": "2024–2025",
+        "prediction": "Specific to ${dashaInfo} and current transits"
+      },
+      {
+        "period": "2025–2026",
+        "prediction": "Based on upcoming planetary transits for ${kundliData.rashi}"
+      },
+      {
+        "period": "2026–2027",
+        "prediction": "Based on dasha progression"
+      }
     ]
   },
   "love": {
-    "overview": "4-5 lines about relationships and 7th house",
+    "overview": "Relationship style based on 7th house lord AND Venus placement AND ${kundliData.rashi} emotional nature",
     "bestMatches": [
-      {"sign": "Match Sign 1", "reason": "reason"},
-      {"sign": "Match Sign 2", "reason": "reason"},
-      {"sign": "Match Sign 3", "reason": "reason"}
+      {
+        "sign": "Most compatible Rashi 1",
+        "reason": "Why based on chart elements"
+      },
+      {
+        "sign": "Most compatible Rashi 2",
+        "reason": "Why based on chart elements"
+      },
+      {
+        "sign": "Most compatible Rashi 3",
+        "reason": "Why based on chart elements"
+      }
     ],
-    "marriageTiming": "2-3 lines about marriage timing",
-    "relationshipLesson": "one key lesson"
+    "marriageTiming": "Marriage timing based on Jupiter transit AND 7th lord AND ${dashaInfo}",
+    "relationshipLesson": "Key lesson from 7th house and Venus position"
   },
   "health": {
-    "constitution": "Ayurvedic dosha analysis (Pitta/Vata/Kapha)",
+    "constitution": "Ayurvedic constitution based on LAGNA SIGN — ${kundliData.lagna} rules specific body parts. Describe those specific areas.",
     "watchAreas": [
-      {"area": "area 1", "advice": "one line advice"},
-      {"area": "area 2", "advice": "one line advice"},
-      {"area": "area 3", "advice": "one line advice"}
+      {
+        "area": "Body part ruled by ${kundliData.lagna}",
+        "advice": "Specific advice"
+      },
+      {
+        "area": "Body part ruled by Moon sign ${kundliData.rashi}",
+        "advice": "Specific advice"
+      },
+      {
+        "area": "Health area from 6th house planets",
+        "advice": "Specific advice"
+      }
     ],
     "recommendations": {
-      "diet": "dietary advice",
-      "exercise": "exercise advice",
-      "spiritual": "spiritual health advice"
+      "diet": "Diet for ${kundliData.lagna} constitution",
+      "exercise": "Exercise for this Lagna type",
+      "spiritual": "Practices for ${kundliData.nakshatra}"
     }
   },
   "spiritual": {
-    "soulPurpose": "3-4 lines about soul purpose",
-    "pastLife": "past life karmic indicator",
-    "practices": ["practice 1", "practice 2", "practice 3", "practice 4"],
+    "soulPurpose": "Soul purpose from Life Path ${kundliData.life_path_number || 1} AND ${kundliData.nakshatra} nakshatra's spiritual significance",
+    "pastLife": "Past life based on 12th house and Ketu position",
+    "practices": [
+      "Mantra for Lagna lord",
+      "Mantra for Moon sign ${kundliData.rashi}",
+      "Practice for current ${dashaInfo}",
+      "Practice for ${kundliData.nakshatra}",
+      "Practice for Life Path ${kundliData.life_path_number || 1}",
+      "Seva (service) based on chart"
+    ],
     "remedies": [
-      {"planet": "Primary Benefic", "remedy": "Vedic remedy", "day": "Day of week"},
-      {"planet": "Lagna Lord", "remedy": "Vedic remedy", "day": "Day of week"},
-      {"planet": "Dasha Lord", "remedy": "Vedic remedy", "day": "Day of week"}
+      {
+        "planet": "Lagna lord planet name",
+        "remedy": "Specific remedy for this person",
+        "day": "Correct day for this planet"
+      },
+      {
+        "planet": "Moon sign lord",
+        "remedy": "Specific remedy",
+        "day": "Correct day"
+      },
+      {
+        "planet": "${dashaInfo.split(' ')[0]}",
+        "remedy": "Current dasha remedy",
+        "day": "Correct day"
+      }
     ]
   }
 }
 
-Use authentic Vedic Jyotish principles tailored specifically to this person's chart.
+CRITICAL: The output for ${kundliData.name || 'Seeker'} with ${kundliData.lagna} Lagna MUST be completely different from someone with same Lagna but different planets, nakshatra, and dasha.
+
+Return ONLY valid JSON. No markdown.
 `;
 
-  return await callAI(prompt, 2000, fallback);
+  return await callAI(prompt, 2500, fallback);
 }
 
 // ── NUMEROLOGY REPORT ────────────────
