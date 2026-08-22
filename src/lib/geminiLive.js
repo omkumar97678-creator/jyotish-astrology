@@ -322,9 +322,9 @@ export class GeminiLiveSession {
       return false;
     }
 
-    // ── STEP 3: Gemini Live WebSocket API Connection ──
+    // ── STEP 3: Gemini Live WebSocket API Connection with Timeout ──
     try {
-      this.session = await this.client.live.connect({
+      const connectPromise = this.client.live.connect({
         model: 'gemini-3.1-flash-live-preview',
         config: {
           responseModalities: ['AUDIO'],
@@ -377,26 +377,39 @@ export class GeminiLiveSession {
           },
           onerror: (err) => {
             console.error('Gemini Live WebSocket error:', err);
+            this.stop();
             this.onError?.({
-              message: 'Connection dropped. Tap to reconnect.',
+              message: 'Connection dropped. Tap Try Again to reconnect.',
               isPermissionDenied: false,
             });
+            this.onStateChange?.('error');
           },
           onclose: (e) => {
             console.log('Gemini Live session closed:', e);
             if (this.isActive) {
               this.stop();
+              this.onStateChange?.('disconnected');
             }
           },
         },
       });
 
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('CONNECT_TIMEOUT'));
+        }, 12000);
+      });
+
+      this.session = await Promise.race([connectPromise, timeoutPromise]);
       return true;
     } catch (wsErr) {
       console.error('Failed to connect to Gemini Live WebSocket:', wsErr);
       this.stop();
+      const isTimeout = wsErr?.message === 'CONNECT_TIMEOUT';
       this.onError?.({
-        message: 'Could not connect to live voice server. Tap Try Again to reconnect.',
+        message: isTimeout
+          ? 'Connecting to live voice server timed out. Tap Try Again to reconnect.'
+          : 'Could not connect to live voice server. Tap Try Again to reconnect.',
         isPermissionDenied: false,
       });
       this.onStateChange?.('error');
