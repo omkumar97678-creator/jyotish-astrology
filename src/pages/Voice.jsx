@@ -457,7 +457,13 @@ export default function Voice() {
       setVoiceState('error');
     };
 
-    await session.start(kundliData);
+    try {
+      await session.start(kundliData);
+    } catch (startErr) {
+      console.error('Session start unexpected error:', startErr);
+      setError(startErr?.message || 'Failed to start voice consultation');
+      setVoiceState('error');
+    }
   };
 
   // ── End Gemini Live Session ────────────

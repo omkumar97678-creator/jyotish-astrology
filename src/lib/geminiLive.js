@@ -21,6 +21,7 @@ export function buildAstroSystemPrompt(kundliData) {
   const soulUrge = kundliData?.soul_urge_number || numerology?.soulUrgeNumber || 9;
   const luckyNumbers = numerology?.luckyNumbers?.join(', ') || '5, 3, 6';
   const luckyColors = numerology?.luckyColors?.join(', ') || 'Golden Yellow, Emerald Green';
+  const dasha = kundliData?.current_dasha?.lord || kundliData?.mahadasha?.activeDasha?.planet || 'Active Mahadasha';
   const now = new Date();
   const currentYear = now.getFullYear();
   const todayDateStr = now.toLocaleDateString('en-IN', {
